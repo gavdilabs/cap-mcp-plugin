@@ -1,0 +1,34 @@
+meta {
+  name: MCP Tool - get-author
+  type: http
+  seq: 3
+}
+
+post {
+  url: http://localhost:4004/mcp
+  body: json
+  auth: inherit
+}
+
+headers {
+  mcp-session-id: {{SESSION_ID}}
+  Accept: application/json,text/event-stream
+}
+
+body:json {
+  {
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "mcp/callTool",
+    "params": {
+      "name": "get-author",
+      "arguments": { 
+        "input": "Edgar Allan Poe"
+      }
+    }
+  }
+}
+
+vars:pre-request {
+  SESSION_ID: e50f76b6-4e35-4c9e-a654-e8ffbd1d6490
+}

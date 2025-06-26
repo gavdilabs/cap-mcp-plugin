@@ -1,0 +1,101 @@
+ID,title,stock,author_ID
+1,"Harry Potter and the Philosopher's Stone",25,1
+2,"Harry Potter and the Chamber of Secrets",18,1
+3,"Harry Potter and the Prisoner of Azkaban",22,1
+4,"Harry Potter and the Goblet of Fire",15,1
+5,"Harry Potter and the Order of the Phoenix",12,1
+6,"The Shining",8,2
+7,"It",14,2
+8,"The Stand",6,2
+9,"Carrie",11,2
+10,"Pet Sematary",9,2
+11,"A Game of Thrones",20,3
+12,"A Clash of Kings",17,3
+13,"A Storm of Swords",15,3
+14,"A Feast for Crows",13,3
+15,"Murder on the Orient Express",19,4
+16,"The Murder of Roger Ackroyd",16,4
+17,"And Then There Were None",21,4
+18,"Death on the Nile",14,4
+19,"Foundation",12,5
+20,"I, Robot",18,5
+21,"The Caves of Steel",10,5
+22,"Foundation and Empire",8,5
+23,"The Handmaid's Tale",24,6
+24,"Cat's Eye",13,6
+25,"Oryx and Crake",11,6
+26,"Norwegian Wood",16,7
+27,"Kafka on the Shore",14,7
+28,"1Q84",9,7
+29,"Beloved",17,8
+30,"Song of Solomon",12,8
+31,"The Bluest Eye",15,8
+32,"One Hundred Years of Solitude",19,9
+33,"Love in the Time of Cholera",13,9
+34,"Chronicle of a Death Foretold",11,9
+35,"The Old Man and the Sea",22,10
+36,"A Farewell to Arms",18,10
+37,"For Whom the Bell Tolls",14,10
+38,"Mrs. Dalloway",16,11
+39,"To the Lighthouse",12,11
+40,"Orlando",10,11
+41,"The Great Gatsby",28,12
+42,"This Side of Paradise",8,12
+43,"Tender Is the Night",6,12
+44,"Pride and Prejudice",32,13
+45,"Sense and Sensibility",24,13
+46,"Emma",20,13
+47,"Mansfield Park",15,13
+48,"Great Expectations",26,14
+49,"A Tale of Two Cities",23,14
+50,"Oliver Twist",18,14
+51,"David Copperfield",14,14
+52,"War and Peace",12,15
+53,"Anna Karenina",16,15
+54,"The Death of Ivan Ilyich",9,15
+55,"I Know Why the Caged Bird Sings",21,16
+56,"Still I Rise",17,16
+57,"Gather Together in My Name",13,16
+58,"Kindred",19,17
+59,"Parable of the Sower",15,17
+60,"Dawn",11,17
+61,"American Gods",22,18
+62,"Good Omens",18,18
+63,"The Sandman",14,18
+64,"Neverwhere",16,18
+65,"The Left Hand of Darkness",13,19
+66,"The Dispossessed",11,19
+67,"A Wizard of Earthsea",17,19
+68,"Fahrenheit 451",25,20
+69,"The Martian Chronicles",19,20
+70,"Dandelion Wine",12,20
+71,"The Hitchhiker's Guide to the Galaxy",27,21
+72,"The Restaurant at the End of the Universe",21,21
+73,"Life, the Universe and Everything",18,21
+74,"The Colour of Magic",23,22
+75,"The Light Fantastic",19,22
+76,"Mort",16,22
+77,"Guards! Guards!",14,22
+78,"Gone Girl",24,23
+79,"Sharp Objects",18,23
+80,"Dark Places",15,23
+81,"The Da Vinci Code",29,24
+82,"Angels and Demons",22,24
+83,"The Lost Symbol",17,24
+84,"A Time to Kill",20,25
+85,"The Firm",18,25
+86,"The Pelican Brief",15,25
+87,"Misery",13,2
+88,"Salem's Lot",10,2
+89,"The Dark Tower",8,2
+90,"Fire & Blood",12,3
+91,"The World of Ice & Fire",9,3
+92,"Poirot Investigates",16,4
+93,"The ABC Murders",13,4
+94,"Second Foundation",11,5
+95,"The Gods Themselves",9,5
+96,"The Testaments",14,6
+97,"Hard-Boiled Wonderland",12,7
+98,"Jazz",10,8
+99,"News of a Kidnapping",8,9
+100,"The Sun Also Rises",15,10

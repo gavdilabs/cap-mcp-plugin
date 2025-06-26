@@ -1,0 +1,15 @@
+meta {
+  name: Books.getStock
+  type: http
+  seq: 7
+}
+
+get {
+  url: http://localhost:4004/odata/v4/catalog/Books({{ID}})/getStock()
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  ID: 1
+}

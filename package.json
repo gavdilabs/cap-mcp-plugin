@@ -1,0 +1,58 @@
+{
+  "name": "@gavdi/cap-mcp",
+  "version": "1.0.0",
+  "description": "MCP Pluging for CAP",
+  "keywords": [
+    "MCP",
+    "CAP",
+    "Plugin"
+  ],
+  "license": "ISC",
+  "author": "Simon Vestergaard Laursen",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "mock": "npm run start --workspace=test/demo",
+    "test": "jest",
+    "build": "tsc",
+    "inspect": "npx @modelcontextprotocol/inspector"
+  },
+  "peerDependencies": {
+    "@sap/cds": "^9",
+    "express": "^4"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.13.0",
+    "zod": "^3.25.67",
+    "zod-to-json-schema": "^3.24.5"
+  },
+  "devDependencies": {
+    "@cap-js/cds-types": "^0.11.0",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.3",
+    "eslint": "^9.29.0",
+    "husky": "^9.1.7",
+    "jest": "^29.7.0",
+    "lint-staged": "^16.1.2",
+    "prettier": "^3.5.3",
+    "release-it": "^19.0.3",
+    "ts-jest": "^29.4.0",
+    "typescript": "^5.8.3"
+  },
+  "lint-staged": {
+    "*.json": [
+      "prettier --check"
+    ],
+    "*.ts": [
+      "eslint",
+      "prettier --check ./src"
+    ],
+    "*.js": [
+      "eslint",
+      "prettier --check ./src"
+    ]
+  },
+  "workspaces": [
+    "test/demo"
+  ]
+}

@@ -1,0 +1,31 @@
+meta {
+  name: MCP Resource Templates - Call Resource
+  type: http
+  seq: 6
+}
+
+post {
+  url: http://localhost:4004/mcp
+  body: json
+  auth: inherit
+}
+
+headers {
+  mcp-session-id: {{SESSION_ID}}
+  Accept: application/json,text/event-stream
+}
+
+body:json {
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "resources/read",
+    "params": {
+      "uri": "odata://CatalogService/books?filter=contains(title%2C'Murder')&orderby=title%20desc&select=title%2Cstock&skip=0"
+    }
+  }
+}
+
+vars:pre-request {
+  SESSION_ID: bd78072b-5bc1-4865-b7fd-a9e81910a179
+}

@@ -1,0 +1,31 @@
+meta {
+  name: MCP Resource - List
+  type: http
+  seq: 4
+}
+
+post {
+  url: http://localhost:4004/mcp
+  body: json
+  auth: inherit
+}
+
+headers {
+  mcp-session-id: {{SESSION_ID}}
+  Accept: application/json,text/event-stream
+}
+
+body:json {
+  {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "resources/list",
+    "params": {
+      "cursor": "optional-cursor-value"
+    }
+  }
+}
+
+vars:pre-request {
+  SESSION_ID: 	b9d106d0-9155-4b2e-8645-1005454f86c6
+}
