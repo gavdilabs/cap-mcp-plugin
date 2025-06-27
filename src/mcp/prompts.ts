@@ -2,10 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpPromptAnnotation } from "../annotations/structures";
 import { LOGGER } from "../logger";
 import { determineMcpParameterType } from "./utils";
-import {
-  McpAnnotationPromptInjection,
-  McpAnnotationPromptInput,
-} from "../annotations/types";
+import { McpAnnotationPromptInput } from "../annotations/types";
 import { Service } from "@sap/cds";
 
 /* @ts-ignore */
