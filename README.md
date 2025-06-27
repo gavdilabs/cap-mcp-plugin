@@ -228,6 +228,23 @@ Would you like me to help you review any of these in detail?"
 - **Integration Ready**: Works with existing CAP-based workflow systems
 - **Mobile Friendly**: Access approvals from any MCP-compatible AI client
 
+## 🧰 Testing Locally
+
+If you want to test the MCP implementation you have made on your CAP application locally, you have 2 options available (that does not involve direct integration with AI Agent).
+
+### Option #1 - MCP Inspector
+
+You can inspect the MCP implementation by utilizing the official `@modelcontextprotocol/inspector`.
+
+This inspector can be started up through either the included `npm run inspect` command, or by running `npx @modelcontextprotocol/inspector`.
+
+For plugin implementation implementation in your own project it is recommended to add the above command to your own script collection.
+
+For more information on the inspector, please [see the official documentation](https://github.com/modelcontextprotocol/inspector).
+
+### Option #2 - Bruno Collection
+
+This repository comes with a Bruno collection available that includes some example queries you can use to verify your MCP implementation. These can be found in the `bruno` directory.
 
 ## 🤝 Contributing
 
