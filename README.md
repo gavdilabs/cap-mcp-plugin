@@ -28,6 +28,11 @@ APIs and annotations may change in future releases. Use in development and testi
 
 Version 1.0 of the plugin is planned to release shortly after auth integration is complete.
 
+### 👾 Known Bugs
+
+> ❗Currently there is a bug in the `@modelcontextprotocol/sdk` package that breaks the RFC template strings. The issue has been reported.
+> Until this issue is fixed, the resource reads for dynamic queries are only possible if all query options are provided.
+
 ## 📦 Installation
 
 ```bash
