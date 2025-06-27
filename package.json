@@ -7,7 +7,7 @@
     "CAP",
     "Plugin"
   ],
-  "license": "ISC",
+  "license": "Apache-2.0",
   "author": "Simon Vestergaard Laursen",
   "type": "commonjs",
   "main": "index.js",
