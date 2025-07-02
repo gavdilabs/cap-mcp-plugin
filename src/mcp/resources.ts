@@ -5,7 +5,10 @@ import {
 import { McpResourceAnnotation } from "../annotations/structures";
 import { LOGGER } from "../logger";
 import { Service } from "@sap/cds";
-import { writeODataDescriptionForResource } from "./utils";
+import {
+  parseODataFilterString,
+  writeODataDescriptionForResource,
+} from "./utils";
 import { McpResourceQueryParams } from "./types";
 // import cds from "@sap/cds";
 
@@ -19,6 +22,7 @@ export function assignResourceToServer(
   LOGGER.debug("Adding resource", model);
   if (model.functionalities.size <= 0) {
     registerStaticResource(model, server);
+    return;
   }
 
   // Dynamic resource registration
@@ -38,6 +42,15 @@ export function assignResourceToServer(
     { title: model.target, description: detailedDescription },
     async (uri: URL, queryParameters: McpResourceQueryParams) => {
       const service: Service = cds.services[model.serviceName];
+      if (!service) {
+        LOGGER.error(
+          `Invalid service found for service '${model.serviceName}'`,
+        );
+        throw new Error(
+          `Invalid service found for service '${model.serviceName}'`,
+        );
+      }
+
       const query = SELECT.from(model.target).limit(
         queryParameters.top ? Number(queryParameters.top) : 100,
         queryParameters.skip ? Number(queryParameters.skip) : undefined,
@@ -46,7 +59,8 @@ export function assignResourceToServer(
       for (const [k, v] of Object.entries(queryParameters)) {
         switch (k) {
           case "filter":
-            const expression = cds.parse.expr(decodeURIComponent(v));
+            const decoded = parseODataFilterString(v);
+            const expression = cds.parse.expr(decoded);
             query.where(expression);
             continue;
           case "select":
