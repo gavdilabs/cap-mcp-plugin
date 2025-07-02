@@ -4,6 +4,15 @@ import { McpSession } from "./types";
 import { Request, Response } from "express";
 import { z } from "zod";
 
+const ODATA_2_CDS_MAP = new Map<string, string>([
+  ["eq", "="],
+  ["lt", "<"],
+  ["le", "<="],
+  ["gt", ">"],
+  ["ge", ">="],
+  ["ne", "!="],
+]);
+
 /**
  * Takes in the string based type name of the CDS type found through CSN and converts it to zod type
  */
@@ -75,4 +84,16 @@ export function writeODataDescriptionForResource(
   }
 
   return description;
+}
+
+//  TODO: Write test cases for this entry
+export function parseODataFilterString(filter: string): string {
+  let parsed = "" + filter; // We do not want to mutate the original
+
+  for (const [k, v] of ODATA_2_CDS_MAP.entries()) {
+    if (!parsed.includes(`%20${k}%20`)) continue;
+    parsed = parsed.replaceAll(`%20${k}%20`, ` ${v} `);
+  }
+
+  return decodeURIComponent(parsed);
 }
