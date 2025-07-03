@@ -100,6 +100,7 @@ export function writeODataDescriptionForResource(
 
 //  TODO: Write test cases for this entry
 /**
+ * @deprecated Use ODataQueryValidator.validateFilter() instead for secure parsing
  * Parses and converts OData filter string from URL encoding to CDS query syntax
  * @param filter - URL encoded OData filter string
  * @returns Decoded filter string with CDS operators

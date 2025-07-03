@@ -5,10 +5,8 @@ import {
 import { McpResourceAnnotation } from "../annotations/structures";
 import { LOGGER } from "../logger";
 import { Service } from "@sap/cds";
-import {
-  parseODataFilterString,
-  writeODataDescriptionForResource,
-} from "./utils";
+import { writeODataDescriptionForResource } from "./utils";
+import { ODataQueryValidator, ODataValidationError } from "./validation";
 import { McpResourceQueryParams } from "./types";
 // import cds from "@sap/cds";
 
@@ -56,32 +54,64 @@ export function assignResourceToServer(
         );
       }
 
-      const query = SELECT.from(model.target).limit(
-        queryParameters.top ? Number(queryParameters.top) : 100,
-        queryParameters.skip ? Number(queryParameters.skip) : undefined,
-      );
+      // Create validator with entity properties
+      const validator = new ODataQueryValidator(model.properties);
 
-      for (const [k, v] of Object.entries(queryParameters)) {
-        switch (k) {
-          case "filter":
-            const decoded = parseODataFilterString(v);
-            const expression = cds.parse.expr(decoded);
-            query.where(expression);
-            continue;
-          case "select":
-            const decodedSelect = decodeURIComponent(v);
-            query.columns(decodedSelect.split(","));
-            continue;
-          case "orderby":
-            query.orderBy(decodeURIComponent(v));
-            continue;
-          default:
-            continue;
+      // Validate and build query with secure parameter handling
+      let query: any;
+      try {
+        query = SELECT.from(model.target).limit(
+          queryParameters.top
+            ? validator.validateTop(queryParameters.top)
+            : 100,
+          queryParameters.skip
+            ? validator.validateSkip(queryParameters.skip)
+            : undefined,
+        );
+
+        for (const [k, v] of Object.entries(queryParameters)) {
+          switch (k) {
+            case "filter":
+              if (v && v.trim().length > 0) {
+                const validatedFilter = validator.validateFilter(v);
+                const expression = cds.parse.expr(validatedFilter);
+                query.where(expression);
+              }
+              continue;
+            case "select":
+              if (v && v.trim().length > 0) {
+                const validatedColumns = validator.validateSelect(v);
+                query.columns(validatedColumns);
+              }
+              continue;
+            case "orderby":
+              if (v && v.trim().length > 0) {
+                const validatedOrderBy = validator.validateOrderBy(v);
+                query.orderBy(validatedOrderBy);
+              }
+              continue;
+            default:
+              continue;
+          }
         }
+      } catch (error) {
+        LOGGER.warn(
+          `OData query validation failed for ${model.target}:`,
+          error,
+        );
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: `ERROR: Invalid query parameter - ${error instanceof ODataValidationError ? error.message : "Invalid query syntax"}`,
+            },
+          ],
+        };
       }
 
       try {
         const response = await service.run(query);
+        console.log("QUERY", JSON.stringify(query));
         return {
           contents: [
             {
@@ -120,11 +150,17 @@ function registerStaticResource(
     { title: model.target, description: model.description },
     async (uri: URL, queryParameters: McpResourceQueryParams) => {
       const service: Service = cds.services[model.serviceName];
-      const query = SELECT.from(model.target).limit(
-        queryParameters.top ? Number(queryParameters.top) : 100,
-      );
+
+      // Create validator even for static resources to validate top parameter
+      const validator = new ODataQueryValidator(model.properties);
 
       try {
+        const query = SELECT.from(model.target).limit(
+          queryParameters.top
+            ? validator.validateTop(queryParameters.top)
+            : 100,
+        );
+
         const response = await service.run(query);
         return {
           contents: [
@@ -134,8 +170,26 @@ function registerStaticResource(
             },
           ],
         };
-      } catch (e) {
-        LOGGER.error(`Failed to retrieve resource data for ${model.target}`, e);
+      } catch (error) {
+        if (error instanceof ODataValidationError) {
+          LOGGER.warn(
+            `OData validation failed for static resource ${model.target}:`,
+            error,
+          );
+          return {
+            contents: [
+              {
+                uri: uri.href,
+                text: `ERROR: Invalid query parameter - ${error.message}`,
+              },
+            ],
+          };
+        }
+
+        LOGGER.error(
+          `Failed to retrieve resource data for ${model.target}`,
+          error,
+        );
         return {
           contents: [
             {

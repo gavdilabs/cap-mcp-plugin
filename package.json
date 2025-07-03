@@ -22,7 +22,7 @@
   "repository": "github:gavdilabs/cap-mcp-plugin",
   "scripts": {
     "mock": "npm run start --workspace=test/demo",
-    "test": "jest",
+    "test": "jest --silent",
     "build": "tsc",
     "inspect": "npx @modelcontextprotocol/inspector",
     "prepare": "husky",
@@ -62,11 +62,11 @@
     ],
     "*.ts": [
       "eslint",
-      "prettier --check ./src"
+      "prettier ./src --check"
     ],
     "*.js": [
       "eslint",
-      "prettier --check ./src"
+      "prettier ./src --check"
     ]
   },
   "workspaces": [

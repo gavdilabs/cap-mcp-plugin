@@ -7,14 +7,8 @@
       "type": "node",
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "cds",
-      "args": [
-        "serve",
-        "--with-mocks",
-        "--in-memory?"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "args": ["serve", "--with-mocks", "--in-memory?"],
+      "skipFiles": ["<node_internals>/**"]
     }
   ]
 }

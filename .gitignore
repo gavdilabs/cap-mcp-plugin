@@ -4,3 +4,6 @@ lib/
 .env
 default-env.json
 .npmrc
+.claude
+CLAUDE.md
+
