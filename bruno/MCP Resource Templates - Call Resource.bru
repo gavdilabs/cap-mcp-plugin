@@ -21,11 +21,11 @@ body:json {
     "id": 1,
     "method": "resources/read",
     "params": {
-      "uri": "odata://CatalogService/books?filter=contains(title%2C'It')&orderby=title%20desc&select=title%2Cstock&skip=0"
+      "uri": "odata://CatalogService/books?orderby=title%20desc&select=title%2Cstock&top=5&skip=0"
     }
   }
 }
 
 vars:pre-request {
-  SESSION_ID: 900eadb3-16ab-40fb-99cd-8e8de525315e
+  SESSION_ID: 	3d7d586f-1e31-4902-8189-160748325a38
 }

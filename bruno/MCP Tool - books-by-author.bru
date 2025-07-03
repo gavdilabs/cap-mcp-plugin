@@ -1,7 +1,7 @@
 meta {
-  name: MCP Resource Templates - List
+  name: MCP Tool - books-by-author
   type: http
-  seq: 5
+  seq: 8
 }
 
 post {
@@ -18,14 +18,17 @@ headers {
 body:json {
   {
     "jsonrpc": "2.0",
-    "id": 1,
-    "method": "resources/templates/list",
+    "id": 2,
+    "method": "tools/call",
     "params": {
-      "cursor": "optional-cursor-value"
+      "name": "books-by-author",
+      "arguments": {
+        "authorName": "Stephen"
+      }
     }
   }
 }
 
 vars:pre-request {
-  SESSION_ID: 	7ca5a88b-c6b3-4433-b7e8-e5ad70fe17e0
+  SESSION_ID: c664753f-6c37-4d04-819d-1e78b2cf78bd
 }

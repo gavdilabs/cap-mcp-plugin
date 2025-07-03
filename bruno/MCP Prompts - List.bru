@@ -1,7 +1,7 @@
 meta {
-  name: MCP Tool - get-author
+  name: MCP Prompts - List
   type: http
-  seq: 3
+  seq: 9
 }
 
 post {
@@ -18,17 +18,14 @@ headers {
 body:json {
   {
     "jsonrpc": "2.0",
-    "id": 2,
-    "method": "mcp/callTool",
+    "id": 1,
+    "method": "prompts/list",
     "params": {
-      "name": "get-author",
-      "arguments": { 
-        "input": "Edgar Allan Poe"
-      }
+      "cursor": "optional-cursor-value"
     }
   }
 }
 
 vars:pre-request {
-  SESSION_ID: 9380bb93-43b3-43ba-aa67-fec630d67b30
+  SESSION_ID: 3c88a7a5-3ee4-4811-b6ed-a15dd1f88f97
 }

@@ -1,7 +1,7 @@
 meta {
-  name: MCP Resource Templates - List
+  name: MCP Tools - List
   type: http
-  seq: 5
+  seq: 7
 }
 
 post {
@@ -19,7 +19,7 @@ body:json {
   {
     "jsonrpc": "2.0",
     "id": 1,
-    "method": "resources/templates/list",
+    "method": "tools/list",
     "params": {
       "cursor": "optional-cursor-value"
     }
@@ -27,5 +27,5 @@ body:json {
 }
 
 vars:pre-request {
-  SESSION_ID: 	7ca5a88b-c6b3-4433-b7e8-e5ad70fe17e0
+  SESSION_ID: e321bfc2-2641-4b36-9b10-00da6d809e3d
 }
