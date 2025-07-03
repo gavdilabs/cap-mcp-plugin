@@ -16,6 +16,9 @@ const ODATA_2_CDS_MAP = new Map<string, string>([
 /**
  * Takes in the string based type name of the CDS type found through CSN and converts it to zod type
  */
+/**
+ * Takes in the string based type name of the CDS type found through CSN and converts it to zod type
+ */
 export function determineMcpParameterType(cdsType: string): unknown {
   switch (cdsType) {
     case "String":
@@ -27,6 +30,10 @@ export function determineMcpParameterType(cdsType: string): unknown {
   }
 }
 
+/**
+ * Session handler for MCP server.
+ * Rejects or approves incoming requests based on existing MCP session header ID
+ */
 /**
  * Session handler for MCP server.
  * Rejects or approves incoming requests based on existing MCP session header ID
@@ -51,6 +58,11 @@ export async function handleMcpSessionRequest(
   await session.transport.handleRequest(req, res);
 }
 
+/**
+ * Writes a detailed OData description for a resource including available query parameters and properties
+ * @param model - The resource annotation to generate description for
+ * @returns Formatted description string with OData query syntax examples
+ */
 export function writeODataDescriptionForResource(
   model: McpResourceAnnotation,
 ): string {
@@ -87,6 +99,11 @@ export function writeODataDescriptionForResource(
 }
 
 //  TODO: Write test cases for this entry
+/**
+ * Parses and converts OData filter string from URL encoding to CDS query syntax
+ * @param filter - URL encoded OData filter string
+ * @returns Decoded filter string with CDS operators
+ */
 export function parseODataFilterString(filter: string): string {
   let parsed = "" + filter; // We do not want to mutate the original
 
