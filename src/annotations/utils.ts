@@ -3,6 +3,11 @@ import { DEFAULT_ALL_RESOURCE_OPTIONS, MCP_ANNOTATION_KEY } from "./constants";
 import { McpAnnotationStructure, McpResourceOption } from "./types";
 import { LOGGER } from "../logger";
 
+/**
+ * Splits a definition name into service name and target
+ * @param definition - The definition name to split
+ * @returns Object containing serviceName and target
+ */
 export function splitDefinitionName(definition: string): {
   serviceName: string;
   target: string;
@@ -14,6 +19,11 @@ export function splitDefinitionName(definition: string): {
   };
 }
 
+/**
+ * Checks if a definition contains any MCP annotations
+ * @param definition - The definition to check
+ * @returns True if MCP annotations are found, false otherwise
+ */
 export function containsMcpAnnotation(definition: csn.Definition): boolean {
   for (const key of Object.keys(definition)) {
     if (!key.includes(MCP_ANNOTATION_KEY)) continue;
@@ -22,6 +32,12 @@ export function containsMcpAnnotation(definition: csn.Definition): boolean {
   return false;
 }
 
+/**
+ * Validates that required MCP annotations are present and valid
+ * @param annotations - The annotation structure to validate
+ * @returns True if valid, throws error if invalid
+ * @throws Error if required annotations are missing
+ */
 export function containsRequiredAnnotations(
   annotations: Partial<McpAnnotationStructure>,
 ): boolean {
@@ -42,6 +58,12 @@ export function containsRequiredAnnotations(
   return true;
 }
 
+/**
+ * Validates a resource annotation structure
+ * @param annotations - The annotation structure to validate
+ * @returns True if valid, throws error if invalid
+ * @throws Error if resource annotation is invalid
+ */
 export function isValidResourceAnnotation(
   annotations: Partial<McpAnnotationStructure>,
 ): boolean {
@@ -63,6 +85,12 @@ export function isValidResourceAnnotation(
   return true;
 }
 
+/**
+ * Validates a tool annotation structure
+ * @param annotations - The annotation structure to validate
+ * @returns True if valid, throws error if invalid
+ * @throws Error if tool annotation is invalid
+ */
 export function isValidToolAnnotation(
   annotations: Partial<McpAnnotationStructure>,
 ): boolean {
@@ -75,6 +103,12 @@ export function isValidToolAnnotation(
   return true;
 }
 
+/**
+ * Validates a prompts annotation structure
+ * @param annotations - The annotation structure to validate
+ * @returns True if valid, throws error if invalid
+ * @throws Error if prompts annotation is invalid
+ */
 export function isValidPromptsAnnotation(
   annotations: Partial<McpAnnotationStructure>,
 ): boolean {
@@ -132,6 +166,11 @@ export function isValidPromptsAnnotation(
   return true;
 }
 
+/**
+ * Determines resource options from annotation structure
+ * @param annotations - The annotation structure to process
+ * @returns Set of resource options, defaults to all options if not specified
+ */
 export function determineResourceOptions(
   annotations: Partial<McpAnnotationStructure>,
 ): Set<McpResourceOption> {
@@ -139,6 +178,11 @@ export function determineResourceOptions(
   return new Set<McpResourceOption>(annotations.resource);
 }
 
+/**
+ * Parses resource elements from a definition to extract properties and keys
+ * @param definition - The definition to parse
+ * @returns Object containing properties and resource keys maps
+ */
 export function parseResourceElements(definition: csn.Definition): {
   properties: Map<string, string>;
   resourceKeys: Map<string, string>;
@@ -161,6 +205,11 @@ export function parseResourceElements(definition: csn.Definition): {
   };
 }
 
+/**
+ * Parses operation elements from annotation structure
+ * @param annotations - The annotation structure to parse
+ * @returns Object containing parameters and operation kind
+ */
 export function parseOperationElements(annotations: McpAnnotationStructure): {
   parameters?: Map<string, string>;
   operationKind?: string;
@@ -183,6 +232,12 @@ export function parseOperationElements(annotations: McpAnnotationStructure): {
   };
 }
 
+/**
+ * Parses entity keys from a definition
+ * @param definition - The definition to parse keys from
+ * @returns Map of key names to their types
+ * @throws Error if invalid key type is found
+ */
 export function parseEntityKeys(
   definition: csn.Definition,
 ): Map<string, string> {

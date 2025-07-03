@@ -11,6 +11,12 @@ import { assignResourceToServer } from "./resources";
 import { CAPConfiguration } from "../config/types";
 import { assignPromptToServer } from "./prompts";
 
+/**
+ * Creates and configures an MCP server instance with the given configuration and annotations
+ * @param config - CAP configuration object
+ * @param annotations - Optional parsed annotations to register with the server
+ * @returns Configured MCP server instance
+ */
 export function createMcpServer(
   config: CAPConfiguration,
   annotations?: ParsedAnnotations,

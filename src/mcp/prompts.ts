@@ -23,6 +23,11 @@ annotate CatalogService with @mcp.prompts: [{
 }];
  */
 
+/**
+ * Assigns prompt annotations to the MCP server
+ * @param model - The prompt annotation containing prompt definitions
+ * @param server - The MCP server instance to register prompts with
+ */
 export function assignPromptToServer(
   model: McpPromptAnnotation,
   server: McpServer,
@@ -61,6 +66,11 @@ export function assignPromptToServer(
   }
 }
 
+/**
+ * Constructs input arguments schema for prompt registration
+ * @param inputs - Array of prompt input definitions
+ * @returns Record of input schemas or undefined if no inputs
+ */
 function constructInputArgs(
   inputs: McpAnnotationPromptInput[] | undefined,
 ): Record<string, any> | undefined {

@@ -15,6 +15,11 @@ import { McpResourceQueryParams } from "./types";
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
+/**
+ * Assigns a resource annotation to the MCP server
+ * @param model - The resource annotation to assign
+ * @param server - The MCP server instance to assign the resource to
+ */
 export function assignResourceToServer(
   model: McpResourceAnnotation,
   server: McpServer,
@@ -100,6 +105,11 @@ export function assignResourceToServer(
   );
 }
 
+/**
+ * Registers a static resource (without query parameters) to the MCP server
+ * @param model - The resource annotation to register
+ * @param server - The MCP server instance
+ */
 function registerStaticResource(
   model: McpResourceAnnotation,
   server: McpServer,

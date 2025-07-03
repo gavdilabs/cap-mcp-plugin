@@ -25,6 +25,12 @@ import {
 } from "./utils";
 import { MCP_ANNOTATION_KEY, MCP_ANNOTATION_PROPS } from "./constants";
 
+/**
+ * Parses model definitions to extract MCP annotations and return them as a map of annotated entries
+ * @param model - The CSN model containing definitions to parse
+ * @returns A map of target names to their corresponding MCP annotation entries
+ * @throws Error if model lacks valid definitions
+ */
 export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
   if (!model.definitions) {
     LOGGER.error("Invalid model loaded", model);
@@ -87,6 +93,11 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
   return result;
 }
 
+/**
+ * Parses MCP annotations from a definition object
+ * @param definition - The definition object to parse annotations from
+ * @returns Partial annotation structure or undefined if no MCP annotations found
+ */
 function parseAnnotations(
   definition: csn.Definition,
 ): Partial<McpAnnotationStructure> | undefined {
@@ -122,6 +133,14 @@ function parseAnnotations(
   return annotations;
 }
 
+/**
+ * Constructs a resource annotation from parsed annotation data
+ * @param serviceName - Name of the service containing the resource
+ * @param target - Target entity name
+ * @param annotations - Parsed annotation structure
+ * @param definition - CSN definition object
+ * @returns Resource annotation or undefined if invalid
+ */
 function constructResourceAnnotation(
   serviceName: string,
   target: string,
@@ -144,6 +163,15 @@ function constructResourceAnnotation(
   );
 }
 
+/**
+ * Constructs a tool annotation from parsed annotation data
+ * @param serviceName - Name of the service containing the tool
+ * @param target - Target operation name
+ * @param annotations - Parsed annotation structure
+ * @param entityKey - Optional entity key for bound operations
+ * @param keyParams - Optional key parameters for bound operations
+ * @returns Tool annotation or undefined if invalid
+ */
 function constructToolAnnotation(
   serviceName: string,
   target: string,
@@ -166,6 +194,12 @@ function constructToolAnnotation(
   );
 }
 
+/**
+ * Constructs a prompt annotation from parsed annotation data
+ * @param serviceName - Name of the service containing the prompts
+ * @param annotations - Parsed annotation structure
+ * @returns Prompt annotation or undefined if invalid
+ */
 function constructPromptAnnotation(
   serviceName: string,
   annotations: McpAnnotationStructure,

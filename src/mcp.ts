@@ -25,12 +25,19 @@ export default class McpPlugin {
   private expressApp?: Application;
   private annotations?: ParsedAnnotations;
 
+  /**
+   * Initializes a new MCP plugin instance
+   */
   constructor() {
     LOGGER.debug("Plugin instance created");
     this.sessions = new Map<string, McpSession>();
     this.config = loadConfiguration();
   }
 
+  /**
+   * Handles the bootstrap event by setting up Express app and API endpoints
+   * @param app - Express application instance
+   */
   public async onBootstrap(app: Application): Promise<void> {
     LOGGER.debug("Event received for 'bootstrap'");
     this.expressApp = app;
@@ -40,12 +47,19 @@ export default class McpPlugin {
     LOGGER.debug("Bootstrap complete");
   }
 
+  /**
+   * Handles the loaded event by parsing model definitions for MCP annotations
+   * @param model - CSN model containing definitions
+   */
   public async onLoaded(model: csn.CSN): Promise<void> {
     LOGGER.debug("Event received for 'loaded'");
     this.annotations = parseDefinitions(model);
     LOGGER.debug("Annotations have been loaded");
   }
 
+  /**
+   * Handles the shutdown event by gracefully closing all MCP server sessions
+   */
   public async onShutdown(): Promise<void> {
     LOGGER.debug("Gracefully shutting down MCP server");
     for (const session of this.sessions.values()) {
@@ -54,6 +68,9 @@ export default class McpPlugin {
     LOGGER.debug("MCP server sessions has been shutdown");
   }
 
+  /**
+   * Registers API endpoints for MCP server communication
+   */
   private async registerApiEndpoints(): Promise<void> {
     LOGGER.debug("Registering health endpoint for MCP");
     this.expressApp?.get("/mcp/health", (_, res) => {
