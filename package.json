@@ -24,7 +24,11 @@
     "mock": "npm run start --workspace=test/demo",
     "test": "jest",
     "build": "tsc",
-    "inspect": "npx @modelcontextprotocol/inspector"
+    "inspect": "npx @modelcontextprotocol/inspector",
+    "prepare": "husky",
+    "lint": "eslint",
+    "lint-staged": "lint-staged",
+    "format": "prettier --check ./src"
   },
   "peerDependencies": {
     "@sap/cds": "^9",
