@@ -28,7 +28,11 @@ export function createMcpServer(
     capabilities: config.capabilities,
   });
 
-  if (!annotations) return server;
+  if (!annotations) {
+    LOGGER.debug("No annotations provided, skipping registration...");
+    return server;
+  }
+
   LOGGER.debug("Annotations found for server: ", annotations);
 
   // TODO: Error handling
