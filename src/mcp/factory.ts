@@ -31,7 +31,6 @@ export function createMcpServer(
   if (!annotations) return server;
   LOGGER.debug("Annotations found for server: ", annotations);
 
-  // TODO: Handle the parsed annotations
   // TODO: Error handling
   // TODO: This should only be mapped once, not per each server instance. Maybe this should be pre-packaged on load?
   // TODO: Handle auth

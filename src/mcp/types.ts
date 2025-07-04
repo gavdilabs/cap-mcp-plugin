@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
+// TODO: JSDoc for types
+
 export type McpParameters = Record<string, unknown>;
 
 export interface McpSession {

@@ -32,6 +32,8 @@ export default class McpPlugin {
     LOGGER.debug("Plugin instance created");
     this.sessions = new Map<string, McpSession>();
     this.config = loadConfiguration();
+
+    LOGGER.debug("Running with configuration", this.config);
   }
 
   /**
@@ -84,6 +86,12 @@ export default class McpPlugin {
       const sessionIdHeader = req.headers[MCP_SESSION_HEADER] as string;
       let sessionEntry: McpSession | undefined = undefined;
 
+      LOGGER.debug("MCP request received", {
+        hasSessionId: !!sessionIdHeader,
+        isInitialize: isInitializeRequest(req.body),
+        contentType: req.headers["content-type"],
+      });
+
       if (sessionIdHeader && this.sessions.has(sessionIdHeader)) {
         LOGGER.debug("Request received - Session ID", sessionIdHeader);
         sessionEntry = this.sessions.get(sessionIdHeader);
@@ -92,7 +100,9 @@ export default class McpPlugin {
         const server = createMcpServer(this.config, this.annotations);
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
+          enableJsonResponse: process.env.NODE_ENV === "test",
           onsessioninitialized: (sid) => {
+            LOGGER.debug("Session initialized with ID:", sid);
             this.sessions.set(sid, {
               server: server,
               transport: transport,
@@ -107,11 +117,27 @@ export default class McpPlugin {
         };
 
         await server.connect(transport);
-        sessionEntry = {
-          server: server,
-          transport: transport,
-        };
+
+        // Handle initialization request immediately and return
+        try {
+          await transport.handleRequest(req, res, req.body);
+          return;
+        } catch (error) {
+          LOGGER.error("Initialization error:", error);
+          if (!res.headersSent) {
+            res.status(500).json({
+              jsonrpc: "2.0",
+              error: {
+                code: -32603,
+                message: "Internal Error: Initialization failed",
+                id: null,
+              },
+            });
+          }
+          return;
+        }
       } else {
+        LOGGER.debug("Invalid request - no session ID and not initialize");
         res.status(400).json({
           jsonrpc: "2.0",
           error: {
@@ -120,9 +146,27 @@ export default class McpPlugin {
             id: null,
           },
         });
+        return;
       }
 
-      await sessionEntry?.transport.handleRequest(req, res, req.body);
+      // Handle requests with existing session
+      if (sessionEntry) {
+        try {
+          await sessionEntry.transport.handleRequest(req, res, req.body);
+        } catch (error) {
+          LOGGER.error("Transport error:", error);
+          if (!res.headersSent) {
+            res.status(500).json({
+              jsonrpc: "2.0",
+              error: {
+                code: -32603,
+                message: "Internal Error: Transport failed",
+                id: null,
+              },
+            });
+          }
+        }
+      }
     });
 
     this.expressApp?.get("/mcp", (req, res) =>

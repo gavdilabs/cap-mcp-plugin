@@ -153,11 +153,13 @@ export class ODataQueryValidator {
    * Validates and sanitizes filter parameter with comprehensive security checks
    */
   validateFilter(value: string): string {
-    if (!value || value.trim().length === 0) {
+    const input = value?.replace("filter=", "");
+
+    if (!input || input.trim().length === 0) {
       throw new Error("Filter parameter cannot be empty");
     }
 
-    const decoded = decodeURIComponent(value);
+    const decoded = decodeURIComponent(input);
     const validated = ODataQueryValidationSchemas.filter.parse(decoded);
 
     // Check for forbidden patterns
@@ -270,34 +272,34 @@ export class ODataQueryValidator {
     const cdsTokens: string[] = [];
 
     for (const token of tokens) {
-      switch (token.type) {
-        case "operator":
-          // Convert OData operators to CDS operators
-          switch (token.value.toLowerCase()) {
-            case "eq":
-              cdsTokens.push("=");
-              break;
-            case "ne":
-              cdsTokens.push("!=");
-              break;
-            case "gt":
-              cdsTokens.push(">");
-              break;
-            case "ge":
-              cdsTokens.push(">=");
-              break;
-            case "lt":
-              cdsTokens.push("<");
-              break;
-            case "le":
-              cdsTokens.push("<=");
-              break;
-            default:
-              cdsTokens.push(token.value);
-          }
-          break;
-        default:
-          cdsTokens.push(token.value);
+      if (token.type === "operator") {
+        // Convert OData operators to CDS operators
+        switch (token.value.toLowerCase()) {
+          case "eq":
+            cdsTokens.push("=");
+            break;
+          case "ne":
+            cdsTokens.push("!=");
+            break;
+          case "gt":
+            cdsTokens.push(">");
+            break;
+          case "ge":
+            cdsTokens.push(">=");
+            break;
+          case "lt":
+            cdsTokens.push("<");
+            break;
+          case "le":
+            cdsTokens.push("<=");
+            break;
+          default:
+            cdsTokens.push(token.value);
+            break;
+        }
+      } else {
+        cdsTokens.push(token.value);
+        continue;
       }
     }
 

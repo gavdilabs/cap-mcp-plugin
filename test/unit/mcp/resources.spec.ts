@@ -4,6 +4,7 @@ import {
   McpServer,
   ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { CustomResourceTemplate } from "../../../src/mcp/customResourceTemplate";
 import { assignResourceToServer } from "../../../src/mcp/resources";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 import * as utils from "../../../src/mcp/utils";
@@ -68,7 +69,6 @@ describe("MCP Resources", () => {
   let mockServer: sinon.SinonStubbedInstance<McpServer>;
   let loggerDebugStub: sinon.SinonStub;
   let loggerErrorStub: sinon.SinonStub;
-  let parseODataFilterStringStub: sinon.SinonStub;
   let writeODataDescriptionStub: sinon.SinonStub;
 
   beforeEach(async () => {
@@ -81,7 +81,6 @@ describe("MCP Resources", () => {
     // Setup stubs
     mockServer = sinon.createStubInstance(McpServer);
 
-    parseODataFilterStringStub = sinon.stub(utils, "parseODataFilterString");
     writeODataDescriptionStub = sinon.stub(
       utils,
       "writeODataDescriptionForResource",
@@ -253,7 +252,7 @@ describe("MCP Resources", () => {
         sinon.assert.called(mockServer.registerResource);
         expect(mockServer.registerResource.getCalls()[0].args).toEqual([
           "DynamicResource",
-          expect.any(ResourceTemplate),
+          expect.any(CustomResourceTemplate),
           {
             title: "TestEntity",
             description: "Detailed OData description",
@@ -263,8 +262,15 @@ describe("MCP Resources", () => {
 
         // Verify ResourceTemplate URI construction
         const registerCall = mockServer.registerResource.getCall(0);
-        const resourceTemplate = registerCall.args[1] as ResourceTemplate;
-        expect(resourceTemplate).toBeInstanceOf(ResourceTemplate);
+        const resourceTemplate = registerCall
+          .args[1] as unknown as CustomResourceTemplate;
+        expect(resourceTemplate).toBeInstanceOf(CustomResourceTemplate);
+
+        // Verify the URI template format is grouped parameters
+        expect(resourceTemplate.uriTemplate.toString()).toBe(
+          "odata://TestService/DynamicResource{?filter,select,orderby}",
+        );
+        expect(resourceTemplate.uriTemplate.toString()).not.toContain("}{?");
       });
 
       it("should handle all query parameters correctly", async () => {
@@ -284,7 +290,6 @@ describe("MCP Resources", () => {
         };
         (cds as any).services["TestService"] = mockService;
 
-        parseODataFilterStringStub.returns("decoded filter");
         (cds.parse.expr as jest.Mock).mockReturnValue("parsed expression");
 
         assignResourceToServer(model, mockServer as any);
@@ -305,7 +310,6 @@ describe("MCP Resources", () => {
         // Assert
         expect(SELECT.from).toHaveBeenCalledWith("TestEntity");
         expect(mockQuery.limit).toHaveBeenCalledWith(20, 10);
-        // Note: We no longer use parseODataFilterString, now using ODataQueryValidator
         expect(cds.parse.expr).toHaveBeenCalledWith("decoded filter");
         expect(mockQuery.where).toHaveBeenCalledWith("parsed expression");
         expect(mockQuery.columns).toHaveBeenCalledWith(["id", "name"]);

@@ -77,6 +77,8 @@ export type McpAnnotationPrompt = {
   inputs?: McpAnnotationPromptInput[];
 };
 
+// TODO: JSDocs
+
 export type McpAnnotationPromptInput = {
   key: string;
   type: string;

@@ -1,5 +1,7 @@
 import { McpAnnotationPrompt, McpResourceOption } from "./types";
 
+// TODO: JSDocs
+
 export class McpAnnotation {
   protected readonly _name: string;
   protected readonly _description: string;

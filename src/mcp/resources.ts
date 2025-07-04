@@ -2,6 +2,7 @@ import {
   McpServer,
   ResourceTemplate,
 } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { CustomResourceTemplate } from "./customResourceTemplate";
 import { McpResourceAnnotation } from "../annotations/structures";
 import { LOGGER } from "../logger";
 import { Service } from "@sap/cds";
@@ -30,20 +31,23 @@ export function assignResourceToServer(
 
   // Dynamic resource registration
   const detailedDescription = writeODataDescriptionForResource(model);
-  const functionalities = Array.from(model.functionalities).map(
-    (el) => `{?${el}}`,
-  );
-  // BUG: RFC compliance breaking bug in the MCP SDK library, must wait for fix....
-  const resourceTemplateUri = `odata://${model.serviceName}/${model.name}${functionalities.join("")}`;
-  const template = new ResourceTemplate(resourceTemplateUri, {
+  const functionalities = Array.from(model.functionalities);
+
+  // Using grouped query parameter format to fix MCP SDK URI matching issue
+  // Format: {?param1,param2,param3} instead of {?param1}{?param2}{?param3}
+  const templateParams =
+    functionalities.length > 0 ? `{?${functionalities.join(",")}}` : "";
+  const resourceTemplateUri = `odata://${model.serviceName}/${model.name}${templateParams}`;
+  const template = new CustomResourceTemplate(resourceTemplateUri, {
     list: undefined,
   });
 
   server.registerResource(
     model.name,
-    template,
+    template as any, // Type assertion to bypass strict type checking - necessary due to broken URI parser in the MCP SDK
     { title: model.target, description: detailedDescription },
-    async (uri: URL, queryParameters: McpResourceQueryParams) => {
+    async (uri: URL, variables: unknown) => {
+      const queryParameters = variables as McpResourceQueryParams;
       const service: Service = cds.services[model.serviceName];
       if (!service) {
         LOGGER.error(
@@ -70,25 +74,21 @@ export function assignResourceToServer(
         );
 
         for (const [k, v] of Object.entries(queryParameters)) {
+          if (!v || v.trim().length <= 0) continue;
           switch (k) {
             case "filter":
-              if (v && v.trim().length > 0) {
-                const validatedFilter = validator.validateFilter(v);
-                const expression = cds.parse.expr(validatedFilter);
-                query.where(expression);
-              }
+              // BUG: If filter value is e.g. "filter=1234" the value 1234 will go through
+              const validatedFilter = validator.validateFilter(v);
+              const expression = cds.parse.expr(validatedFilter);
+              query.where(expression);
               continue;
             case "select":
-              if (v && v.trim().length > 0) {
-                const validatedColumns = validator.validateSelect(v);
-                query.columns(validatedColumns);
-              }
+              const validatedColumns = validator.validateSelect(v);
+              query.columns(validatedColumns);
               continue;
             case "orderby":
-              if (v && v.trim().length > 0) {
-                const validatedOrderBy = validator.validateOrderBy(v);
-                query.orderBy(validatedOrderBy);
-              }
+              const validatedOrderBy = validator.validateOrderBy(v);
+              query.orderBy(validatedOrderBy);
               continue;
             default:
               continue;
@@ -111,7 +111,6 @@ export function assignResourceToServer(
 
       try {
         const response = await service.run(query);
-        console.log("QUERY", JSON.stringify(query));
         return {
           contents: [
             {
@@ -148,7 +147,8 @@ function registerStaticResource(
     model.name,
     `odata://${model.serviceName}/${model.name}`,
     { title: model.target, description: model.description },
-    async (uri: URL, queryParameters: McpResourceQueryParams) => {
+    async (uri: URL, extra: any) => {
+      const queryParameters = extra as McpResourceQueryParams;
       const service: Service = cds.services[model.serviceName];
 
       // Create validator even for static resources to validate top parameter

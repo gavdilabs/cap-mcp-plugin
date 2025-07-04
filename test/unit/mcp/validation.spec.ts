@@ -99,11 +99,20 @@ describe("ODataQueryValidator", () => {
   });
 
   describe("validateFilter", () => {
+    it("should be able to handle 'filter=' being included in the parameter", () => {
+      const result = validator.validateFilter("filter=title eq 'Test Book'");
+      expect(result).toContain("title");
+      expect(result).toContain("=");
+      expect(result).toContain("'Test Book'");
+      expect(result).toEqual("title = 'Test Book'");
+    });
+
     it("should validate simple filter expressions", () => {
       const result = validator.validateFilter("title eq 'Test Book'");
       expect(result).toContain("title");
       expect(result).toContain("=");
       expect(result).toContain("'Test Book'");
+      expect(result).toEqual("title = 'Test Book'");
     });
 
     it("should validate complex filter expressions", () => {

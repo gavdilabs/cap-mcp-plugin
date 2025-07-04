@@ -6,6 +6,7 @@ import { ERR_MISSING_SERVICE } from "../../../src//mcp/constants";
 import cds from "@sap/cds";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import * as utils from "../../../src/mcp/utils";
+import { z } from "zod";
 
 // Mock CDS module completely
 jest.mock("@sap/cds", () => ({
@@ -65,12 +66,8 @@ describe("tools.ts", () => {
           ]),
         );
 
-        determineMcpParameterTypeStub
-          .withArgs("string")
-          .returns({ type: "string" });
-        determineMcpParameterTypeStub
-          .withArgs("number")
-          .returns({ type: "number" });
+        determineMcpParameterTypeStub.withArgs("string").returns(z.string());
+        determineMcpParameterTypeStub.withArgs("number").returns(z.number());
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
@@ -82,21 +79,29 @@ describe("tools.ts", () => {
 
         // Assert
         sinon.assert.called(mockServer.registerTool);
-        expect(mockServer.registerTool.getCall(0).args).toEqual([
-          "TestTool",
-          {
-            param1: { type: "string" },
-            param2: { type: "number" },
-          },
-          expect.any(Function),
-        ]);
+        const registerCall = mockServer.registerTool.getCall(0);
+        expect(registerCall.args[0]).toBe("TestTool");
+        expect(registerCall.args[1]).toEqual({
+          title: "TestTool",
+          description: "Test tool description",
+          inputSchema: expect.objectContaining({
+            param1: expect.any(z.ZodString),
+            param2: expect.any(z.ZodNumber),
+          }),
+        });
+        expect(registerCall.args[2]).toEqual(expect.any(Function));
 
         // Test the registered handler
-        const registerCall = mockServer.registerTool.getCall(0) as any;
         const handler = registerCall.args[2];
         const inputData = { param1: "test", param2: 42 };
 
-        const result = await handler(inputData);
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler(inputData, mockExtra);
 
         expect(mockService.send).toHaveBeenCalledWith("testAction", inputData);
         expect(result.content).toEqual([{ type: "text", text: "success" }]);
@@ -121,7 +126,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({});
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
 
         // Assert
         expect(result.content).toEqual([
@@ -146,7 +157,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({});
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
 
         // Assert
         expect(result.isError).toBe(true);
@@ -175,11 +192,14 @@ describe("tools.ts", () => {
 
         // Assert
         sinon.assert.called(mockServer.registerTool);
-        expect(mockServer.registerTool.getCall(0).args).toEqual([
-          "TestTool",
-          {},
-          expect.any(Function),
-        ]);
+        const registerCall = mockServer.registerTool.getCall(0);
+        expect(registerCall.args[0]).toBe("TestTool");
+        expect(registerCall.args[1]).toEqual({
+          title: "TestTool",
+          description: "Test tool description",
+          inputSchema: {},
+        });
+        expect(registerCall.args[2]).toEqual(expect.any(Function));
       });
 
       it("should handle empty parameters map in unbound operation", () => {
@@ -202,11 +222,14 @@ describe("tools.ts", () => {
 
         // Assert
         sinon.assert.called(mockServer.registerTool);
-        expect(mockServer.registerTool.getCall(0).args).toEqual([
-          "TestTool",
-          {},
-          expect.any(Function),
-        ]);
+        const registerCall = mockServer.registerTool.getCall(0);
+        expect(registerCall.args[0]).toBe("TestTool");
+        expect(registerCall.args[1]).toEqual({
+          title: "TestTool",
+          description: "Test tool description",
+          inputSchema: {},
+        });
+        expect(registerCall.args[2]).toEqual(expect.any(Function));
       });
 
       it("should handle complex object responses in unbound operation", async () => {
@@ -233,7 +256,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({});
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
 
         // Assert
         expect(result.content).toEqual([
@@ -256,12 +285,8 @@ describe("tools.ts", () => {
           new Map([["id", "number"]]),
         );
 
-        determineMcpParameterTypeStub
-          .withArgs("string")
-          .returns({ type: "string" });
-        determineMcpParameterTypeStub
-          .withArgs("number")
-          .returns({ type: "number" });
+        determineMcpParameterTypeStub.withArgs("string").returns(z.string());
+        determineMcpParameterTypeStub.withArgs("number").returns(z.number());
 
         const mockService = {
           send: jest.fn().mockResolvedValue({ result: "bound success" }),
@@ -274,21 +299,29 @@ describe("tools.ts", () => {
 
         // Assert
         sinon.assert.called(mockServer.registerTool);
-        expect(mockServer.registerTool.getCall(0).args).toEqual([
-          "BoundTool",
-          {
-            id: { type: "number" },
-            param1: { type: "string" },
-          },
-          expect.any(Function),
-        ]);
+        const registerCall = mockServer.registerTool.getCall(0);
+        expect(registerCall.args[0]).toBe("BoundTool");
+        expect(registerCall.args[1]).toEqual({
+          title: "BoundTool",
+          description: "Bound tool description",
+          inputSchema: expect.objectContaining({
+            id: expect.any(z.ZodNumber),
+            param1: expect.any(z.ZodString),
+          }),
+        });
+        expect(registerCall.args[2]).toEqual(expect.any(Function));
 
         // Test the registered handler
-        const registerCall = mockServer.registerTool.getCall(0) as any;
         const handler = registerCall.args[2];
         const inputData = { id: 123, param1: "test", extraParam: "ignored" };
 
-        const result = await handler(inputData);
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler(inputData, mockExtra);
 
         expect(mockService.send).toHaveBeenCalledWith({
           event: "boundAction",
@@ -358,7 +391,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({ id: 123 });
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({ id: 123 }, mockExtra);
 
         // Assert
         expect(result.isError).toBe(true);
@@ -396,11 +435,20 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        await handler({
-          id: 123,
-          validParam: "test",
-          invalidParam: "should be ignored",
-        });
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        await handler(
+          {
+            id: 123,
+            validParam: "test",
+            invalidParam: "should be ignored",
+          },
+          mockExtra,
+        );
 
         // Assert
         expect(mockService.send).toHaveBeenCalledWith({
@@ -444,12 +492,21 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        await handler({
-          id: 123,
-          version: "v1.0",
-          tenant: "test-tenant",
-          param1: "test-value",
-        });
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        await handler(
+          {
+            id: 123,
+            version: "v1.0",
+            tenant: "test-tenant",
+            param1: "test-value",
+          },
+          mockExtra,
+        );
 
         // Assert
         expect(mockService.send).toHaveBeenCalledWith({
@@ -492,7 +549,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        await handler({ id: 123 });
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        await handler({ id: 123 }, mockExtra);
 
         // Assert
         expect(mockService.send).toHaveBeenCalledWith({
@@ -529,7 +592,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({ id: 123 });
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({ id: 123 }, mockExtra);
 
         // Assert
         expect(result.content).toEqual([
@@ -560,7 +629,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({});
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
 
         // Assert
         expect(result.content).toEqual([{ type: "text", text: "null" }]);
@@ -585,7 +660,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({});
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
 
         // Assert
         expect(result.content).toEqual([{ type: "text", text: "undefined" }]);
@@ -610,7 +691,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({});
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
 
         // Assert
         expect(result.content).toEqual([{ type: "text", text: "true" }]);
@@ -635,7 +722,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({});
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
 
         // Assert
         expect(result.content).toEqual([{ type: "text", text: "42" }]);
@@ -660,7 +753,13 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        const result = await handler({});
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
 
         // Assert
         expect(result.content).toEqual([]);
@@ -705,13 +804,22 @@ describe("tools.ts", () => {
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
-        await handler({
-          id: "guid-123-456",
-          stringParam: "test-string",
-          numberParam: 123.45,
-          boolParam: true,
-          extraIgnored: "ignored",
-        });
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        await handler(
+          {
+            id: "guid-123-456",
+            stringParam: "test-string",
+            numberParam: 123.45,
+            boolParam: true,
+            extraIgnored: "ignored",
+          },
+          mockExtra,
+        );
 
         // Assert
         expect(mockService.send).toHaveBeenCalledWith({

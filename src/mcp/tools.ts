@@ -5,6 +5,7 @@ import { LOGGER } from "../logger";
 import { McpParameters } from "./types";
 import { Service } from "@sap/cds";
 import { ERR_MISSING_SERVICE } from "./constants";
+import { z } from "zod";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
@@ -36,9 +37,6 @@ export function assignToolToServer(
 /**
  * Creates tool handler for bound action/function imports
  */
-/**
- * Creates tool handler for bound action/function imports
- */
 function assignBoundOperation(
   params: McpParameters,
   model: McpToolAnnotation,
@@ -54,46 +52,56 @@ function assignBoundOperation(
   }
 
   const keys = buildToolParameters(model.keyTypeMap);
-  server.registerTool(model.name, { ...keys, ...params }, async (data) => {
-    const service: Service = cds.services[model.serviceName];
-    if (!service) {
-      LOGGER.error("Invalid CAP service - undefined");
-      return {
-        isError: true,
-        content: [
-          {
-            type: "text",
-            text: ERR_MISSING_SERVICE,
-          },
-        ],
-      };
-    }
+  const inputSchema = buildZodSchema({ ...keys, ...params });
 
-    const operationInput: Record<string, unknown> = {};
-    const operationKeys: Record<string, unknown> = {};
-
-    for (const [k, v] of Object.entries(data)) {
-      if (model.keyTypeMap?.has(k)) {
-        operationKeys[k] = v;
+  server.registerTool(
+    model.name,
+    {
+      title: model.name,
+      description: model.description,
+      inputSchema: inputSchema,
+    },
+    async (args) => {
+      const service: Service = cds.services[model.serviceName];
+      if (!service) {
+        LOGGER.error("Invalid CAP service - undefined");
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: ERR_MISSING_SERVICE,
+            },
+          ],
+        };
       }
 
-      if (!model.parameters?.has(k)) continue;
-      operationInput[k] = v;
-    }
+      const operationInput: Record<string, unknown> = {};
+      const operationKeys: Record<string, unknown> = {};
 
-    const response = await service.send({
-      event: model.target,
-      entity: model.entityKey as string,
-      data: operationInput,
-      params: [operationKeys],
-    });
+      for (const [k, v] of Object.entries(args)) {
+        if (model.keyTypeMap?.has(k)) {
+          operationKeys[k] = v;
+        }
 
-    return {
-      content: Array.isArray(response)
-        ? response.map((el) => ({ type: "text", text: String(el) }))
-        : [{ type: "text", text: String(response) }],
-    };
-  });
+        if (!model.parameters?.has(k)) continue;
+        operationInput[k] = v;
+      }
+
+      const response = await service.send({
+        event: model.target,
+        entity: model.entityKey as string,
+        data: operationInput,
+        params: [operationKeys],
+      });
+
+      return {
+        content: Array.isArray(response)
+          ? response.map((el) => ({ type: "text", text: String(el) }))
+          : [{ type: "text", text: String(response) }],
+      };
+    },
+  );
 }
 
 /**
@@ -107,33 +115,41 @@ function assignUnboundOperation(
   model: McpToolAnnotation,
   server: McpServer,
 ): void {
-  server.registerTool(model.name, params, async (data) => {
-    const service: Service = cds.services[model.serviceName];
-    if (!service) {
-      LOGGER.error("Invalid CAP service - undefined");
-      return {
-        isError: true,
-        content: [
-          {
-            type: "text",
-            text: ERR_MISSING_SERVICE,
-          },
-        ],
-      };
-    }
+  const inputSchema = buildZodSchema(params);
 
-    const response = await service.send(model.target, data);
-    return {
-      content: Array.isArray(response)
-        ? response.map((el) => ({ type: "text", text: String(el) }))
-        : [{ type: "text", text: String(response) }],
-    };
-  });
+  server.registerTool(
+    model.name,
+    {
+      title: model.name,
+      description: model.description,
+      inputSchema: inputSchema,
+    },
+    async (args) => {
+      const service: Service = cds.services[model.serviceName];
+      if (!service) {
+        LOGGER.error("Invalid CAP service - undefined");
+        return {
+          isError: true,
+          content: [
+            {
+              type: "text",
+              text: ERR_MISSING_SERVICE,
+            },
+          ],
+        };
+      }
+
+      const response = await service.send(model.target, args);
+
+      return {
+        content: Array.isArray(response)
+          ? response.map((el) => ({ type: "text", text: String(el) }))
+          : [{ type: "text", text: String(response) }],
+      };
+    },
+  );
 }
 
-/**
- * Builds the parameters that the MCP server should take in for the given tool's parameters
- */
 /**
  * Builds the parameters that the MCP server should take in for the given tool's parameters
  */
@@ -147,4 +163,23 @@ function buildToolParameters(
     result[k] = determineMcpParameterType(v);
   }
   return result;
+}
+
+/**
+ * Builds a Zod schema from MCP parameters for tool registration
+ */
+function buildZodSchema(params: McpParameters): Record<string, z.ZodType> {
+  const schema: Record<string, z.ZodType> = {};
+
+  for (const [key, zodType] of Object.entries(params)) {
+    // The parameter is already a Zod type from determineMcpParameterType
+    if (zodType && typeof zodType === "object" && "describe" in zodType) {
+      schema[key] = zodType as z.ZodType;
+    } else {
+      // Fallback to string if not a valid Zod type
+      schema[key] = z.string().describe(`Parameter: ${key}`);
+    }
+  }
+
+  return schema;
 }

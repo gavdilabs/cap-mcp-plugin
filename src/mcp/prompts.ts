@@ -3,10 +3,6 @@ import { McpPromptAnnotation } from "../annotations/structures";
 import { LOGGER } from "../logger";
 import { determineMcpParameterType } from "./utils";
 import { McpAnnotationPromptInput } from "../annotations/types";
-import { Service } from "@sap/cds";
-
-/* @ts-ignore */
-const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
 // NOTE: Not satisfied with below implementation, will need to be revised for full effect
 

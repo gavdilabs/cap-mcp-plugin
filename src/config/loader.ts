@@ -36,13 +36,6 @@ export function loadConfiguration(): CAPConfiguration {
  * In case of an error, the project info will default to plugin defaults.
  * See constants for reference.
  */
-/**
- * Retrieves the current runtime's project information.
- * This is used to distinguish the MCP server, by associating it with its parent application.
- *
- * In case of an error, the project info will default to plugin defaults.
- * See constants for reference.
- */
 function getProjectInfo(): ProjectInfo {
   try {
     return {

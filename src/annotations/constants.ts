@@ -1,5 +1,7 @@
 import { McpResourceOption } from "./types";
 
+// TODO: JSDocs
+
 export const MCP_ANNOTATION_KEY = "@mcp";
 export const MCP_ANNOTATION_PROPS = {
   // Standard annotations - required for all
