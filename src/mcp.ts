@@ -63,6 +63,7 @@ export default class McpPlugin {
   public async onShutdown(): Promise<void> {
     LOGGER.debug("Gracefully shutting down MCP server");
     for (const session of this.sessionManager.getSessions().values()) {
+      await session.transport.close();
       await session.server.close();
     }
     LOGGER.debug("MCP server sessions has been shutdown");
