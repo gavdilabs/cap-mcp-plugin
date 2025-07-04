@@ -1,6 +1,7 @@
 import { LOGGER } from "../logger";
 import { CAPConfiguration, ProjectInfo } from "./types";
 import { getSafeEnvVar } from "./env-sanitizer";
+import { parseCAPConfiguration, createSafeErrorMessage } from "./json-parser";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
@@ -65,10 +66,12 @@ function loadCdsEnvConfiguration(): CAPConfiguration | undefined {
   if (!config) return undefined;
   else if (typeof config === "object") return config;
 
-  try {
-    return JSON.parse(config);
-  } catch (_) {
-    LOGGER.warn("Could not parse the configuration object from cdsrc");
+  // Use secure JSON parser for string configurations
+  const parsed = parseCAPConfiguration(config);
+  if (!parsed) {
+    LOGGER.warn(createSafeErrorMessage("CDS environment configuration"));
     return undefined;
   }
+
+  return parsed;
 }

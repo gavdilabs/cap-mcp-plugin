@@ -226,7 +226,7 @@ function parseBoundOperations(
   if (definition.kind !== "entity") return;
 
   const boundOperations: Record<string, csn.Definition> = (definition as any)
-    .actions; // Necessary due to missing type reference
+    .actions; // NOTE: Necessary due to missing type reference in cds-types
   if (!boundOperations) return;
 
   const keyParams = parseEntityKeys(definition);

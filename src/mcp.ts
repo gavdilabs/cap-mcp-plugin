@@ -15,9 +15,6 @@ import { CAPConfiguration } from "./config/types";
 import { loadConfiguration } from "./config/loader";
 import { isTestEnvironment } from "./config/env-sanitizer";
 
-/* @ts-ignore */
-const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
-
 // TODO: Handle auth
 
 export default class McpPlugin {

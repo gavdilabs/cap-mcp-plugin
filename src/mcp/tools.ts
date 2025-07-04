@@ -14,10 +14,6 @@ const cds = global.cds || require("@sap/cds"); // This is a work around for miss
  * Assigns the annotated tool to the server.
  * This is done by reference, and will therefore mutate the provided server.
  */
-/**
- * Assigns the annotated tool to the server.
- * This is done by reference, and will therefore mutate the provided server.
- */
 export function assignToolToServer(
   model: McpToolAnnotation,
   server: McpServer,
@@ -104,9 +100,6 @@ function assignBoundOperation(
   );
 }
 
-/**
- * Creates a tool handler for unbound action/function imports
- */
 /**
  * Creates a tool handler for unbound action/function imports
  */
