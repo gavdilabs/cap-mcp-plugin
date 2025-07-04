@@ -1,7 +1,7 @@
 meta {
-  name: MCP Resource Templates - Call Resource
+  name: MCP Tool - recommend-book
   type: http
-  seq: 6
+  seq: 11
 }
 
 post {
@@ -18,14 +18,15 @@ headers {
 body:json {
   {
     "jsonrpc": "2.0",
-    "id": 1,
-    "method": "resources/read",
+    "id": 2,
+    "method": "tools/call",
     "params": {
-      "uri": "odata://CatalogService/books?top=10&skip=5&orderby=title  desc&select=title"
+      "name": "book-recommendation",
+      "arguments": {}
     }
   }
 }
 
 vars:pre-request {
-  SESSION_ID: 	a473f65d-6aca-47e7-899e-514ceed55d0d
+  SESSION_ID: a473f65d-6aca-47e7-899e-514ceed55d0d
 }
