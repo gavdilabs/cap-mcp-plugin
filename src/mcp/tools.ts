@@ -11,8 +11,10 @@ import { z } from "zod";
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
 /**
- * Assigns the annotated tool to the server.
- * This is done by reference, and will therefore mutate the provided server.
+ * Registers a CAP function or action as an executable MCP tool
+ * Handles both bound (entity-level) and unbound (service-level) operations
+ * @param model - The tool annotation containing operation metadata and parameters
+ * @param server - The MCP server instance to register the tool with
  */
 export function assignToolToServer(
   model: McpToolAnnotation,
@@ -31,7 +33,11 @@ export function assignToolToServer(
 }
 
 /**
- * Creates tool handler for bound action/function imports
+ * Registers a bound operation that operates on a specific entity instance
+ * Requires entity key parameters in addition to operation parameters
+ * @param params - Zod schema definitions for operation parameters
+ * @param model - Tool annotation with bound operation metadata
+ * @param server - MCP server instance to register with
  */
 function assignBoundOperation(
   params: McpParameters,
@@ -101,7 +107,11 @@ function assignBoundOperation(
 }
 
 /**
- * Creates a tool handler for unbound action/function imports
+ * Registers an unbound operation that operates at the service level
+ * Does not require entity keys, only operation parameters
+ * @param params - Zod schema definitions for operation parameters
+ * @param model - Tool annotation with unbound operation metadata
+ * @param server - MCP server instance to register with
  */
 function assignUnboundOperation(
   params: McpParameters,
@@ -144,7 +154,9 @@ function assignUnboundOperation(
 }
 
 /**
- * Builds the parameters that the MCP server should take in for the given tool's parameters
+ * Converts a map of CDS parameter types to MCP parameter schema definitions
+ * @param params - Map of parameter names to their CDS type strings
+ * @returns Record of parameter names to Zod schema types
  */
 function buildToolParameters(
   params: Map<string, string> | undefined,
@@ -159,7 +171,9 @@ function buildToolParameters(
 }
 
 /**
- * Builds a Zod schema from MCP parameters for tool registration
+ * Constructs a complete Zod schema object for MCP tool input validation
+ * @param params - Record of parameter names to Zod schema types
+ * @returns Zod schema record suitable for MCP tool registration
  */
 function buildZodSchema(params: McpParameters): Record<string, z.ZodType> {
   const schema: Record<string, z.ZodType> = {};

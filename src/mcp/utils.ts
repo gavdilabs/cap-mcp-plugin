@@ -5,7 +5,9 @@ import { Request, Response } from "express";
 import { z } from "zod";
 
 /**
- * Takes in the string based type name of the CDS type found through CSN and converts it to zod type
+ * Converts a CDS type string to the corresponding Zod schema type
+ * @param cdsType - The CDS type name (e.g., 'String', 'Integer')
+ * @returns Zod schema instance for the given type
  */
 export function determineMcpParameterType(cdsType: string): unknown {
   switch (cdsType) {
@@ -19,8 +21,10 @@ export function determineMcpParameterType(cdsType: string): unknown {
 }
 
 /**
- * Session handler for MCP server.
- * Rejects or approves incoming requests based on existing MCP session header ID
+ * Handles incoming MCP session requests by validating session IDs and routing to appropriate session
+ * @param req - Express request object containing session headers
+ * @param res - Express response object for sending responses
+ * @param sessions - Map of active MCP sessions keyed by session ID
  */
 export async function handleMcpSessionRequest(
   req: Request,

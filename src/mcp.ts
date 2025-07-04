@@ -13,6 +13,10 @@ import { McpSessionManager } from "./mcp/session-manager";
 
 // TODO: Handle auth
 
+/**
+ * Main MCP plugin class that integrates CAP services with Model Context Protocol
+ * Manages server sessions, API endpoints, and annotation processing
+ */
 export default class McpPlugin {
   private readonly sessionManager: McpSessionManager;
   private readonly config: CAPConfiguration;
@@ -20,7 +24,7 @@ export default class McpPlugin {
   private annotations?: ParsedAnnotations;
 
   /**
-   * Initializes a new MCP plugin instance
+   * Creates a new MCP plugin instance with configuration and session management
    */
   constructor() {
     LOGGER.debug("Plugin instance created");
@@ -65,7 +69,8 @@ export default class McpPlugin {
   }
 
   /**
-   * Registers API endpoints for MCP server communication
+   * Sets up HTTP endpoints for MCP communication and health checks
+   * Registers /mcp and /mcp/health routes with appropriate handlers
    */
   private async registerApiEndpoints(): Promise<void> {
     if (!this.expressApp) {
@@ -94,6 +99,10 @@ export default class McpPlugin {
     );
   }
 
+  /**
+   * Registers the main MCP POST endpoint for session creation and request handling
+   * Handles session initialization and routes requests to appropriate sessions
+   */
   private registerMcpSessionRoute(): void {
     LOGGER.debug("Registering MCP entry point");
     this.expressApp?.post("/mcp", async (req, res) => {

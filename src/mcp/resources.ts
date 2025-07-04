@@ -15,9 +15,10 @@ import { McpResourceQueryParams } from "./types";
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
 /**
- * Assigns a resource annotation to the MCP server
- * @param model - The resource annotation to assign
- * @param server - The MCP server instance to assign the resource to
+ * Registers a CAP entity as an MCP resource with optional OData query support
+ * Creates either static or dynamic resources based on configured functionalities
+ * @param model - The resource annotation containing entity metadata and query options
+ * @param server - The MCP server instance to register the resource with
  */
 export function assignResourceToServer(
   model: McpResourceAnnotation,
@@ -135,9 +136,10 @@ export function assignResourceToServer(
 }
 
 /**
- * Registers a static resource (without query parameters) to the MCP server
- * @param model - The resource annotation to register
- * @param server - The MCP server instance
+ * Registers a static resource without OData query functionality
+ * Used when no query functionalities are configured for the resource
+ * @param model - The resource annotation with entity metadata
+ * @param server - The MCP server instance to register with
  */
 function registerStaticResource(
   model: McpResourceAnnotation,

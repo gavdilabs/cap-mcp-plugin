@@ -2,7 +2,8 @@ import { z } from "zod";
 import { LOGGER } from "../logger";
 
 /**
- * Validation schemas and utilities for OData query parameters
+ * Comprehensive validation system for OData query parameters with security controls
+ * Provides schema validation, injection attack prevention, and type safety
  */
 
 // Allowed OData operators
@@ -71,19 +72,27 @@ export const ODataQueryValidationSchemas = {
 };
 
 /**
- * Validates and sanitizes OData query parameters
+ * Validates and sanitizes OData query parameters with comprehensive security checks
+ * Prevents injection attacks, validates property references, and ensures type safety
  */
 export class ODataQueryValidator {
   private allowedProperties: Set<string>;
   private allowedTypes: Map<string, string>;
 
+  /**
+   * Creates a new OData query validator for a specific entity
+   * @param properties - Map of allowed entity properties to their CDS types
+   */
   constructor(properties: Map<string, string>) {
     this.allowedProperties = new Set(properties.keys());
     this.allowedTypes = new Map(properties);
   }
 
   /**
-   * Validates a top parameter
+   * Validates and parses the $top query parameter
+   * @param value - String value of the $top parameter
+   * @returns Validated integer value between 1 and 1000
+   * @throws Error if value is invalid or out of range
    */
   validateTop(value: string): number {
     const parsed = parseFloat(value);
@@ -94,7 +103,10 @@ export class ODataQueryValidator {
   }
 
   /**
-   * Validates a skip parameter
+   * Validates and parses the $skip query parameter
+   * @param value - String value of the $skip parameter
+   * @returns Validated non-negative integer value
+   * @throws Error if value is invalid or negative
    */
   validateSkip(value: string): number {
     const parsed = parseFloat(value);
@@ -105,7 +117,10 @@ export class ODataQueryValidator {
   }
 
   /**
-   * Validates and sanitizes select parameter
+   * Validates and sanitizes the $select query parameter
+   * @param value - Comma-separated list of property names
+   * @returns Array of validated property names
+   * @throws Error if any property is invalid or not allowed
    */
   validateSelect(value: string): string[] {
     const decoded = decodeURIComponent(value);
@@ -126,7 +141,10 @@ export class ODataQueryValidator {
   }
 
   /**
-   * Validates and sanitizes orderby parameter
+   * Validates and sanitizes the $orderby query parameter
+   * @param value - Order by clause with property names and optional asc/desc
+   * @returns Validated order by string
+   * @throws Error if any property is invalid or not allowed
    */
   validateOrderBy(value: string): string {
     const decoded = decodeURIComponent(value);
@@ -150,7 +168,11 @@ export class ODataQueryValidator {
   }
 
   /**
-   * Validates and sanitizes filter parameter with comprehensive security checks
+   * Validates and sanitizes the $filter query parameter with comprehensive security checks
+   * Prevents injection attacks, validates operators and property references
+   * @param value - OData filter expression
+   * @returns Sanitized filter string in CDS syntax
+   * @throws Error if filter contains forbidden patterns or invalid syntax
    */
   validateFilter(value: string): string {
     const input = value?.replace("filter=", "");
@@ -177,7 +199,9 @@ export class ODataQueryValidator {
   }
 
   /**
-   * Parses OData filter and validates property references and operators
+   * Parses OData filter expression and validates all components
+   * @param filter - Decoded and pre-validated filter string
+   * @returns CDS-compatible filter expression
    */
   private parseAndValidateFilter(filter: string): string {
     // Tokenize the filter expression
@@ -191,7 +215,9 @@ export class ODataQueryValidator {
   }
 
   /**
-   * Tokenizes filter expression into logical components
+   * Tokenizes filter expression into structured components for validation
+   * @param filter - Filter string to tokenize
+   * @returns Array of typed tokens representing the filter structure
    */
   private tokenizeFilter(filter: string): FilterToken[] {
     const tokens: FilterToken[] = [];
@@ -229,7 +255,9 @@ export class ODataQueryValidator {
   }
 
   /**
-   * Validates filter tokens against allowed properties and operators
+   * Validates all filter tokens against allowed properties and operators
+   * @param tokens - Array of parsed filter tokens to validate
+   * @throws Error if any token contains invalid properties or operators
    */
   private validateFilterTokens(tokens: FilterToken[]): void {
     for (const token of tokens) {
@@ -266,7 +294,9 @@ export class ODataQueryValidator {
   }
 
   /**
-   * Converts validated OData filter tokens to CDS filter syntax
+   * Converts validated OData filter tokens to CDS-compatible filter syntax
+   * @param tokens - Array of validated filter tokens
+   * @returns CDS filter expression string
    */
   private convertToCdsFilter(tokens: FilterToken[]): string {
     const cdsTokens: string[] = [];
@@ -308,7 +338,7 @@ export class ODataQueryValidator {
 }
 
 /**
- * Filter token interface
+ * Represents a single token in a parsed OData filter expression
  */
 interface FilterToken {
   type: "property" | "operator" | "logical" | "paren" | "literal";
@@ -316,9 +346,16 @@ interface FilterToken {
 }
 
 /**
- * Validation error for OData parameters
+ * Specialized error class for OData query parameter validation failures
+ * Provides additional context about which parameter and value caused the error
  */
 export class ODataValidationError extends Error {
+  /**
+   * Creates a new OData validation error
+   * @param message - Error description
+   * @param parameter - Name of the parameter that failed validation
+   * @param value - The invalid value that caused the error
+   */
   constructor(
     message: string,
     public readonly parameter: string,
