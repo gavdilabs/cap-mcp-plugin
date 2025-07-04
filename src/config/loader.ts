@@ -1,5 +1,6 @@
 import { LOGGER } from "../logger";
 import { CAPConfiguration, ProjectInfo } from "./types";
+import { getSafeEnvVar } from "./env-sanitizer";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
@@ -39,9 +40,11 @@ export function loadConfiguration(): CAPConfiguration {
 function getProjectInfo(): ProjectInfo {
   try {
     return {
-      name: process.env[ENV_NPM_PACKAGE_NAME] ?? DEFAULT_PROJECT_INFO.name,
-      version:
-        process.env[ENV_NPM_PACKAGE_VERSION] ?? DEFAULT_PROJECT_INFO.version,
+      name: getSafeEnvVar(ENV_NPM_PACKAGE_NAME, DEFAULT_PROJECT_INFO.name),
+      version: getSafeEnvVar(
+        ENV_NPM_PACKAGE_VERSION,
+        DEFAULT_PROJECT_INFO.version,
+      ),
     };
   } catch (e) {
     LOGGER.warn(

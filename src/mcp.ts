@@ -13,6 +13,7 @@ import { createMcpServer } from "./mcp/factory";
 import { MCP_SESSION_HEADER } from "./mcp/constants";
 import { CAPConfiguration } from "./config/types";
 import { loadConfiguration } from "./config/loader";
+import { isTestEnvironment } from "./config/env-sanitizer";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
@@ -100,7 +101,7 @@ export default class McpPlugin {
         const server = createMcpServer(this.config, this.annotations);
         const transport = new StreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
-          enableJsonResponse: process.env.NODE_ENV === "test",
+          enableJsonResponse: isTestEnvironment(),
           onsessioninitialized: (sid) => {
             LOGGER.debug("Session initialized with ID:", sid);
             this.sessions.set(sid, {
