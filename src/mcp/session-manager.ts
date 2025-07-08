@@ -8,25 +8,54 @@ import { isTestEnvironment } from "../config/env-sanitizer";
 import { LOGGER } from "../logger";
 import { createMcpServer } from "./factory";
 
+/**
+ * Manages active MCP server sessions and their lifecycle
+ * Handles session creation, storage, retrieval, and cleanup for MCP protocol communication
+ */
 export class McpSessionManager {
+  /** Map storing active sessions by their unique session IDs */
   private readonly sessions: Map<string, McpSession>;
 
+  /**
+   * Creates a new session manager with empty session storage
+   */
   constructor() {
     this.sessions = new Map<string, McpSession>();
   }
 
+  /**
+   * Retrieves the complete map of active sessions
+   * @returns Map of session IDs to their corresponding session objects
+   */
   public getSessions(): Map<string, McpSession> {
     return this.sessions;
   }
 
+  /**
+   * Checks if a session exists for the given session ID
+   * @param sessionID - Unique identifier for the session
+   * @returns True if session exists, false otherwise
+   */
   public hasSession(sessionID: string): boolean {
     return this.sessions.has(sessionID);
   }
 
+  /**
+   * Retrieves a specific session by its ID
+   * @param sessionID - Unique identifier for the session
+   * @returns Session object if found, undefined otherwise
+   */
   public getSession(sessionID: string): McpSession | undefined {
     return this.sessions.get(sessionID);
   }
 
+  /**
+   * Creates a new MCP session with server and transport configuration
+   * Initializes MCP server with provided annotations and establishes transport connection
+   * @param config - CAP configuration for the MCP server
+   * @param annotations - Optional parsed MCP annotations for resources, tools, and prompts
+   * @returns Promise resolving to the created session object
+   */
   public async createSession(
     config: CAPConfiguration,
     annotations?: ParsedAnnotations,
@@ -40,6 +69,12 @@ export class McpSessionManager {
     return { server, transport };
   }
 
+  /**
+   * Creates and configures HTTP transport for MCP communication
+   * Sets up session ID generation, response format, and event handlers
+   * @param server - MCP server instance to associate with the transport
+   * @returns Configured StreamableHTTPServerTransport instance
+   */
   private createTransport(server: McpServer): StreamableHTTPServerTransport {
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
@@ -58,6 +93,11 @@ export class McpSessionManager {
     return transport;
   }
 
+  /**
+   * Handles session cleanup when transport connection closes
+   * Removes the session from active sessions map when connection terminates
+   * @param transport - Transport instance that was closed
+   */
   private onCloseSession(transport: StreamableHTTPServerTransport): void {
     if (!transport.sessionId || !this.sessions.has(transport.sessionId)) {
       return;
