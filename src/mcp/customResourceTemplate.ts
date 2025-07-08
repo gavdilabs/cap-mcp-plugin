@@ -9,7 +9,7 @@
  * Upon the SDK being fixed, we should switch over to that implementation.
  */
 
-// TODO: Get rid of 'any' typing
+// TODO: Get rid of 'any' typing for better type safety
 
 /**
  * Custom URI template class that properly handles grouped query parameters
