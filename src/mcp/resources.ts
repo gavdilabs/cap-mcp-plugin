@@ -1,8 +1,5 @@
-import {
-  McpServer,
-  ResourceTemplate,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
-import { CustomResourceTemplate } from "./customResourceTemplate";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { CustomResourceTemplate } from "./custom-resource-template";
 import { McpResourceAnnotation } from "../annotations/structures";
 import { LOGGER } from "../logger";
 import { Service } from "@sap/cds";

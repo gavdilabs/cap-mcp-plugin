@@ -1,7 +1,7 @@
 import {
   CustomResourceTemplate,
   CustomUriTemplate,
-} from "../../../src/mcp/customResourceTemplate";
+} from "../../../src/mcp/custom-resource-template";
 
 describe("CustomResourceTemplate", () => {
   describe("constructor", () => {

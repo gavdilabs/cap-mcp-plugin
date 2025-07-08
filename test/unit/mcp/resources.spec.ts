@@ -1,10 +1,7 @@
 import sinon from "sinon";
 import cds from "@sap/cds";
-import {
-  McpServer,
-  ResourceTemplate,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
-import { CustomResourceTemplate } from "../../../src/mcp/customResourceTemplate";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { CustomResourceTemplate } from "../../../src/mcp/custom-resource-template";
 import { assignResourceToServer } from "../../../src/mcp/resources";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 import * as utils from "../../../src/mcp/utils";

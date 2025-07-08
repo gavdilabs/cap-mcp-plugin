@@ -1,4 +1,4 @@
-import { CustomUriTemplate } from "../../../src/mcp/customResourceTemplate";
+import { CustomUriTemplate } from "../../../src/mcp/custom-resource-template";
 
 describe("CustomUriTemplate - Security & Parameter Validation", () => {
   describe("Unauthorized Parameter Rejection", () => {
