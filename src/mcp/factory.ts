@@ -35,7 +35,6 @@ export function createMcpServer(
 
   LOGGER.debug("Annotations found for server: ", annotations);
 
-  // TODO: Error handling
   // TODO: Handle auth
   for (const entry of annotations.values()) {
     if (entry instanceof McpToolAnnotation) {
