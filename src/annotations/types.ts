@@ -6,28 +6,31 @@ import {
 } from "./structures";
 
 /**
- * Valid types of possible annotations
- * A annotation must be one of the three types.
+ * Valid MCP annotation types that can be applied to CAP definitions
+ * Each annotation type serves a different purpose in the MCP protocol
  */
 export type McpDataType = "prompt" | "tool" | "resource";
 
 /**
- * Valid options for configuration of a resource annotation
+ * OData query capabilities that can be enabled for MCP resources
+ * Each option corresponds to a specific OData v4 query parameter
  */
 export type McpResourceOption =
-  | "filter"
-  | "orderby"
-  | "select"
-  | "top"
-  | "skip";
+  | "filter" // $filter - OData filter expressions
+  | "orderby" // $orderby - Sorting specifications
+  | "select" // $select - Property selection
+  | "top" // $top - Limit number of results
+  | "skip"; // $skip - Skip number of results
 
 /**
- * The two different possible types of resource annotation
+ * Resource annotation configuration options
+ * Can be either a boolean (all options) or specific array of capabilities
  */
 export type McpResourceType = boolean | Array<McpResourceOption>;
 
 /**
- * Utility type for refering to either of the three parsed annotation versions
+ * Union type representing any parsed and validated MCP annotation
+ * Used as values in the ParsedAnnotations map
  */
 export type AnnotatedMcpEntry =
   | McpResourceAnnotation
@@ -35,14 +38,14 @@ export type AnnotatedMcpEntry =
   | McpPromptAnnotation;
 
 /**
- * Utility type for referring to a parsed annotation
- * The key is the owner of the annotation, i.e. the entity, operation or service that has been annotated.
+ * Map of target names to their corresponding MCP annotations
+ * Keys are entity/operation/service names, values are typed annotation objects
  */
 export type ParsedAnnotations = Map<string, AnnotatedMcpEntry>;
 
 /**
- * The expected structure of the annotations.
- * Mainly here for reference purposes.
+ * Reference type showing the expected structure of MCP annotations in CDS files
+ * This is the format developers use when writing @mcp annotations
  */
 export type McpReferenceAnnotationStructure = {
   "@mcp.name": string;
@@ -53,8 +56,8 @@ export type McpReferenceAnnotationStructure = {
 };
 
 /**
- * Runtime parsing object for determination of annotated definitions
- * Should be verified with validation functions
+ * Internal structure used during annotation parsing and validation
+ * Contains both parsed annotation data and the original CSN definition
  */
 export type McpAnnotationStructure = {
   definition: csn.Definition; // Runtime only - not for annotations
@@ -66,7 +69,8 @@ export type McpAnnotationStructure = {
 };
 
 /**
- * Annotation structure for prompts
+ * Configuration structure for individual prompt templates
+ * Defines template content, inputs, and metadata for MCP prompts
  */
 export type McpAnnotationPrompt = {
   name: string;
@@ -77,7 +81,13 @@ export type McpAnnotationPrompt = {
   inputs?: McpAnnotationPromptInput[];
 };
 
+/**
+ * Input parameter definition for prompt templates
+ * Specifies variable names and types for template substitution
+ */
 export type McpAnnotationPromptInput = {
+  /** Variable name used in template substitution (e.g., 'title' for {{title}}) */
   key: string;
+  /** CDS type string for parameter validation (e.g., 'String', 'Integer') */
   type: string;
 };

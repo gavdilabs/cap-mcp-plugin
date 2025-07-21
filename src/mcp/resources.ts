@@ -1,14 +1,10 @@
-import {
-  McpServer,
-  ResourceTemplate,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { CustomResourceTemplate } from "./custom-resource-template";
 import { McpResourceAnnotation } from "../annotations/structures";
 import { LOGGER } from "../logger";
 import { Service } from "@sap/cds";
-import {
-  parseODataFilterString,
-  writeODataDescriptionForResource,
-} from "./utils";
+import { writeODataDescriptionForResource } from "./utils";
+import { ODataQueryValidator, ODataValidationError } from "./validation";
 import { McpResourceQueryParams } from "./types";
 // import cds from "@sap/cds";
 
@@ -16,9 +12,10 @@ import { McpResourceQueryParams } from "./types";
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
 /**
- * Assigns a resource annotation to the MCP server
- * @param model - The resource annotation to assign
- * @param server - The MCP server instance to assign the resource to
+ * Registers a CAP entity as an MCP resource with optional OData query support
+ * Creates either static or dynamic resources based on configured functionalities
+ * @param model - The resource annotation containing entity metadata and query options
+ * @param server - The MCP server instance to register the resource with
  */
 export function assignResourceToServer(
   model: McpResourceAnnotation,
@@ -32,20 +29,23 @@ export function assignResourceToServer(
 
   // Dynamic resource registration
   const detailedDescription = writeODataDescriptionForResource(model);
-  const functionalities = Array.from(model.functionalities).map(
-    (el) => `{?${el}}`,
-  );
-  // BUG: RFC compliance breaking bug in the MCP SDK library, must wait for fix....
-  const resourceTemplateUri = `odata://${model.serviceName}/${model.name}${functionalities.join("")}`;
-  const template = new ResourceTemplate(resourceTemplateUri, {
+  const functionalities = Array.from(model.functionalities);
+
+  // Using grouped query parameter format to fix MCP SDK URI matching issue
+  // Format: {?param1,param2,param3} instead of {?param1}{?param2}{?param3}
+  const templateParams =
+    functionalities.length > 0 ? `{?${functionalities.join(",")}}` : "";
+  const resourceTemplateUri = `odata://${model.serviceName}/${model.name}${templateParams}`;
+  const template = new CustomResourceTemplate(resourceTemplateUri, {
     list: undefined,
   });
 
   server.registerResource(
     model.name,
-    template,
+    template as any, // Type assertion to bypass strict type checking - necessary due to broken URI parser in the MCP SDK
     { title: model.target, description: detailedDescription },
-    async (uri: URL, queryParameters: McpResourceQueryParams) => {
+    async (uri: URL, variables: unknown) => {
+      const queryParameters = variables as McpResourceQueryParams;
       const service: Service = cds.services[model.serviceName];
       if (!service) {
         LOGGER.error(
@@ -56,28 +56,55 @@ export function assignResourceToServer(
         );
       }
 
-      const query = SELECT.from(model.target).limit(
-        queryParameters.top ? Number(queryParameters.top) : 100,
-        queryParameters.skip ? Number(queryParameters.skip) : undefined,
-      );
+      // Create validator with entity properties
+      const validator = new ODataQueryValidator(model.properties);
 
-      for (const [k, v] of Object.entries(queryParameters)) {
-        switch (k) {
-          case "filter":
-            const decoded = parseODataFilterString(v);
-            const expression = cds.parse.expr(decoded);
-            query.where(expression);
-            continue;
-          case "select":
-            const decodedSelect = decodeURIComponent(v);
-            query.columns(decodedSelect.split(","));
-            continue;
-          case "orderby":
-            query.orderBy(decodeURIComponent(v));
-            continue;
-          default:
-            continue;
+      // Validate and build query with secure parameter handling
+      let query: any;
+      try {
+        query = SELECT.from(model.target).limit(
+          queryParameters.top
+            ? validator.validateTop(queryParameters.top)
+            : 100,
+          queryParameters.skip
+            ? validator.validateSkip(queryParameters.skip)
+            : undefined,
+        );
+
+        for (const [k, v] of Object.entries(queryParameters)) {
+          if (!v || v.trim().length <= 0) continue;
+          switch (k) {
+            case "filter":
+              // BUG: If filter value is e.g. "filter=1234" the value 1234 will go through
+              const validatedFilter = validator.validateFilter(v);
+              const expression = cds.parse.expr(validatedFilter);
+              query.where(expression);
+              continue;
+            case "select":
+              const validatedColumns = validator.validateSelect(v);
+              query.columns(validatedColumns);
+              continue;
+            case "orderby":
+              const validatedOrderBy = validator.validateOrderBy(v);
+              query.orderBy(validatedOrderBy);
+              continue;
+            default:
+              continue;
+          }
         }
+      } catch (error) {
+        LOGGER.warn(
+          `OData query validation failed for ${model.target}:`,
+          error,
+        );
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              text: `ERROR: Invalid query parameter - ${error instanceof ODataValidationError ? error.message : "Invalid query syntax"}`,
+            },
+          ],
+        };
       }
 
       try {
@@ -106,9 +133,10 @@ export function assignResourceToServer(
 }
 
 /**
- * Registers a static resource (without query parameters) to the MCP server
- * @param model - The resource annotation to register
- * @param server - The MCP server instance
+ * Registers a static resource without OData query functionality
+ * Used when no query functionalities are configured for the resource
+ * @param model - The resource annotation with entity metadata
+ * @param server - The MCP server instance to register with
  */
 function registerStaticResource(
   model: McpResourceAnnotation,
@@ -118,13 +146,20 @@ function registerStaticResource(
     model.name,
     `odata://${model.serviceName}/${model.name}`,
     { title: model.target, description: model.description },
-    async (uri: URL, queryParameters: McpResourceQueryParams) => {
+    async (uri: URL, extra: any) => {
+      const queryParameters = extra as McpResourceQueryParams;
       const service: Service = cds.services[model.serviceName];
-      const query = SELECT.from(model.target).limit(
-        queryParameters.top ? Number(queryParameters.top) : 100,
-      );
+
+      // Create validator even for static resources to validate top parameter
+      const validator = new ODataQueryValidator(model.properties);
 
       try {
+        const query = SELECT.from(model.target).limit(
+          queryParameters.top
+            ? validator.validateTop(queryParameters.top)
+            : 100,
+        );
+
         const response = await service.run(query);
         return {
           contents: [
@@ -134,8 +169,26 @@ function registerStaticResource(
             },
           ],
         };
-      } catch (e) {
-        LOGGER.error(`Failed to retrieve resource data for ${model.target}`, e);
+      } catch (error) {
+        if (error instanceof ODataValidationError) {
+          LOGGER.warn(
+            `OData validation failed for static resource ${model.target}:`,
+            error,
+          );
+          return {
+            contents: [
+              {
+                uri: uri.href,
+                text: `ERROR: Invalid query parameter - ${error.message}`,
+              },
+            ],
+          };
+        }
+
+        LOGGER.error(
+          `Failed to retrieve resource data for ${model.target}`,
+          error,
+        );
         return {
           contents: [
             {

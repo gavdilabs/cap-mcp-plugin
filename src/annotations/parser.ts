@@ -214,8 +214,12 @@ function constructPromptAnnotation(
 }
 
 /**
- * Parses the bound operations found on the entity definition if any.
- * This function mutates the passed result reference object.
+ * Parses bound operations (actions/functions) attached to an entity definition
+ * Extracts MCP tool annotations from entity-level operations and adds them to the result map
+ * @param serviceName - Name of the service containing the entity
+ * @param entityKey - Name of the entity that owns these bound operations
+ * @param definition - CSN entity definition containing bound operations
+ * @param resultRef - Map to store parsed annotations (mutated by this function)
  */
 function parseBoundOperations(
   serviceName: string,
@@ -226,7 +230,7 @@ function parseBoundOperations(
   if (definition.kind !== "entity") return;
 
   const boundOperations: Record<string, csn.Definition> = (definition as any)
-    .actions; // Necessary due to missing type reference
+    .actions; // NOTE: Necessary due to missing type reference in cds-types
   if (!boundOperations) return;
 
   const keyParams = parseEntityKeys(definition);

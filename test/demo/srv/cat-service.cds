@@ -28,7 +28,8 @@ service CatalogService {
   @mcp: {
     name       : 'authors',
     description: 'Author data list',
-    resource   : true // In case we just want to enable all options
+    //resource   : true // In case we just want to enable all options
+    resource   : true
   }
   entity Authors          as projection on my.Authors;
 

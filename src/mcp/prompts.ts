@@ -3,10 +3,6 @@ import { McpPromptAnnotation } from "../annotations/structures";
 import { LOGGER } from "../logger";
 import { determineMcpParameterType } from "./utils";
 import { McpAnnotationPromptInput } from "../annotations/types";
-import { Service } from "@sap/cds";
-
-/* @ts-ignore */
-const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
 // NOTE: Not satisfied with below implementation, will need to be revised for full effect
 
@@ -24,8 +20,9 @@ annotate CatalogService with @mcp.prompts: [{
  */
 
 /**
- * Assigns prompt annotations to the MCP server
- * @param model - The prompt annotation containing prompt definitions
+ * Registers prompt templates from a prompt annotation with the MCP server
+ * Each prompt template supports variable substitution using {{variable}} syntax
+ * @param model - The prompt annotation containing template definitions and inputs
  * @param server - The MCP server instance to register prompts with
  */
 export function assignPromptToServer(
@@ -67,9 +64,10 @@ export function assignPromptToServer(
 }
 
 /**
- * Constructs input arguments schema for prompt registration
- * @param inputs - Array of prompt input definitions
- * @returns Record of input schemas or undefined if no inputs
+ * Builds Zod schema definitions for prompt input parameters
+ * Converts CDS type strings to appropriate Zod validation schemas
+ * @param inputs - Array of prompt input parameter definitions
+ * @returns Record mapping parameter names to Zod schemas, or undefined if no inputs
  */
 function constructInputArgs(
   inputs: McpAnnotationPromptInput[] | undefined,

@@ -4,20 +4,10 @@ import { McpSession } from "./types";
 import { Request, Response } from "express";
 import { z } from "zod";
 
-const ODATA_2_CDS_MAP = new Map<string, string>([
-  ["eq", "="],
-  ["lt", "<"],
-  ["le", "<="],
-  ["gt", ">"],
-  ["ge", ">="],
-  ["ne", "!="],
-]);
-
 /**
- * Takes in the string based type name of the CDS type found through CSN and converts it to zod type
- */
-/**
- * Takes in the string based type name of the CDS type found through CSN and converts it to zod type
+ * Converts a CDS type string to the corresponding Zod schema type
+ * @param cdsType - The CDS type name (e.g., 'String', 'Integer')
+ * @returns Zod schema instance for the given type
  */
 export function determineMcpParameterType(cdsType: string): unknown {
   switch (cdsType) {
@@ -31,12 +21,10 @@ export function determineMcpParameterType(cdsType: string): unknown {
 }
 
 /**
- * Session handler for MCP server.
- * Rejects or approves incoming requests based on existing MCP session header ID
- */
-/**
- * Session handler for MCP server.
- * Rejects or approves incoming requests based on existing MCP session header ID
+ * Handles incoming MCP session requests by validating session IDs and routing to appropriate session
+ * @param req - Express request object containing session headers
+ * @param res - Express response object for sending responses
+ * @param sessions - Map of active MCP sessions keyed by session ID
  */
 export async function handleMcpSessionRequest(
   req: Request,
@@ -96,21 +84,4 @@ export function writeODataDescriptionForResource(
   }
 
   return description;
-}
-
-//  TODO: Write test cases for this entry
-/**
- * Parses and converts OData filter string from URL encoding to CDS query syntax
- * @param filter - URL encoded OData filter string
- * @returns Decoded filter string with CDS operators
- */
-export function parseODataFilterString(filter: string): string {
-  let parsed = "" + filter; // We do not want to mutate the original
-
-  for (const [k, v] of ODATA_2_CDS_MAP.entries()) {
-    if (!parsed.includes(`%20${k}%20`)) continue;
-    parsed = parsed.replaceAll(`%20${k}%20`, ` ${v} `);
-  }
-
-  return decodeURIComponent(parsed);
 }

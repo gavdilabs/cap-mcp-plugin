@@ -1,5 +1,7 @@
 import { LOGGER } from "../logger";
 import { CAPConfiguration, ProjectInfo } from "./types";
+import { getSafeEnvVar } from "./env-sanitizer";
+import { parseCAPConfiguration, createSafeErrorMessage } from "./json-parser";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
@@ -30,25 +32,18 @@ export function loadConfiguration(): CAPConfiguration {
 }
 
 /**
- * Retrieves the current runtime's project information.
- * This is used to distinguish the MCP server, by associating it with its parent application.
- *
- * In case of an error, the project info will default to plugin defaults.
- * See constants for reference.
- */
-/**
- * Retrieves the current runtime's project information.
- * This is used to distinguish the MCP server, by associating it with its parent application.
- *
- * In case of an error, the project info will default to plugin defaults.
- * See constants for reference.
+ * Extracts project information from environment variables with fallback to defaults
+ * Uses npm package environment variables to identify the hosting CAP application
+ * @returns Project information object with name and version
  */
 function getProjectInfo(): ProjectInfo {
   try {
     return {
-      name: process.env[ENV_NPM_PACKAGE_NAME] ?? DEFAULT_PROJECT_INFO.name,
-      version:
-        process.env[ENV_NPM_PACKAGE_VERSION] ?? DEFAULT_PROJECT_INFO.version,
+      name: getSafeEnvVar(ENV_NPM_PACKAGE_NAME, DEFAULT_PROJECT_INFO.name),
+      version: getSafeEnvVar(
+        ENV_NPM_PACKAGE_VERSION,
+        DEFAULT_PROJECT_INFO.version,
+      ),
     };
   } catch (e) {
     LOGGER.warn(
@@ -69,10 +64,12 @@ function loadCdsEnvConfiguration(): CAPConfiguration | undefined {
   if (!config) return undefined;
   else if (typeof config === "object") return config;
 
-  try {
-    return JSON.parse(config);
-  } catch (_) {
-    LOGGER.warn("Could not parse the configuration object from cdsrc");
+  // Use secure JSON parser for string configurations
+  const parsed = parseCAPConfiguration(config);
+  if (!parsed) {
+    LOGGER.warn(createSafeErrorMessage("CDS environment configuration"));
     return undefined;
   }
+
+  return parsed;
 }

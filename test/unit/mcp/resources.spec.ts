@@ -1,12 +1,32 @@
 import sinon from "sinon";
 import cds from "@sap/cds";
-import {
-  McpServer,
-  ResourceTemplate,
-} from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { CustomResourceTemplate } from "../../../src/mcp/custom-resource-template";
 import { assignResourceToServer } from "../../../src/mcp/resources";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 import * as utils from "../../../src/mcp/utils";
+
+// Mock the logger
+jest.mock("../../../src/logger", () => ({
+  LOGGER: {
+    debug: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+  },
+}));
+
+// Mock the validation module
+jest.mock("../../../src/mcp/validation", () => ({
+  ODataQueryValidator: jest.fn().mockImplementation(() => ({
+    validateTop: jest.fn((value) => parseInt(value)),
+    validateSkip: jest.fn((value) => parseInt(value)),
+    validateSelect: jest.fn((value) => decodeURIComponent(value).split(",")),
+    validateOrderBy: jest.fn((value) => decodeURIComponent(value)),
+    validateFilter: jest.fn((value) => "decoded filter"),
+  })),
+  ODataValidationError: jest.fn(),
+}));
 
 // Mock CDS module completely
 jest.mock("@sap/cds", () => ({
@@ -46,7 +66,6 @@ describe("MCP Resources", () => {
   let mockServer: sinon.SinonStubbedInstance<McpServer>;
   let loggerDebugStub: sinon.SinonStub;
   let loggerErrorStub: sinon.SinonStub;
-  let parseODataFilterStringStub: sinon.SinonStub;
   let writeODataDescriptionStub: sinon.SinonStub;
 
   beforeEach(async () => {
@@ -59,7 +78,6 @@ describe("MCP Resources", () => {
     // Setup stubs
     mockServer = sinon.createStubInstance(McpServer);
 
-    parseODataFilterStringStub = sinon.stub(utils, "parseODataFilterString");
     writeODataDescriptionStub = sinon.stub(
       utils,
       "writeODataDescriptionForResource",
@@ -231,7 +249,7 @@ describe("MCP Resources", () => {
         sinon.assert.called(mockServer.registerResource);
         expect(mockServer.registerResource.getCalls()[0].args).toEqual([
           "DynamicResource",
-          expect.any(ResourceTemplate),
+          expect.any(CustomResourceTemplate),
           {
             title: "TestEntity",
             description: "Detailed OData description",
@@ -241,8 +259,15 @@ describe("MCP Resources", () => {
 
         // Verify ResourceTemplate URI construction
         const registerCall = mockServer.registerResource.getCall(0);
-        const resourceTemplate = registerCall.args[1] as ResourceTemplate;
-        expect(resourceTemplate).toBeInstanceOf(ResourceTemplate);
+        const resourceTemplate = registerCall
+          .args[1] as unknown as CustomResourceTemplate;
+        expect(resourceTemplate).toBeInstanceOf(CustomResourceTemplate);
+
+        // Verify the URI template format is grouped parameters
+        expect(resourceTemplate.uriTemplate.toString()).toBe(
+          "odata://TestService/DynamicResource{?filter,select,orderby}",
+        );
+        expect(resourceTemplate.uriTemplate.toString()).not.toContain("}{?");
       });
 
       it("should handle all query parameters correctly", async () => {
@@ -262,7 +287,6 @@ describe("MCP Resources", () => {
         };
         (cds as any).services["TestService"] = mockService;
 
-        parseODataFilterStringStub.returns("decoded filter");
         (cds.parse.expr as jest.Mock).mockReturnValue("parsed expression");
 
         assignResourceToServer(model, mockServer as any);
@@ -283,7 +307,6 @@ describe("MCP Resources", () => {
         // Assert
         expect(SELECT.from).toHaveBeenCalledWith("TestEntity");
         expect(mockQuery.limit).toHaveBeenCalledWith(20, 10);
-        sinon.assert.calledOnce(parseODataFilterStringStub);
         expect(cds.parse.expr).toHaveBeenCalledWith("decoded filter");
         expect(mockQuery.where).toHaveBeenCalledWith("parsed expression");
         expect(mockQuery.columns).toHaveBeenCalledWith(["id", "name"]);

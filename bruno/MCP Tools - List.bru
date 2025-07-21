@@ -1,7 +1,7 @@
 meta {
-  name: MCP Resource Templates - Call Resource
+  name: MCP Tools - List
   type: http
-  seq: 6
+  seq: 7
 }
 
 post {
@@ -19,13 +19,13 @@ body:json {
   {
     "jsonrpc": "2.0",
     "id": 1,
-    "method": "resources/read",
+    "method": "tools/list",
     "params": {
-      "uri": "odata://CatalogService/books?top=10&skip=5&orderby=title  desc&select=title"
+      "cursor": "optional-cursor-value"
     }
   }
 }
 
 vars:pre-request {
-  SESSION_ID: 	a473f65d-6aca-47e7-899e-514ceed55d0d
+  SESSION_ID: e321bfc2-2641-4b36-9b10-00da6d809e3d
 }

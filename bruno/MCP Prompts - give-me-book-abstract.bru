@@ -1,7 +1,7 @@
 meta {
-  name: MCP Resource Templates - Call Resource
+  name: MCP Prompts - give-me-book-abstract
   type: http
-  seq: 6
+  seq: 10
 }
 
 post {
@@ -18,14 +18,17 @@ headers {
 body:json {
   {
     "jsonrpc": "2.0",
-    "id": 1,
-    "method": "resources/read",
+    "id": 2,
+    "method": "prompts/get",
     "params": {
-      "uri": "odata://CatalogService/books?top=10&skip=5&orderby=title  desc&select=title"
+      "name": "give-me-book-abstract",
+      "arguments": {
+        "book-id": "1"
+      }
     }
   }
 }
 
 vars:pre-request {
-  SESSION_ID: 	a473f65d-6aca-47e7-899e-514ceed55d0d
+  SESSION_ID: 9d5444ca-c8b8-4f4f-a253-606cdfaf802c
 }

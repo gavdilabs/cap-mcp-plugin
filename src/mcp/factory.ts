@@ -28,30 +28,28 @@ export function createMcpServer(
     capabilities: config.capabilities,
   });
 
-  if (!annotations) return server;
+  if (!annotations) {
+    LOGGER.debug("No annotations provided, skipping registration...");
+    return server;
+  }
+
   LOGGER.debug("Annotations found for server: ", annotations);
 
-  // TODO: Handle the parsed annotations
-  // TODO: Error handling
-  // TODO: This should only be mapped once, not per each server instance. Maybe this should be pre-packaged on load?
   // TODO: Handle auth
   for (const entry of annotations.values()) {
-    switch (entry.constructor) {
-      case McpToolAnnotation:
-        assignToolToServer(entry as McpToolAnnotation, server);
-        continue;
-      case McpResourceAnnotation:
-        assignResourceToServer(entry as McpResourceAnnotation, server);
-        continue;
-      case McpPromptAnnotation:
-        assignPromptToServer(entry as McpPromptAnnotation, server);
-        continue;
-      default:
-        LOGGER.warn(
-          "Invalid annotation entry - Cannot be parsed by MCP server, skipping...",
-        );
-        continue;
+    if (entry instanceof McpToolAnnotation) {
+      assignToolToServer(entry, server);
+      continue;
+    } else if (entry instanceof McpResourceAnnotation) {
+      assignResourceToServer(entry, server);
+      continue;
+    } else if (entry instanceof McpPromptAnnotation) {
+      assignPromptToServer(entry, server);
+      continue;
     }
+    LOGGER.warn(
+      "Invalid annotation entry - Cannot be parsed by MCP server, skipping...",
+    );
   }
 
   return server;

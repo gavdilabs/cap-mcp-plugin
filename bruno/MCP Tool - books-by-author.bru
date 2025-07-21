@@ -1,7 +1,7 @@
 meta {
-  name: MCP Resource Templates - Call Resource
+  name: MCP Tool - books-by-author
   type: http
-  seq: 6
+  seq: 8
 }
 
 post {
@@ -18,10 +18,13 @@ headers {
 body:json {
   {
     "jsonrpc": "2.0",
-    "id": 1,
-    "method": "resources/read",
+    "id": 2,
+    "method": "tools/call",
     "params": {
-      "uri": "odata://CatalogService/books?top=10&skip=5&orderby=title  desc&select=title"
+      "name": "books-by-author",
+      "arguments": {
+        "authorName": "Steph"
+      }
     }
   }
 }

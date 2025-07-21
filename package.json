@@ -22,7 +22,9 @@
   "repository": "github:gavdilabs/cap-mcp-plugin",
   "scripts": {
     "mock": "npm run start --workspace=test/demo",
-    "test": "jest",
+    "test": "NODE_ENV=test jest --silent",
+    "test:unit": "NODE_ENV=test jest --silent test/unit",
+    "test:integration": "NODE_ENV=test jest --silent test/integration",
     "build": "tsc",
     "inspect": "npx @modelcontextprotocol/inspector",
     "prepare": "husky",
@@ -40,11 +42,12 @@
     "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
-    "@cap-js/cds-types": "^0.11.0",
+    "@cap-js/cds-types": "^0.12.0",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.3",
     "@types/sinon": "^17.0.4",
+    "@types/supertest": "^6.0.2",
     "eslint": "^9.29.0",
     "husky": "^9.1.7",
     "jest": "^29.7.0",
@@ -52,6 +55,7 @@
     "prettier": "^3.5.3",
     "release-it": "^19.0.3",
     "sinon": "^21.0.0",
+    "supertest": "^7.0.0",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
@@ -62,11 +66,11 @@
     ],
     "*.ts": [
       "eslint",
-      "prettier --check ./src"
+      "prettier ./src --check"
     ],
     "*.js": [
       "eslint",
-      "prettier --check ./src"
+      "prettier ./src --check"
     ]
   },
   "workspaces": [
