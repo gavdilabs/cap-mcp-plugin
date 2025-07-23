@@ -264,9 +264,12 @@ describe("tools.ts", () => {
         };
         const result = await handler({}, mockExtra);
 
-        // Assert
+        // Assert - Should now properly JSON stringify objects
         expect(result.content).toEqual([
-          { type: "text", text: "[object Object]" },
+          {
+            type: "text",
+            text: JSON.stringify(complexResponse, null, 2),
+          },
         ]);
       });
     });
@@ -330,7 +333,10 @@ describe("tools.ts", () => {
           params: [{ id: 123 }],
         });
         expect(result.content).toEqual([
-          { type: "text", text: "[object Object]" },
+          {
+            type: "text",
+            text: JSON.stringify({ result: "bound success" }, null, 2),
+          },
         ]);
       });
 
@@ -605,6 +611,246 @@ describe("tools.ts", () => {
           { type: "text", text: "item1" },
           { type: "text", text: "item2" },
           { type: "text", text: "item3" },
+        ]);
+      });
+    });
+
+    describe("Response Formatting", () => {
+      it("should handle array of objects in unbound operation", async () => {
+        // Arrange
+        const model = new McpToolAnnotation(
+          "TestTool",
+          "Test tool description",
+          "testAction",
+          "TestService",
+          new Map(),
+        );
+
+        const arrayResponse = [
+          { id: 1, name: "Item 1" },
+          { id: 2, name: "Item 2" },
+        ];
+
+        const mockService = {
+          send: jest.fn().mockResolvedValue(arrayResponse),
+        };
+        (cds as any).services["TestService"] = mockService;
+
+        assignToolToServer(model, mockServer as any);
+        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+
+        // Act
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
+
+        // Assert - Should JSON stringify each object in the array
+        expect(result.content).toEqual([
+          {
+            type: "text",
+            text: JSON.stringify({ id: 1, name: "Item 1" }, null, 2),
+          },
+          {
+            type: "text",
+            text: JSON.stringify({ id: 2, name: "Item 2" }, null, 2),
+          },
+        ]);
+      });
+
+      it("should handle array of objects in bound operation", async () => {
+        // Arrange
+        const model = new McpToolAnnotation(
+          "BoundTool",
+          "Bound tool description",
+          "boundAction",
+          "TestService",
+          new Map(),
+          "TestEntity",
+          "action",
+          new Map([["id", "number"]]),
+        );
+
+        determineMcpParameterTypeStub
+          .withArgs("number")
+          .returns({ type: "number" });
+
+        const arrayResponse = [
+          { status: "active", count: 5 },
+          { status: "inactive", count: 2 },
+        ];
+
+        const mockService = {
+          send: jest.fn().mockResolvedValue(arrayResponse),
+        };
+        (cds as any).services["TestService"] = mockService;
+
+        assignToolToServer(model, mockServer as any);
+        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+
+        // Act
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({ id: 123 }, mockExtra);
+
+        // Assert - Should JSON stringify each object in the array
+        expect(result.content).toEqual([
+          {
+            type: "text",
+            text: JSON.stringify({ status: "active", count: 5 }, null, 2),
+          },
+          {
+            type: "text",
+            text: JSON.stringify({ status: "inactive", count: 2 }, null, 2),
+          },
+        ]);
+      });
+
+      it("should handle nested objects with arrays", async () => {
+        // Arrange
+        const model = new McpToolAnnotation(
+          "TestTool",
+          "Test tool description",
+          "testAction",
+          "TestService",
+          new Map(),
+        );
+
+        const nestedResponse = {
+          user: {
+            id: 1,
+            name: "John Doe",
+            preferences: {
+              theme: "dark",
+              notifications: true,
+            },
+            tags: ["admin", "power-user"],
+          },
+          metadata: {
+            createdAt: "2023-01-01T00:00:00Z",
+            permissions: ["read", "write", "delete"],
+          },
+        };
+
+        const mockService = {
+          send: jest.fn().mockResolvedValue(nestedResponse),
+        };
+        (cds as any).services["TestService"] = mockService;
+
+        assignToolToServer(model, mockServer as any);
+        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+
+        // Act
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
+
+        // Assert - Should properly JSON stringify nested structure
+        expect(result.content).toEqual([
+          {
+            type: "text",
+            text: JSON.stringify(nestedResponse, null, 2),
+          },
+        ]);
+      });
+
+      it("should handle mixed primitive and object array", async () => {
+        // Arrange
+        const model = new McpToolAnnotation(
+          "TestTool",
+          "Test tool description",
+          "testAction",
+          "TestService",
+          new Map(),
+        );
+
+        const mixedResponse = [
+          "simple string",
+          42,
+          { complex: "object", with: ["nested", "array"] },
+          true,
+          null,
+        ];
+
+        const mockService = {
+          send: jest.fn().mockResolvedValue(mixedResponse),
+        };
+        (cds as any).services["TestService"] = mockService;
+
+        assignToolToServer(model, mockServer as any);
+        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+
+        // Act
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
+
+        // Assert - Should handle each type appropriately
+        expect(result.content).toEqual([
+          { type: "text", text: "simple string" },
+          { type: "text", text: "42" },
+          {
+            type: "text",
+            text: JSON.stringify(
+              { complex: "object", with: ["nested", "array"] },
+              null,
+              2,
+            ),
+          },
+          { type: "text", text: "true" },
+          { type: "text", text: "null" },
+        ]);
+      });
+
+      it("should handle circular reference gracefully", async () => {
+        // Arrange
+        const model = new McpToolAnnotation(
+          "TestTool",
+          "Test tool description",
+          "testAction",
+          "TestService",
+          new Map(),
+        );
+
+        // Create circular reference
+        const circularResponse: any = { name: "test" };
+        circularResponse.self = circularResponse;
+
+        const mockService = {
+          send: jest.fn().mockResolvedValue(circularResponse),
+        };
+        (cds as any).services["TestService"] = mockService;
+
+        assignToolToServer(model, mockServer as any);
+        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+
+        // Act
+        const mockExtra = {
+          signal: new AbortController().signal,
+          requestId: "test-request-id",
+          sendNotification: jest.fn(),
+          sendRequest: jest.fn(),
+        };
+        const result = await handler({}, mockExtra);
+
+        // Assert - Should fallback to String() for circular references
+        expect(result.content).toEqual([
+          { type: "text", text: "[object Object]" },
         ]);
       });
     });
