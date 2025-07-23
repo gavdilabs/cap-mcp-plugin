@@ -99,8 +99,11 @@ function assignBoundOperation(
 
       return {
         content: Array.isArray(response)
-          ? response.map((el) => ({ type: "text", text: String(el) }))
-          : [{ type: "text", text: String(response) }],
+          ? response.map((el) => ({
+              type: "text",
+              text: formatResponseValue(el),
+            }))
+          : [{ type: "text", text: formatResponseValue(response) }],
       };
     },
   );
@@ -146,8 +149,11 @@ function assignUnboundOperation(
 
       return {
         content: Array.isArray(response)
-          ? response.map((el) => ({ type: "text", text: String(el) }))
-          : [{ type: "text", text: String(response) }],
+          ? response.map((el) => ({
+              type: "text",
+              text: formatResponseValue(el),
+            }))
+          : [{ type: "text", text: formatResponseValue(response) }],
       };
     },
   );
@@ -168,6 +174,29 @@ function buildToolParameters(
     result[k] = determineMcpParameterType(v);
   }
   return result;
+}
+
+/**
+ * Converts a value to a string representation suitable for MCP responses
+ * Handles objects and arrays by JSON stringifying them instead of using String()
+ * @param value - The value to convert to string
+ * @returns String representation of the value
+ */
+function formatResponseValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return String(value);
+  }
+
+  if (typeof value === "object") {
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch (error) {
+      // Fallback to String() if JSON.stringify fails (e.g., circular references)
+      return String(value);
+    }
+  }
+
+  return String(value);
 }
 
 /**
