@@ -11,25 +11,28 @@ let originalLoadConfiguration: (() => CAPConfiguration) | undefined;
 /**
  * Mocks the loadConfiguration function to return test-friendly configuration
  */
-export function mockLoadConfiguration(): void {
-  // Only mock once to avoid multiple requires
-  if (originalLoadConfiguration) return;
-
+export function mockLoadConfiguration(testConfig?: CAPConfiguration): void {
   const configModule = require("../../src/config/loader");
-  originalLoadConfiguration = configModule.loadConfiguration;
 
-  // Replace with test-friendly version that always returns auth: "none"
+  // Store original if not already stored
+  if (!originalLoadConfiguration) {
+    originalLoadConfiguration = configModule.loadConfiguration;
+  }
+
+  // Replace with test-friendly version (allow updates with new config)
   configModule.loadConfiguration = (): CAPConfiguration => {
-    return {
-      name: "Test MCP Server",
-      version: "1.0.0",
-      auth: "none", // Always disable auth for tests
-      capabilities: {
-        tools: { listChanged: true },
-        resources: { listChanged: true, subscribe: false },
-        prompts: { listChanged: true },
-      },
-    };
+    return (
+      testConfig || {
+        name: "Test MCP Server",
+        version: "1.0.0",
+        auth: "none", // Default: disable auth for tests
+        capabilities: {
+          tools: { listChanged: true },
+          resources: { listChanged: true, subscribe: false },
+          prompts: { listChanged: true },
+        },
+      }
+    );
   };
 }
 

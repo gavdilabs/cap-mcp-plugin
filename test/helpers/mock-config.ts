@@ -56,7 +56,7 @@ export function mockCdsEnvironment(): void {
  * Use this for testing auth-specific functionality
  */
 export function createAuthTestConfig(
-  authType: "inherit" = "inherit",
+  authType: "inherit" | "none" = "inherit",
 ): CAPConfiguration {
   return createTestConfig({
     auth: authType,
