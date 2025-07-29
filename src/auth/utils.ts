@@ -116,12 +116,22 @@ export function getAccessRights(authEnabled: boolean): User {
  */
 export function registerAuthMiddleware(expressApp: Application): void {
   const middlewares = cds.middlewares.before as any[]; // No types exists for this part of the CDS library
+
+  // Build array of auth middleware to apply
+  const authMiddleware: any[] = [];
+
+  // Add CAP middleware
   middlewares.forEach((mw) => {
     const process = mw.factory();
-    if (!process || process.length <= 0) return;
-    expressApp?.use("/mcp", process);
+    if (process && process.length > 0) {
+      authMiddleware.push(process);
+    }
   });
 
-  expressApp?.use("/mcp", errorHandlerFactory());
-  expressApp?.use("/mcp", authHandlerFactory());
+  // Add MCP auth middleware
+  authMiddleware.push(errorHandlerFactory());
+  authMiddleware.push(authHandlerFactory());
+
+  // Apply auth middleware to all /mcp routes EXCEPT health
+  expressApp?.use(/^\/mcp(?!\/health).*/, ...authMiddleware);
 }
