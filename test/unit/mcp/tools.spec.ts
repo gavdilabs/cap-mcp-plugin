@@ -15,6 +15,13 @@ jest.mock("@sap/cds", () => ({
   connect: {
     to: jest.fn(),
   },
+  User: {
+    privileged: { id: "privileged", name: "Privileged User" },
+    anonymous: { id: "anonymous", _is_anonymous: true },
+  },
+  context: {
+    user: null,
+  },
 }));
 
 jest.mock("../../../src/logger", () => ({
@@ -71,11 +78,14 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue("success"),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
         // Act
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
 
         // Assert
         sinon.assert.called(mockServer.registerTool);
@@ -103,7 +113,13 @@ describe("tools.ts", () => {
         };
         const result = await handler(inputData, mockExtra);
 
-        expect(mockService.send).toHaveBeenCalledWith("testAction", inputData);
+        expect(mockService.tx).toHaveBeenCalledWith({
+          user: { id: "privileged", name: "Privileged User" },
+        });
+        expect(mockService.tx().send).toHaveBeenCalledWith(
+          "testAction",
+          inputData,
+        );
         expect(result.content).toEqual([{ type: "text", text: "success" }]);
       });
 
@@ -119,10 +135,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(["result1", "result2"]),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(["result1", "result2"]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -153,7 +172,7 @@ describe("tools.ts", () => {
 
         // No service added to cds.services
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -184,11 +203,14 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue("success"),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
         // Act
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
 
         // Assert
         sinon.assert.called(mockServer.registerTool);
@@ -214,11 +236,14 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue("success"),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
         // Act
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
 
         // Assert
         sinon.assert.called(mockServer.registerTool);
@@ -249,10 +274,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(complexResponse),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(complexResponse),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -293,12 +321,15 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue({ result: "bound success" }),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue({ result: "bound success" }),
+          }),
         };
 
         (cds as any).services["TestService"] = mockService;
 
         // Act
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
 
         // Assert
         sinon.assert.called(mockServer.registerTool);
@@ -326,7 +357,10 @@ describe("tools.ts", () => {
         };
         const result = await handler(inputData, mockExtra);
 
-        expect(mockService.send).toHaveBeenCalledWith({
+        expect(mockService.tx).toHaveBeenCalledWith({
+          user: { id: "privileged", name: "Privileged User" },
+        });
+        expect(mockService.tx().send).toHaveBeenCalledWith({
           event: "boundAction",
           entity: "TestEntity",
           data: { param1: "test" },
@@ -354,7 +388,9 @@ describe("tools.ts", () => {
         );
 
         // Act & Assert
-        expect(() => assignToolToServer(model, mockServer as any)).toThrow(
+        expect(() =>
+          assignToolToServer(model, mockServer as any, false),
+        ).toThrow(
           "Bound operation cannot be assigned to tool list, missing keys",
         );
       });
@@ -373,7 +409,9 @@ describe("tools.ts", () => {
         );
 
         // Act & Assert
-        expect(() => assignToolToServer(model, mockServer as any)).toThrow(
+        expect(() =>
+          assignToolToServer(model, mockServer as any, false),
+        ).toThrow(
           "Bound operation cannot be assigned to tool list, missing keys",
         );
       });
@@ -393,7 +431,7 @@ describe("tools.ts", () => {
 
         // No service added to cds.services
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -434,10 +472,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue("success"),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -457,7 +498,10 @@ describe("tools.ts", () => {
         );
 
         // Assert
-        expect(mockService.send).toHaveBeenCalledWith({
+        expect(mockService.tx).toHaveBeenCalledWith({
+          user: { id: "privileged", name: "Privileged User" },
+        });
+        expect(mockService.tx().send).toHaveBeenCalledWith({
           event: "boundAction",
           entity: "TestEntity",
           data: { validParam: "test" },
@@ -491,10 +535,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue("success"),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -515,7 +562,10 @@ describe("tools.ts", () => {
         );
 
         // Assert
-        expect(mockService.send).toHaveBeenCalledWith({
+        expect(mockService.tx).toHaveBeenCalledWith({
+          user: { id: "privileged", name: "Privileged User" },
+        });
+        expect(mockService.tx().send).toHaveBeenCalledWith({
           event: "boundAction",
           entity: "TestEntity",
           data: { param1: "test-value" },
@@ -548,10 +598,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue("success"),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -564,7 +617,10 @@ describe("tools.ts", () => {
         await handler({ id: 123 }, mockExtra);
 
         // Assert
-        expect(mockService.send).toHaveBeenCalledWith({
+        expect(mockService.tx).toHaveBeenCalledWith({
+          user: { id: "privileged", name: "Privileged User" },
+        });
+        expect(mockService.tx().send).toHaveBeenCalledWith({
           event: "boundAction",
           entity: "TestEntity",
           data: {},
@@ -591,10 +647,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(["item1", "item2", "item3"]),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(["item1", "item2", "item3"]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -633,10 +692,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(arrayResponse),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(arrayResponse),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -685,10 +747,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(arrayResponse),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(arrayResponse),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -741,10 +806,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(nestedResponse),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(nestedResponse),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -785,10 +853,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(mixedResponse),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(mixedResponse),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -833,10 +904,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(circularResponse),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(circularResponse),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -868,10 +942,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(null),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(null),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -899,10 +976,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(undefined),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(undefined),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -930,10 +1010,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(true),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(true),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -961,10 +1044,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue(42),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue(42),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -992,10 +1078,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue([]),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue([]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -1043,10 +1132,13 @@ describe("tools.ts", () => {
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
+          tx: jest.fn().mockReturnValue({
+            send: jest.fn().mockResolvedValue("success"),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignToolToServer(model, mockServer as any);
+        assignToolToServer(model, mockServer as any, false);
         const handler = mockServer.registerTool.getCall(0).args[2] as any;
 
         // Act
@@ -1068,7 +1160,10 @@ describe("tools.ts", () => {
         );
 
         // Assert
-        expect(mockService.send).toHaveBeenCalledWith({
+        expect(mockService.tx).toHaveBeenCalledWith({
+          user: { id: "privileged", name: "Privileged User" },
+        });
+        expect(mockService.tx().send).toHaveBeenCalledWith({
           event: "boundAction",
           entity: "TestEntity",
           data: {

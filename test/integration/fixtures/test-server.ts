@@ -1,6 +1,8 @@
 import express, { Application } from "express";
 import McpPlugin from "../../../src/mcp";
 import { csn } from "@sap/cds";
+import { mockCdsEnvironment } from "../../helpers/mock-config";
+import { mockLoadConfiguration } from "../../helpers/test-config-loader";
 
 /**
  * Test server fixture for MCP HTTP API integration tests
@@ -12,6 +14,12 @@ export class TestMcpServer {
 
   constructor() {
     this.app = express();
+
+    // Mock both CDS environment AND configuration loader
+    mockCdsEnvironment();
+    mockLoadConfiguration();
+
+    // Initialize plugin AFTER mocking environment
     this.plugin = new McpPlugin();
   }
 
