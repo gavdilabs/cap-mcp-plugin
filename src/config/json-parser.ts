@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LOGGER } from "../logger";
-import { CAPConfiguration } from "./types";
+import { CAPConfiguration, McpAuthType } from "./types";
 
 /**
  * Configuration schema for validation
@@ -8,6 +8,7 @@ import { CAPConfiguration } from "./types";
 const CAPConfigurationSchema: z.ZodSchema<CAPConfiguration> = z.object({
   name: z.string(),
   version: z.string(),
+  auth: z.custom<McpAuthType>(),
   capabilities: z.object({
     tools: z.object({
       listChanged: z.boolean().optional(),
