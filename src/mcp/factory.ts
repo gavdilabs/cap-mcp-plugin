@@ -10,6 +10,7 @@ import { assignToolToServer } from "./tools";
 import { assignResourceToServer } from "./resources";
 import { CAPConfiguration } from "../config/types";
 import { assignPromptToServer } from "./prompts";
+import { isAuthEnabled } from "../auth/utils";
 
 /**
  * Creates and configures an MCP server instance with the given configuration and annotations
@@ -34,14 +35,14 @@ export function createMcpServer(
   }
 
   LOGGER.debug("Annotations found for server: ", annotations);
+  const authEnabled = isAuthEnabled(config.auth);
 
-  // TODO: Handle auth
   for (const entry of annotations.values()) {
     if (entry instanceof McpToolAnnotation) {
-      assignToolToServer(entry, server);
+      assignToolToServer(entry, server, authEnabled);
       continue;
     } else if (entry instanceof McpResourceAnnotation) {
-      assignResourceToServer(entry, server);
+      assignResourceToServer(entry, server, authEnabled);
       continue;
     } else if (entry instanceof McpPromptAnnotation) {
       assignPromptToServer(entry, server);

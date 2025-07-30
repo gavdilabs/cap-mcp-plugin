@@ -6,6 +6,7 @@ import { McpParameters } from "./types";
 import { Service } from "@sap/cds";
 import { ERR_MISSING_SERVICE } from "./constants";
 import { z } from "zod";
+import { getAccessRights } from "../auth/utils";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
@@ -19,17 +20,18 @@ const cds = global.cds || require("@sap/cds"); // This is a work around for miss
 export function assignToolToServer(
   model: McpToolAnnotation,
   server: McpServer,
+  authEnabled: boolean,
 ): void {
   LOGGER.debug("Adding tool", model);
   const parameters = buildToolParameters(model.parameters);
 
   if (model.entityKey) {
     // Assign tool as bound operation
-    assignBoundOperation(parameters, model, server);
+    assignBoundOperation(parameters, model, server, authEnabled);
     return;
   }
 
-  assignUnboundOperation(parameters, model, server);
+  assignUnboundOperation(parameters, model, server, authEnabled);
 }
 
 /**
@@ -43,6 +45,7 @@ function assignBoundOperation(
   params: McpParameters,
   model: McpToolAnnotation,
   server: McpServer,
+  authEnabled: boolean,
 ): void {
   if (!model.keyTypeMap || model.keyTypeMap.size <= 0) {
     LOGGER.error(
@@ -90,7 +93,8 @@ function assignBoundOperation(
         operationInput[k] = v;
       }
 
-      const response = await service.send({
+      const accessRights = getAccessRights(authEnabled);
+      const response = await service.tx({ user: accessRights }).send({
         event: model.target,
         entity: model.entityKey as string,
         data: operationInput,
@@ -120,6 +124,7 @@ function assignUnboundOperation(
   params: McpParameters,
   model: McpToolAnnotation,
   server: McpServer,
+  authEnabled: boolean,
 ): void {
   const inputSchema = buildZodSchema(params);
 
@@ -145,7 +150,10 @@ function assignUnboundOperation(
         };
       }
 
-      const response = await service.send(model.target, args);
+      const accessRights = getAccessRights(authEnabled);
+      const response = await service
+        .tx({ user: accessRights })
+        .send(model.target, args);
 
       return {
         content: Array.isArray(response)

@@ -38,6 +38,13 @@ jest.mock("@sap/cds", () => ({
   connect: {
     to: jest.fn(),
   },
+  User: {
+    privileged: { id: "privileged", name: "Privileged User" },
+    anonymous: { id: "anonymous", _is_anonymous: true },
+  },
+  context: {
+    user: null,
+  },
 }));
 
 jest.mock("../../../src/logger", () => ({
@@ -113,11 +120,14 @@ describe("MCP Resources", () => {
 
         const mockService = {
           run: jest.fn().mockResolvedValue([{ id: 1, name: "test" }]),
+          tx: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue([{ id: 1, name: "test" }]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
         // Act
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
 
         // Assert
 
@@ -138,7 +148,10 @@ describe("MCP Resources", () => {
 
         expect(SELECT.from).toHaveBeenCalledWith("TestEntity");
         expect(mockQuery.limit).toHaveBeenCalledWith(10);
-        expect(mockService.run).toHaveBeenCalledWith(mockQuery);
+        expect(mockService.tx).toHaveBeenCalledWith({
+          user: { id: "privileged", name: "Privileged User" },
+        });
+        expect(mockService.tx().run).toHaveBeenCalledWith(mockQuery);
         expect(result.contents[0].text).toBe('[{"id":1,"name":"test"}]');
       });
 
@@ -159,7 +172,7 @@ describe("MCP Resources", () => {
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act
@@ -185,10 +198,13 @@ describe("MCP Resources", () => {
 
         const mockService = {
           run: jest.fn().mockResolvedValue(null),
+          tx: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue(null),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act
@@ -212,10 +228,13 @@ describe("MCP Resources", () => {
 
         const mockService = {
           run: jest.fn().mockResolvedValue([]),
+          tx: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue([]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act
@@ -242,7 +261,7 @@ describe("MCP Resources", () => {
         writeODataDescriptionStub.returns("Detailed OData description");
 
         // Act
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
 
         // Assert
         sinon.assert.calledWithMatch(writeODataDescriptionStub, model);
@@ -284,12 +303,15 @@ describe("MCP Resources", () => {
 
         const mockService = {
           run: jest.fn().mockResolvedValue([]),
+          tx: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue([]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
         (cds.parse.expr as jest.Mock).mockReturnValue("parsed expression");
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         const queryParams = {
@@ -327,7 +349,7 @@ describe("MCP Resources", () => {
 
         // No service added to cds.services
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act & Assert
@@ -353,7 +375,7 @@ describe("MCP Resources", () => {
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act
@@ -379,10 +401,13 @@ describe("MCP Resources", () => {
 
         const mockService = {
           run: jest.fn().mockResolvedValue([]),
+          tx: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue([]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act
@@ -407,7 +432,7 @@ describe("MCP Resources", () => {
         );
 
         // Act
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
 
         // Assert - Should register as static resource
         sinon.assert.called(mockServer.registerResource);
@@ -430,10 +455,13 @@ describe("MCP Resources", () => {
 
         const mockService = {
           run: jest.fn().mockResolvedValue([]),
+          tx: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue([]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act
@@ -460,10 +488,13 @@ describe("MCP Resources", () => {
 
         const mockService = {
           run: jest.fn().mockResolvedValue([]),
+          tx: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue([]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act
@@ -494,10 +525,13 @@ describe("MCP Resources", () => {
 
         const mockService = {
           run: jest.fn().mockResolvedValue([]),
+          tx: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue([]),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act
@@ -510,7 +544,10 @@ describe("MCP Resources", () => {
         // Assert - Should still work and only use known parameters
         expect(SELECT.from).toHaveBeenCalledWith("TestEntity");
         expect(mockQuery.limit).toHaveBeenCalledWith(100, undefined);
-        expect(mockService.run).toHaveBeenCalledWith(mockQuery);
+        expect(mockService.tx).toHaveBeenCalledWith({
+          user: { id: "privileged", name: "Privileged User" },
+        });
+        expect(mockService.tx().run).toHaveBeenCalledWith(mockQuery);
       });
 
       it("should handle very large result sets", async () => {
@@ -533,10 +570,13 @@ describe("MCP Resources", () => {
 
         const mockService = {
           run: jest.fn().mockResolvedValue(largeResult),
+          tx: jest.fn().mockReturnValue({
+            run: jest.fn().mockResolvedValue(largeResult),
+          }),
         };
         (cds as any).services["TestService"] = mockService;
 
-        assignResourceToServer(model, mockServer as any);
+        assignResourceToServer(model, mockServer as any, false);
         const handler = mockServer.registerResource.getCall(0).args[3] as any;
 
         // Act

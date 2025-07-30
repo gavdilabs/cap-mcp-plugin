@@ -31,6 +31,7 @@
 export interface CAPConfiguration {
   name: string;
   version: string;
+  auth: McpAuthType;
   capabilities: {
     tools: ToolsConfiguration;
     resources: ResourcesConfiguration;
@@ -66,7 +67,7 @@ export interface PromptsConfiguration extends ProtocolConfiguration {}
 /**
  * Auth types available through the package.json/.cdsrc config
  */
-export type McpAuthType = "inherit" | "api-key" | "none";
+export type McpAuthType = "inherit" | "none";
 
 /**
  * Package.json mapping for vital app info

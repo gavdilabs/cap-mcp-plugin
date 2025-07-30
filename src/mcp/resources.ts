@@ -6,6 +6,7 @@ import { Service } from "@sap/cds";
 import { writeODataDescriptionForResource } from "./utils";
 import { ODataQueryValidator, ODataValidationError } from "./validation";
 import { McpResourceQueryParams } from "./types";
+import { getAccessRights } from "../auth/utils";
 // import cds from "@sap/cds";
 
 /* @ts-ignore */
@@ -20,10 +21,11 @@ const cds = global.cds || require("@sap/cds"); // This is a work around for miss
 export function assignResourceToServer(
   model: McpResourceAnnotation,
   server: McpServer,
+  authEnabled: boolean,
 ): void {
   LOGGER.debug("Adding resource", model);
   if (model.functionalities.size <= 0) {
-    registerStaticResource(model, server);
+    registerStaticResource(model, server, authEnabled);
     return;
   }
 
@@ -108,7 +110,8 @@ export function assignResourceToServer(
       }
 
       try {
-        const response = await service.run(query);
+        const accessRights = getAccessRights(authEnabled);
+        const response = await service.tx({ user: accessRights }).run(query);
         return {
           contents: [
             {
@@ -141,6 +144,7 @@ export function assignResourceToServer(
 function registerStaticResource(
   model: McpResourceAnnotation,
   server: McpServer,
+  authEnabled: boolean,
 ): void {
   server.registerResource(
     model.name,
@@ -160,7 +164,8 @@ function registerStaticResource(
             : 100,
         );
 
-        const response = await service.run(query);
+        const accessRights = getAccessRights(authEnabled);
+        const response = await service.tx({ user: accessRights }).run(query);
         return {
           contents: [
             {

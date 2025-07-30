@@ -1,5 +1,5 @@
-import { csn } from "@sap/cds";
-import { Application } from "express";
+import cds, { csn, User } from "@sap/cds";
+import { Application, RequestHandler } from "express";
 import { LOGGER } from "./logger";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
@@ -10,6 +10,11 @@ import { MCP_SESSION_HEADER } from "./mcp/constants";
 import { CAPConfiguration } from "./config/types";
 import { loadConfiguration } from "./config/loader";
 import { McpSessionManager } from "./mcp/session-manager";
+import { authHandlerFactory } from "./auth/handler";
+import { registerAuthMiddleware } from "./auth/utils";
+
+/* @ts-ignore */
+// const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
 // TODO: Handle auth
 
@@ -42,6 +47,10 @@ export default class McpPlugin {
     LOGGER.debug("Event received for 'bootstrap'");
     this.expressApp = app;
     this.expressApp.use(express.json());
+
+    if (this.config.auth === "inherit") {
+      registerAuthMiddleware(this.expressApp);
+    }
 
     await this.registerApiEndpoints();
     LOGGER.debug("Bootstrap complete");
@@ -88,7 +97,6 @@ export default class McpPlugin {
       });
     });
 
-    LOGGER.debug("TESTING - Annotations", this.annotations);
     this.registerMcpSessionRoute();
 
     this.expressApp?.get("/mcp", (req, res) =>
@@ -107,6 +115,7 @@ export default class McpPlugin {
   private registerMcpSessionRoute(): void {
     LOGGER.debug("Registering MCP entry point");
     this.expressApp?.post("/mcp", async (req, res) => {
+      LOGGER.debug("CONTEXT", cds.context); // TODO: Remove this line after testing
       const sessionIdHeader = req.headers[MCP_SESSION_HEADER] as string;
       LOGGER.debug("MCP request received", {
         hasSessionId: !!sessionIdHeader,

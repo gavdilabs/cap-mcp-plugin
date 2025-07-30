@@ -20,7 +20,8 @@
   "cds": {
     "mcp": {
       "name": "mock-service",
-      "version": "0.0.1"
+      "version": "0.0.1",
+      "auth": "inherit"
     }
   }
 }

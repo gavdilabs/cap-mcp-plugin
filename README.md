@@ -23,15 +23,10 @@ By integrating MCP with your CAP applications, you unlock:
 
 ## ⚠️ Development Status
 
-**This plugin is currently in active development (v0.9.0) and is not ready for production use.**
-APIs and annotations may change in future releases. Use in development and testing environments only.
+**This plugin is currently in active development (v0.9.2) and approaching production readiness.**
+APIs and annotations may change in future releases. Authentication and security features are implemented and tested.
 
-Version 1.0 of the plugin is planned to release shortly after auth integration is complete.
-
-### 👾 Known Bugs
-
-> ❗Currently there is a bug in the `@modelcontextprotocol/sdk` package that breaks the RFC template strings. The issue has been reported.
-> Until this issue is fixed, the resource reads for dynamic queries are only possible if all query options are provided.
+Version 1.0 of the plugin is scheduled for release in Summer 2025 after final stability testing and documentation completion.
 
 ## 📦 Installation
 
@@ -40,6 +35,78 @@ npm install @gavdi/cap-mcp
 ```
 
 The plugin follows CAP's standard plugin architecture and will automatically integrate with your CAP application.
+
+## 🚀 Quick Setup
+
+### Prerequisites
+
+- **Node.js**: Version 18 or higher
+- **SAP CAP**: Version 9 or higher
+- **Express**: Version 4 or higher
+- **TypeScript**: Optional but recommended
+
+### Step 1: Install the Plugin
+
+```bash
+npm install @gavdi/cap-mcp
+```
+
+### Step 2: Configure Your CAP Application
+
+Add MCP configuration to your `package.json`:
+
+```json
+{
+  "cds": {
+    "mcp": {
+      "name": "my-bookshop-mcp",
+      "auth": "inherit"
+    }
+  }
+}
+```
+
+### Step 3: Add MCP Annotations
+
+Annotate your CAP services with `@mcp` annotations:
+
+```cds
+// srv/catalog-service.cds
+service CatalogService {
+
+  @mcp: {
+    name: 'books',
+    description: 'Book catalog with search and filtering',
+    resource: ['filter', 'orderby', 'select', 'top', 'skip']
+  }
+  entity Books as projection on my.Books;
+
+  @mcp: {
+    name: 'get-book-recommendations',
+    description: 'Get personalized book recommendations',
+    tool: true
+  }
+  function getRecommendations(genre: String, limit: Integer) returns array of String;
+}
+```
+
+### Step 4: Start Your Application
+
+```bash
+cds serve
+```
+
+The MCP server will be available at:
+- **MCP Endpoint**: `http://localhost:4004/mcp`
+- **Health Check**: `http://localhost:4004/mcp/health`
+
+### Step 5: Test with MCP Inspector
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+Connect to `http://localhost:4004/mcp` to explore your generated MCP resources, tools, and prompts.
 
 ## 🎯 Features
 
@@ -142,10 +209,97 @@ annotate CatalogService with @mcp.prompts: [{
 
 ## 🔧 Configuration
 
+### Plugin Configuration
+
+Configure the MCP plugin through your CAP application's `package.json` or `.cdsrc` file:
+
+```json
+{
+  "cds": {
+    "mcp": {
+      "name": "my-mcp-server",
+      "version": "1.0.0",
+      "auth": "inherit",
+      "capabilities": {
+        "resources": {
+          "listChanged": true,
+          "subscribe": false
+        },
+        "tools": {
+          "listChanged": true
+        },
+        "prompts": {
+          "listChanged": true
+        }
+      }
+    }
+  }
+}
+```
+
+### Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `name` | string | package.json name | MCP server name |
+| `version` | string | package.json version | MCP server version |
+| `auth` | `"inherit"` \| `"none"` | `"inherit"` | Authentication mode |
+| `capabilities.resources.listChanged` | boolean | `true` | Enable resource list change notifications |
+| `capabilities.resources.subscribe` | boolean | `false` | Enable resource subscriptions |
+| `capabilities.tools.listChanged` | boolean | `true` | Enable tool list change notifications |
+| `capabilities.prompts.listChanged` | boolean | `true` | Enable prompt list change notifications |
+
+### Authentication Configuration
+
+The plugin supports two authentication modes:
+
+#### `"inherit"` Mode (Default)
+Uses your CAP application's existing authentication system:
+
+```json
+{
+  "cds": {
+    "mcp": {
+      "auth": "inherit"
+    },
+    "requires": {
+      "auth": {
+        "kind": "xsuaa"
+      }
+    }
+  }
+}
+```
+
+#### `"none"` Mode (Development/Testing)
+Disables authentication completely:
+
+```json
+{
+  "cds": {
+    "mcp": {
+      "auth": "none"
+    }
+  }
+}
+```
+
+**⚠️ Security Warning**: Only use `"none"` mode in development environments. Never deploy to production without proper authentication.
+
+#### Authentication Flow
+1. MCP client connects to `/mcp` endpoint
+2. CAP authentication middleware validates credentials (if `auth: "inherit"`)
+3. MCP session established with authenticated user context
+4. All MCP operations (resources, tools, prompts) inherit the authenticated user's permissions
+
+### Automatic Features
+
 The plugin automatically:
 - Scans your CAP service definitions for `@mcp` annotations
 - Generates appropriate MCP resources, tools, and prompts
 - Creates ResourceTemplates with proper OData v4 query parameter support
+- Sets up HTTP endpoints at `/mcp` and `/mcp/health`
+- Manages MCP session lifecycle and cleanup
 
 ## 🌟 Example AI Interactions
 
@@ -233,11 +387,13 @@ Would you like me to help you review any of these in detail?"
 - **Integration Ready**: Works with existing CAP-based workflow systems
 - **Mobile Friendly**: Access approvals from any MCP-compatible AI client
 
-## 🧰 Testing Locally
+## 🧰 Development & Testing
+
+### Testing Your MCP Implementation
 
 If you want to test the MCP implementation you have made on your CAP application locally, you have 2 options available (that does not involve direct integration with AI Agent).
 
-### Option #1 - MCP Inspector
+#### Option #1 - MCP Inspector
 
 You can inspect the MCP implementation by utilizing the official `@modelcontextprotocol/inspector`.
 
@@ -247,9 +403,27 @@ For plugin implementation implementation in your own project it is recommended t
 
 For more information on the inspector, please [see the official documentation](https://github.com/modelcontextprotocol/inspector).
 
-### Option #2 - Bruno Collection
+#### Option #2 - Bruno Collection
 
 This repository comes with a Bruno collection available that includes some example queries you can use to verify your MCP implementation. These can be found in the `bruno` directory.
+
+#### Option #3 - Automated Testing
+
+Run the comprehensive test suite to validate your implementation:
+
+```bash
+# Test specific components
+npm test -- --testPathPattern=annotations  # Test annotation parsing
+npm test -- --testPathPattern=mcp          # Test MCP functionality
+npm test -- --testPathPattern=security     # Test security boundaries
+npm test -- --testPathPattern=auth         # Test authentication
+
+# Run with detailed output
+npm test -- --verbose
+
+# Run in watch mode for development
+npm test -- --watch
+```
 
 ## 🤝 Contributing
 
@@ -264,11 +438,90 @@ Contributions are welcome! This is an open-source project aimed at bridging CAP 
 
 This project is licensed under the Apache-2.0 License - see the [LICENSE.md](LICENSE.md) file for details.
 
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### MCP Server Not Starting
+- **Check Port Availability**: Ensure port 4004 is not in use by another process
+- **Verify CAP Service**: Make sure your CAP application starts successfully with `cds serve`
+- **Authentication Issues**: If using `auth: "inherit"`, ensure your CAP authentication is properly configured
+
+#### MCP Client Connection Failures
+```bash
+# Check if MCP endpoint is accessible
+curl http://localhost:4004/mcp/health
+
+# Expected response:
+# {"status": "healthy", "timestamp": "2025-01-XX..."}
+```
+
+#### Annotation Not Working
+- **Syntax Check**: Verify your `@mcp` annotation syntax matches the examples
+- **Service Deployment**: Ensure annotated entities/functions are properly deployed
+- **Case Sensitivity**: Check that annotation properties use correct casing (`resource`, `tool`, `prompts`)
+
+#### OData Query Issues
+- **SDK Bug Workaround**: Due to the known `@modelcontextprotocol/sdk` bug, provide all query parameters when using dynamic queries
+- **Parameter Validation**: Ensure query parameters match OData v4 syntax
+
+#### Performance Issues
+- **Resource Filtering**: Use specific `resource` arrays instead of `true` for large datasets
+- **Query Optimization**: Implement proper database indexes for frequently queried fields
+
+### Debugging
+
+#### Enable Debug Logging
+```json
+{
+  "cds": {
+    "log": {
+      "levels": {
+        "mcp": "debug"
+      }
+    }
+  }
+}
+```
+
+#### Test MCP Implementation
+```bash
+# Use MCP Inspector for interactive testing
+npm run inspect
+
+# Or run integration tests
+npm test -- --testPathPattern=integration
+```
+
+### Getting Help
+
+- **GitHub Issues**: Report bugs at [gavdilabs/cap-mcp-plugin](https://github.com/gavdilabs/cap-mcp-plugin/issues)
+- **Documentation**: Check [MCP Specification](https://modelcontextprotocol.io) for protocol details
+- **CAP Support**: Refer to [SAP CAP Documentation](https://cap.cloud.sap) for CAP-specific issues
+
+## 🚨 Performance & Limitations
+
+### Known Limitations
+- **SDK Bug**: Dynamic resource queries require all query parameters due to `@modelcontextprotocol/sdk` RFC template string issue
+- **Authentication Inheritance**: MCP authentication is tightly coupled to CAP's authentication system
+- **Session Cleanup**: MCP sessions are cleaned up on HTTP connection close, not on explicit disconnect
+
+### Performance Considerations
+- **Large Datasets**: Use `resource: ['top']` or similar constraints for entities with many records
+- **Complex Queries**: OData query parsing adds overhead - consider caching for frequently accessed data
+- **Concurrent Sessions**: Each MCP client creates a separate session - monitor memory usage with many clients
+
+### Scale Recommendations
+- **Development**: No specific limits
+- **Production**: Test with expected concurrent MCP client count
+- **Enterprise**: Consider load balancing for high-availability scenarios
+
 ## 🔗 Resources
 
 - [Model Context Protocol Specification](https://modelcontextprotocol.io)
 - [SAP CAP Documentation](https://cap.cloud.sap)
 - [OData v4 Specification](https://odata.org)
+- [MCP Inspector Tool](https://github.com/modelcontextprotocol/inspector)
 
 ---
 (c) Copyright by Gavdi Labs 2025 - All Rights Reserved

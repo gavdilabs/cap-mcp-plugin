@@ -14,6 +14,10 @@ import { assignToolToServer } from "../../../src/mcp/tools";
 import { assignResourceToServer } from "../../../src/mcp/resources";
 import { assignPromptToServer } from "../../../src/mcp/prompts";
 import { LOGGER } from "../../../src/logger";
+import {
+  createTestConfig,
+  mockCdsEnvironment,
+} from "../../helpers/mock-config";
 
 // Mock dependencies
 jest.mock("@modelcontextprotocol/sdk/server/mcp.js", () => ({
@@ -50,15 +54,18 @@ describe("Factory", () => {
   let mockConfig: CAPConfiguration;
 
   beforeEach(() => {
-    mockConfig = {
-      name: "Test Server",
-      version: "1.0.0",
+    // Mock CDS environment for tests
+    mockCdsEnvironment();
+
+    // Create test configuration with auth disabled
+    mockConfig = createTestConfig({
       capabilities: {
         tools: {},
         resources: {},
         prompts: {},
       },
-    };
+    });
+
     jest.clearAllMocks();
   });
 
@@ -103,6 +110,7 @@ describe("Factory", () => {
       expect(assignToolToServer).toHaveBeenCalledWith(
         toolAnnotation,
         expect.any(Object),
+        false, // authEnabled should be false for test config
       );
       expect(LOGGER.debug).toHaveBeenCalledWith(
         "Annotations found for server: ",
@@ -130,6 +138,7 @@ describe("Factory", () => {
       expect(assignResourceToServer).toHaveBeenCalledWith(
         resourceAnnotation,
         expect.any(Object),
+        false, // authEnabled should be false for test config
       );
     });
 
@@ -204,10 +213,12 @@ describe("Factory", () => {
       expect(assignToolToServer).toHaveBeenCalledWith(
         toolAnnotation,
         expect.any(Object),
+        false, // authEnabled should be false for test config
       );
       expect(assignResourceToServer).toHaveBeenCalledWith(
         resourceAnnotation,
         expect.any(Object),
+        false, // authEnabled should be false for test config
       );
       expect(assignPromptToServer).toHaveBeenCalledWith(
         promptAnnotation,
@@ -299,11 +310,13 @@ describe("Factory", () => {
         1,
         tool1,
         expect.any(Object),
+        false, // authEnabled should be false for test config
       );
       expect(assignToolToServer).toHaveBeenNthCalledWith(
         2,
         tool2,
         expect.any(Object),
+        false, // authEnabled should be false for test config
       );
     });
   });

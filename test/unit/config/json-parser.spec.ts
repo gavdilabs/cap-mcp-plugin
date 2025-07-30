@@ -146,6 +146,7 @@ describe("JSON Parser Security", () => {
     const validConfig: CAPConfiguration = {
       name: "test-server",
       version: "1.0.0",
+      auth: "none", // Disable auth for tests
       capabilities: {
         tools: { listChanged: true },
         resources: { listChanged: true, subscribe: false },
@@ -164,6 +165,7 @@ describe("JSON Parser Security", () => {
       const minimalConfig = {
         name: "minimal",
         version: "1.0.0",
+        auth: "none", // Disable auth for tests
         capabilities: {
           tools: {},
           resources: {},

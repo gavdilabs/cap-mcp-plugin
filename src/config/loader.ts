@@ -23,6 +23,7 @@ export function loadConfiguration(): CAPConfiguration {
   return {
     name: cdsEnv?.name ?? packageInfo.name,
     version: cdsEnv?.version ?? packageInfo.version,
+    auth: cdsEnv?.auth ?? "inherit",
     capabilities: {
       tools: cdsEnv?.capabilities?.tools ?? { listChanged: true },
       resources: cdsEnv?.capabilities?.resources ?? { listChanged: true },
