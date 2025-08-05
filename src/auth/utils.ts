@@ -2,6 +2,8 @@ import { User } from "@sap/cds";
 import { Application } from "express";
 import { authHandlerFactory, errorHandlerFactory } from "./handler";
 import { McpAuthType } from "../config/types";
+import { ProxyOAuthServerProvider } from "@modelcontextprotocol/sdk/server/auth/providers/proxyProvider.js";
+import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 
 /**
  * @fileoverview Authentication utilities for MCP-CAP integration.
@@ -26,6 +28,23 @@ import { McpAuthType } from "../config/types";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
+
+/**
+ * Union type representing all supported CAP authentication types.
+ *
+ * This type defines the complete set of authentication mechanisms supported
+ * by the CAP framework and used in OAuth proxy configuration:
+ *
+ * - `dummy`: No authentication, allows all access (development only)
+ * - `mocked`: Mock authentication with predefined test users
+ * - `basic`: HTTP Basic Authentication with username/password
+ * - `jwt`: Generic JWT token validation
+ * - `xsuaa`: SAP BTP XSUAA OAuth2/JWT authentication service
+ * - `ias`: SAP Identity Authentication Service
+ *
+ * @since 1.0.0
+ */
+export type AuthTypes = "dummy" | "mocked" | "basic" | "jwt" | "xsuaa" | "ias";
 
 /**
  * Determines whether authentication is enabled for the MCP plugin.
@@ -134,4 +153,93 @@ export function registerAuthMiddleware(expressApp: Application): void {
 
   // Apply auth middleware to all /mcp routes EXCEPT health
   expressApp?.use(/^\/mcp(?!\/health).*/, ...authMiddleware);
+
+  // Then finally we add the oauth proxy to the xsuaa instance
+  configureOAuthProxy(expressApp);
+}
+
+/**
+ * Configures OAuth proxy middleware for enterprise authentication scenarios.
+ *
+ * This function sets up a proxy OAuth provider that integrates with SAP BTP
+ * authentication services (XSUAA/IAS) to enable MCP clients to authenticate
+ * through standard OAuth2 flows. The proxy handles:
+ *
+ * - OAuth2 authorization and token endpoints
+ * - Access token verification and validation
+ * - Client credential management
+ * - Integration with CAP authentication configuration
+ *
+ * The OAuth proxy is only configured for enterprise authentication types
+ * (jwt, xsuaa, ias) and skips configuration for basic auth types.
+ *
+ * @param expressApp - Express application instance to register OAuth routes on
+ *
+ * @throws {Error} When required OAuth credentials are missing or invalid
+ *
+ * @example
+ * ```typescript
+ * // Automatically called by registerAuthMiddleware()
+ * // Requires CAP auth configuration:
+ * // cds.env.requires.auth = {
+ * //   kind: 'xsuaa',
+ * //   credentials: {
+ * //     clientid: 'your-client-id',
+ * //     clientsecret: 'your-client-secret',
+ * //     url: 'https://your-tenant.authentication.sap.hana.ondemand.com'
+ * //   }
+ * // }
+ * ```
+ *
+ * @internal This function is called internally by registerAuthMiddleware()
+ * @since 1.0.0
+ */
+function configureOAuthProxy(expressApp: Application): void {
+  const config = cds.env.requires.auth;
+  const kind = config.kind as AuthTypes;
+  const credentials = config.credentials;
+
+  // Safety guard - skip OAuth proxy for basic auth types
+  if (kind === "dummy" || kind === "mocked" || kind === "basic") return;
+  else if (
+    !credentials ||
+    !credentials.clientid ||
+    !credentials.clientsecret ||
+    !credentials.url
+  ) {
+    throw new Error("Invalid security credentials");
+  }
+
+  const proxyProvider = new ProxyOAuthServerProvider({
+    endpoints: {
+      authorizationUrl: `${credentials.url}/oauth/authorize`,
+      tokenUrl: `${credentials.url}/oauth/token`,
+      revocationUrl: `${credentials.url}/oauth/revoke`,
+    },
+    verifyAccessToken: async (token: string) => {
+      return {
+        token,
+        clientId: credentials.clientid as string,
+        scopes: ["uaa.resource"],
+      };
+    },
+    getClient: async (client_id: string) => {
+      return {
+        client_secret: credentials.clientsecret as string,
+        client_id,
+        redirect_uris: ["http://localhost:3000/callback"], // Temporary value for now
+      };
+    },
+  });
+
+  expressApp.use(
+    mcpAuthRouter({
+      provider: proxyProvider,
+      issuerUrl: new URL(credentials.url),
+      //baseUrl: new URL(""), // I have left this out for the time being due to the defaulting to issuer
+      serviceDocumentationUrl: new URL(
+        "https://docs.cloudfoundry.org/api/uaa/version/77.34.0/index.html#authorization",
+      ),
+    }),
+  );
 }
