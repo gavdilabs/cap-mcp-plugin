@@ -11,7 +11,12 @@ const safeLog = (ns: string) => {
   try {
     if (typeof (cds as any)?.log === "function") return (cds as any).log(ns);
   } catch {}
-  return { debug: () => {}, info: () => {}, warn: () => {}, error: () => {} } as any;
+  return {
+    debug: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+  } as any;
 };
 
 // Create both channels so logs show up even if the app configured "mcp" instead of "cds-mcp"

@@ -17,13 +17,22 @@ function getCds(): any {
   return (global as any).cds || cds;
 }
 
-async function resolveServiceInstance(serviceName: string): Promise<any | undefined> {
+async function resolveServiceInstance(
+  serviceName: string,
+): Promise<any | undefined> {
   const CDS = getCds();
-  let svc = CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
+  let svc =
+    CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
   if (svc) return svc;
-  const providers: any[] = (CDS.service && (CDS.service as any).providers) || (CDS.services && (CDS.services as any).providers) || [];
+  const providers: any[] =
+    (CDS.service && (CDS.service as any).providers) ||
+    (CDS.services && (CDS.services as any).providers) ||
+    [];
   if (Array.isArray(providers)) {
-    const found = providers.find((p: any) => p?.definition?.name === serviceName || p?.name === serviceName);
+    const found = providers.find(
+      (p: any) =>
+        p?.definition?.name === serviceName || p?.name === serviceName,
+    );
     if (found) return found;
   }
   // do not connect; rely on served providers only to avoid duplicate cds contexts

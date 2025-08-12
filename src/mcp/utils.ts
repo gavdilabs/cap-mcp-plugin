@@ -91,7 +91,11 @@ export function writeODataDescriptionForResource(
  * Unified MCP tool error response helper
  * Returns a consistent JSON error payload inside MCP content
  */
-export function toolError(code: string, message: string, extra?: Record<string, unknown>): any {
+export function toolError(
+  code: string,
+  message: string,
+  extra?: Record<string, unknown>,
+): any {
   const payload = { error: code, message, ...(extra || {}) };
   return {
     isError: true,
@@ -108,7 +112,10 @@ export function toolError(code: string, message: string, extra?: Record<string, 
  * Formats a payload as MCP result content with a single text part.
  * This ensures compatibility with all MCP clients.
  */
-export function asMcpResult(payload: unknown): { content: Array<any>; structuredContent?: Record<string, unknown> } {
+export function asMcpResult(payload: unknown): {
+  content: Array<any>;
+  structuredContent?: Record<string, unknown>;
+} {
   // Pretty-print for objects, stringify primitives, and split arrays into multiple parts
   const toText = (value: unknown): string => {
     if (typeof value === "string") return value;
@@ -127,7 +134,9 @@ export function asMcpResult(payload: unknown): { content: Array<any>; structured
   if (Array.isArray(payload)) {
     if (payload.length === 0) return { content: [] };
     return {
-      content: payload.map((item) => ({ type: "text", text: toText(item) }) as any),
+      content: payload.map(
+        (item) => ({ type: "text", text: toText(item) }) as any,
+      ),
     };
   }
 

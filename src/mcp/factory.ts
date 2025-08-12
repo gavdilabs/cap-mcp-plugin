@@ -53,7 +53,8 @@ export function createMcpServer(
       // Optionally expose entities as tools based on global/per-entity switches
       const globalWrap = !!config.wrap_entities_to_actions;
       const localWrap = entry.wrap?.tools;
-      const enabled = localWrap === true || (localWrap === undefined && globalWrap);
+      const enabled =
+        localWrap === true || (localWrap === undefined && globalWrap);
       if (enabled) {
         const modes = config.wrap_entity_modes ?? ["query", "get"];
         registerEntityWrappers(entry, server, authEnabled, modes);

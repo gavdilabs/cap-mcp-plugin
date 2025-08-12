@@ -1,4 +1,8 @@
-import { McpAnnotationPrompt, McpResourceOption, McpAnnotationWrap } from "./types";
+import {
+  McpAnnotationPrompt,
+  McpResourceOption,
+  McpAnnotationWrap,
+} from "./types";
 
 /**
  * Base class for all MCP annotations that provides common properties

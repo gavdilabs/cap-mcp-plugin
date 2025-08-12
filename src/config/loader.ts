@@ -30,7 +30,12 @@ export function loadConfiguration(): CAPConfiguration {
       prompts: cdsEnv?.capabilities?.prompts ?? { listChanged: true },
     },
     wrap_entities_to_actions: cdsEnv?.wrap_entities_to_actions ?? false,
-    wrap_entity_modes: cdsEnv?.wrap_entity_modes ?? ["query", "get", "create", "update"],
+    wrap_entity_modes: cdsEnv?.wrap_entity_modes ?? [
+      "query",
+      "get",
+      "create",
+      "update",
+    ],
   };
 }
 

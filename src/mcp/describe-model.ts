@@ -53,20 +53,23 @@ export function registerDescribeModelTool(server: McpServer): void {
 
       const describeEntity = (service?: string, entity?: string) => {
         if (!entity) return { error: "Please provide 'entity'." };
-        const fqn = service && !entity.includes(".") ? `${service}.${entity}` : entity;
+        const fqn =
+          service && !entity.includes(".") ? `${service}.${entity}` : entity;
         const ent = (refl.entities || {})[fqn] || (refl.entities || {})[entity];
         if (!ent)
           return {
             error: `Entity not found: ${entity}${service ? ` (service ${service})` : ""}`,
           };
 
-        const elements = Object.entries(ent.elements || {}).map(([name, el]: any) => ({
-          name,
-          type: el.type,
-          key: !!el.key,
-          target: el.target || undefined,
-          isArray: !!el.items,
-        }));
+        const elements = Object.entries(ent.elements || {}).map(
+          ([name, el]: any) => ({
+            name,
+            type: el.type,
+            key: !!el.key,
+            target: el.target || undefined,
+            isArray: !!el.items,
+          }),
+        );
 
         const keys = elements.filter((e) => e.key).map((e) => e.name);
         const sampleTop = 5;
@@ -115,5 +118,3 @@ export function registerDescribeModelTool(server: McpServer): void {
     },
   );
 }
-
-

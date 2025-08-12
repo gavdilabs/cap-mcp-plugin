@@ -47,17 +47,27 @@ async function withTimeout<T>(
  * - Falls back to known service providers (when available)
  * Note: We deliberately avoid creating new connections here to not duplicate contexts.
  */
-async function resolveServiceInstance(serviceName: string): Promise<any | undefined> {
+async function resolveServiceInstance(
+  serviceName: string,
+): Promise<any | undefined> {
   const CDS = getCds();
   // Direct lookup (both exact and lowercase variants)
-  let svc = CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
+  let svc =
+    CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
   if (svc) return svc;
 
   // Look through known service providers
-  const providers: any[] = (CDS.service && (CDS.service as any).providers) || (CDS.services && (CDS.services as any).providers) || [];
+  const providers: any[] =
+    (CDS.service && (CDS.service as any).providers) ||
+    (CDS.services && (CDS.services as any).providers) ||
+    [];
   if (Array.isArray(providers)) {
-    const found = providers.find((p: any) =>
-      p?.definition?.name === serviceName || p?.name === serviceName || (typeof p?.path === "string" && p.path.includes(serviceName.toLowerCase())),
+    const found = providers.find(
+      (p: any) =>
+        p?.definition?.name === serviceName ||
+        p?.name === serviceName ||
+        (typeof p?.path === "string" &&
+          p.path.includes(serviceName.toLowerCase())),
     );
     if (found) return found;
   }
@@ -96,13 +106,21 @@ export function registerEntityWrappers(
   if (modes.includes("query")) {
     registerQueryTool(resAnno, server, authEnabled);
   }
-  if (modes.includes("get") && resAnno.resourceKeys && resAnno.resourceKeys.size > 0) {
+  if (
+    modes.includes("get") &&
+    resAnno.resourceKeys &&
+    resAnno.resourceKeys.size > 0
+  ) {
     registerGetTool(resAnno, server, authEnabled);
   }
   if (modes.includes("create")) {
     registerCreateTool(resAnno, server, authEnabled);
   }
-  if (modes.includes("update") && resAnno.resourceKeys && resAnno.resourceKeys.size > 0) {
+  if (
+    modes.includes("update") &&
+    resAnno.resourceKeys &&
+    resAnno.resourceKeys.size > 0
+  ) {
     registerUpdateTool(resAnno, server, authEnabled);
   }
 }
@@ -138,48 +156,66 @@ function registerQueryTool(
   const propKeys = Array.from(resAnno.properties.keys());
   const fieldEnum = (propKeys.length
     ? z.enum(propKeys as [string, ...string[]])
-    : z.enum(["__dummy__"]).transform(() => "__dummy__")) as unknown as z.ZodEnum<[string, ...string[]]>;
+    : z
+        .enum(["__dummy__"])
+        .transform(() => "__dummy__")) as unknown as z.ZodEnum<
+    [string, ...string[]]
+  >;
   const inputZod = z
     .object({
-    top: z.number().int().min(1).max(MAX_TOP).default(25).describe("Rows (default 25)"),
-    skip: z.number().int().min(0).default(0).describe("Offset"),
-    select: z.array(fieldEnum).optional(),
-    orderby: z
-      .array(
-        z.object({
-          field: fieldEnum,
-          dir: z.enum(["asc", "desc"]).default("asc"),
-        }),
-      )
-      .optional(),
-    where: z
-      .array(
-        z.object({
-          field: fieldEnum,
-          op: z.enum([
-            "eq",
-            "ne",
-            "gt",
-            "ge",
-            "lt",
-            "le",
-            "contains",
-            "startswith",
-            "endswith",
-            "in",
-          ]),
-          value: z.union([z.string(), z.number(), z.boolean(), z.array(z.union([z.string(), z.number()]))]),
-        }),
-      )
-      .optional(),
-    q: z.string().optional().describe("Quick text search"),
-    return: z.enum(["rows", "count", "aggregate"]).default("rows").optional(),
-    aggregate: z
-      .array(
-        z.object({ field: fieldEnum, fn: z.enum(["sum", "avg", "min", "max", "count"]) }),
-      )
-      .optional(),
-    explain: z.boolean().optional(),
+      top: z
+        .number()
+        .int()
+        .min(1)
+        .max(MAX_TOP)
+        .default(25)
+        .describe("Rows (default 25)"),
+      skip: z.number().int().min(0).default(0).describe("Offset"),
+      select: z.array(fieldEnum).optional(),
+      orderby: z
+        .array(
+          z.object({
+            field: fieldEnum,
+            dir: z.enum(["asc", "desc"]).default("asc"),
+          }),
+        )
+        .optional(),
+      where: z
+        .array(
+          z.object({
+            field: fieldEnum,
+            op: z.enum([
+              "eq",
+              "ne",
+              "gt",
+              "ge",
+              "lt",
+              "le",
+              "contains",
+              "startswith",
+              "endswith",
+              "in",
+            ]),
+            value: z.union([
+              z.string(),
+              z.number(),
+              z.boolean(),
+              z.array(z.union([z.string(), z.number()])),
+            ]),
+          }),
+        )
+        .optional(),
+      q: z.string().optional().describe("Quick text search"),
+      return: z.enum(["rows", "count", "aggregate"]).default("rows").optional(),
+      aggregate: z
+        .array(
+          z.object({
+            field: fieldEnum,
+            fn: z.enum(["sum", "avg", "min", "max", "count"]),
+          }),
+        )
+        .optional(),
+      explain: z.boolean().optional(),
     })
     .strict();
   const inputSchema: Record<string, z.ZodType> = {
@@ -198,47 +234,59 @@ function registerQueryTool(
   const desc = `List ${resAnno.target}. Use structured filters (where), top/skip/orderby/select. For fields & examples call cap_describe_model.${hint}`;
 
   const queryHandler = async (rawArgs: Record<string, unknown>) => {
-      const parsed = inputZod.safeParse(rawArgs);
-      if (!parsed.success) {
-        return toolError("INVALID_INPUT", "Query arguments failed validation", { issues: parsed.error.issues });
-      }
-      const args = parsed.data;
-      const CDS = getCds();
-      LOGGER.debug(
-        `[EXECUTION TIME] Query tool: Looking for service: ${resAnno.serviceName}, available services:`,
-        Object.keys(CDS.services || {}),
+    const parsed = inputZod.safeParse(rawArgs);
+    if (!parsed.success) {
+      return toolError("INVALID_INPUT", "Query arguments failed validation", {
+        issues: parsed.error.issues,
+      });
+    }
+    const args = parsed.data;
+    const CDS = getCds();
+    LOGGER.debug(
+      `[EXECUTION TIME] Query tool: Looking for service: ${resAnno.serviceName}, available services:`,
+      Object.keys(CDS.services || {}),
+    );
+    const svc = await resolveServiceInstance(resAnno.serviceName);
+
+    if (!svc) {
+      const msg = `Service not found: ${resAnno.serviceName}. Available: ${Object.keys(CDS.services || {}).join(", ")}`;
+      LOGGER.error(msg);
+      return toolError("ERR_MISSING_SERVICE", msg);
+    }
+
+    let q: any;
+    try {
+      q = buildQuery(CDS, args, resAnno, propKeys);
+    } catch (e: any) {
+      return toolError("FILTER_PARSE_ERROR", e?.message || String(e));
+    }
+
+    try {
+      const t0 = Date.now();
+      const response = await withTimeout(
+        executeQuery(CDS, svc, args, q),
+        TIMEOUT_MS,
+        toolName,
       );
-      const svc = await resolveServiceInstance(resAnno.serviceName);
-
-      if (!svc) {
-        const msg = `Service not found: ${resAnno.serviceName}. Available: ${Object.keys(CDS.services || {}).join(", ")}`;
-        LOGGER.error(msg);
-        return toolError("ERR_MISSING_SERVICE", msg);
-      }
-
-      let q: any;
-      try {
-        q = buildQuery(CDS, args, resAnno, propKeys);
-      } catch (e: any) {
-        return toolError("FILTER_PARSE_ERROR", e?.message || String(e));
-      }
-
-      try {
-        const t0 = Date.now();
-        const response = await withTimeout(executeQuery(CDS, svc, args, q), TIMEOUT_MS, toolName);
-        LOGGER.debug(
-          `[EXECUTION TIME] Query tool completed: ${toolName} in ${Date.now() - t0}ms`,
-          { resultKind: args.return ?? "rows" },
-        );
-        return asMcpResult(args.explain ? { data: response, plan: undefined } : response);
-      } catch (error: any) {
-        const msg = `QUERY_FAILED: ${error?.message || String(error)}`;
-        LOGGER.error(msg, error);
-        return toolError("QUERY_FAILED", msg);
-      }
+      LOGGER.debug(
+        `[EXECUTION TIME] Query tool completed: ${toolName} in ${Date.now() - t0}ms`,
+        { resultKind: args.return ?? "rows" },
+      );
+      return asMcpResult(
+        args.explain ? { data: response, plan: undefined } : response,
+      );
+    } catch (error: any) {
+      const msg = `QUERY_FAILED: ${error?.message || String(error)}`;
+      LOGGER.error(msg, error);
+      return toolError("QUERY_FAILED", msg);
+    }
   };
 
-  server.registerTool(toolName, { title: toolName, description: desc, inputSchema }, queryHandler as any);
+  server.registerTool(
+    toolName,
+    { title: toolName, description: desc, inputSchema },
+    queryHandler as any,
+  );
 }
 
 /**
@@ -263,65 +311,85 @@ function registerGetTool(
   const desc = `Get one ${resAnno.target} by key(s): ${keyList}. For fields & examples call cap_describe_model.${hint}`;
 
   const getHandler = async (args: Record<string, unknown>) => {
-      const startTime = Date.now();
-      const CDS = getCds();
-      LOGGER.debug(`[EXECUTION TIME] Get tool invoked: ${toolName}`, { args });
+    const startTime = Date.now();
+    const CDS = getCds();
+    LOGGER.debug(`[EXECUTION TIME] Get tool invoked: ${toolName}`, { args });
 
-      const svc = await resolveServiceInstance(resAnno.serviceName);
-      if (!svc) {
-        const msg = `Service not found: ${resAnno.serviceName}. Available: ${Object.keys(CDS.services || {}).join(", ")}`;
-        LOGGER.error(msg);
-        return toolError("ERR_MISSING_SERVICE", msg);
-      }
+    const svc = await resolveServiceInstance(resAnno.serviceName);
+    if (!svc) {
+      const msg = `Service not found: ${resAnno.serviceName}. Available: ${Object.keys(CDS.services || {}).join(", ")}`;
+      LOGGER.error(msg);
+      return toolError("ERR_MISSING_SERVICE", msg);
+    }
 
-      // Normalize single-key shorthand, case-insensitive keys, and value-only payloads
-      let normalizedArgs: any = args as any;
-      if (resAnno.resourceKeys.size === 1) {
-        const onlyKey = Array.from(resAnno.resourceKeys.keys())[0];
-        if (normalizedArgs == null || typeof normalizedArgs !== "object" || Array.isArray(normalizedArgs)) {
-          normalizedArgs = { [onlyKey]: normalizedArgs };
-        } else if (normalizedArgs[onlyKey] === undefined && (normalizedArgs.value !== undefined)) {
-          normalizedArgs[onlyKey] = normalizedArgs.value;
-        } else if (normalizedArgs[onlyKey] === undefined) {
-          const alt = Object.entries(normalizedArgs).find(([kk]) => String(kk).toLowerCase() === String(onlyKey).toLowerCase());
-          if (alt) normalizedArgs[onlyKey] = (normalizedArgs as any)[alt[0]];
-        }
-      }
-
-      const keys: Record<string, unknown> = {};
-      for (const [k] of resAnno.resourceKeys.entries()) {
-        let provided = (normalizedArgs as any)[k];
-        if (provided === undefined) {
-          const alt = Object.entries(normalizedArgs || {}).find(([kk]) => String(kk).toLowerCase() === String(k).toLowerCase());
-          if (alt) provided = (normalizedArgs as any)[alt[0]];
-        }
-        if (provided === undefined) {
-          LOGGER.warn(`Get tool missing required key`, { key: k, toolName });
-          return toolError("MISSING_KEY", `Missing key '${k}'`);
-        }
-        const raw = provided;
-        keys[k] = typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : raw;
-      }
-
-      LOGGER.debug(`Executing READ on ${resAnno.target} with keys`, keys);
-
-      try {
-        const response = await withTimeout(svc.read(resAnno.target, keys), TIMEOUT_MS, `${toolName}`);
-
-        LOGGER.debug(
-          `[EXECUTION TIME] Get tool completed: ${toolName} in ${Date.now() - startTime}ms`,
-          { found: !!response },
+    // Normalize single-key shorthand, case-insensitive keys, and value-only payloads
+    let normalizedArgs: any = args as any;
+    if (resAnno.resourceKeys.size === 1) {
+      const onlyKey = Array.from(resAnno.resourceKeys.keys())[0];
+      if (
+        normalizedArgs == null ||
+        typeof normalizedArgs !== "object" ||
+        Array.isArray(normalizedArgs)
+      ) {
+        normalizedArgs = { [onlyKey]: normalizedArgs };
+      } else if (
+        normalizedArgs[onlyKey] === undefined &&
+        normalizedArgs.value !== undefined
+      ) {
+        normalizedArgs[onlyKey] = normalizedArgs.value;
+      } else if (normalizedArgs[onlyKey] === undefined) {
+        const alt = Object.entries(normalizedArgs).find(
+          ([kk]) => String(kk).toLowerCase() === String(onlyKey).toLowerCase(),
         );
-
-        return asMcpResult(response ?? null);
-      } catch (error: any) {
-        const msg = `GET_FAILED: ${error?.message || String(error)}`;
-        LOGGER.error(msg, error);
-        return toolError("GET_FAILED", msg);
+        if (alt) normalizedArgs[onlyKey] = (normalizedArgs as any)[alt[0]];
       }
+    }
+
+    const keys: Record<string, unknown> = {};
+    for (const [k] of resAnno.resourceKeys.entries()) {
+      let provided = (normalizedArgs as any)[k];
+      if (provided === undefined) {
+        const alt = Object.entries(normalizedArgs || {}).find(
+          ([kk]) => String(kk).toLowerCase() === String(k).toLowerCase(),
+        );
+        if (alt) provided = (normalizedArgs as any)[alt[0]];
+      }
+      if (provided === undefined) {
+        LOGGER.warn(`Get tool missing required key`, { key: k, toolName });
+        return toolError("MISSING_KEY", `Missing key '${k}'`);
+      }
+      const raw = provided;
+      keys[k] =
+        typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : raw;
+    }
+
+    LOGGER.debug(`Executing READ on ${resAnno.target} with keys`, keys);
+
+    try {
+      const response = await withTimeout(
+        svc.read(resAnno.target, keys),
+        TIMEOUT_MS,
+        `${toolName}`,
+      );
+
+      LOGGER.debug(
+        `[EXECUTION TIME] Get tool completed: ${toolName} in ${Date.now() - startTime}ms`,
+        { found: !!response },
+      );
+
+      return asMcpResult(response ?? null);
+    } catch (error: any) {
+      const msg = `GET_FAILED: ${error?.message || String(error)}`;
+      LOGGER.error(msg, error);
+      return toolError("GET_FAILED", msg);
+    }
   };
 
-  server.registerTool(toolName, { title: toolName, description: desc, inputSchema }, getHandler as any);
+  server.registerTool(
+    toolName,
+    { title: toolName, description: desc, inputSchema },
+    getHandler as any,
+  );
 }
 
 /**
@@ -355,64 +423,72 @@ function registerCreateTool(
   const desc = `Create a new ${resAnno.target}. Provide fields; service applies defaults.${hint}`;
 
   const createHandler = async (args: Record<string, unknown>) => {
-      const CDS = getCds();
-      const { INSERT } = CDS.ql;
-      const svc = await resolveServiceInstance(resAnno.serviceName);
-      if (!svc) {
-        const msg = `Service not found: ${resAnno.serviceName}. Available: ${Object.keys(CDS.services || {}).join(", ")}`;
-        LOGGER.error(msg);
-        return toolError("ERR_MISSING_SERVICE", msg);
-      }
+    const CDS = getCds();
+    const { INSERT } = CDS.ql;
+    const svc = await resolveServiceInstance(resAnno.serviceName);
+    if (!svc) {
+      const msg = `Service not found: ${resAnno.serviceName}. Available: ${Object.keys(CDS.services || {}).join(", ")}`;
+      LOGGER.error(msg);
+      return toolError("ERR_MISSING_SERVICE", msg);
+    }
 
-      // Build data object from provided args, limited to known properties
-      // Normalize payload: prefer *_ID for associations and coerce numeric strings
-      const data: Record<string, unknown> = {};
-      for (const [propName, cdsType] of resAnno.properties.entries()) {
-        const isAssociation = String(cdsType).toLowerCase().includes("association");
-        if (isAssociation) {
-          const fkName = `${propName}_ID`;
-          if (args[fkName] !== undefined) {
-            const val = (args as any)[fkName];
-            data[fkName] = typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
-          }
-          continue;
+    // Build data object from provided args, limited to known properties
+    // Normalize payload: prefer *_ID for associations and coerce numeric strings
+    const data: Record<string, unknown> = {};
+    for (const [propName, cdsType] of resAnno.properties.entries()) {
+      const isAssociation = String(cdsType)
+        .toLowerCase()
+        .includes("association");
+      if (isAssociation) {
+        const fkName = `${propName}_ID`;
+        if (args[fkName] !== undefined) {
+          const val = (args as any)[fkName];
+          data[fkName] =
+            typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
         }
-        if (args[propName] !== undefined) {
-          const val = (args as any)[propName];
-          data[propName] = typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
-        }
+        continue;
       }
+      if (args[propName] !== undefined) {
+        const val = (args as any)[propName];
+        data[propName] =
+          typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
+      }
+    }
 
-      const tx = svc.tx({ user: getAccessRights(authEnabled) });
+    const tx = svc.tx({ user: getAccessRights(authEnabled) });
+    try {
+      const response = await withTimeout(
+        tx.run(INSERT.into(resAnno.target).entries(data)),
+        TIMEOUT_MS,
+        toolName,
+        async () => {
+          try {
+            await tx.rollback();
+          } catch {}
+        },
+      );
       try {
-        const response = await withTimeout(
-          tx.run(INSERT.into(resAnno.target).entries(data)),
-          TIMEOUT_MS,
-          toolName,
-          async () => {
-            try {
-              await tx.rollback();
-            } catch {}
-          },
-        );
-        try {
-          await tx.commit();
-        } catch {}
-        return asMcpResult(response ?? {});
-      } catch (error: any) {
-        try {
-          await tx.rollback();
-        } catch {}
-        const isTimeout = String(error?.message || "").includes("timed out");
-        const msg = isTimeout
-          ? `${toolName} timed out after ${TIMEOUT_MS}ms`
-          : `CREATE_FAILED: ${error?.message || String(error)}`;
-        LOGGER.error(msg, error);
-        return toolError(isTimeout ? "TIMEOUT" : "CREATE_FAILED", msg);
-      }
+        await tx.commit();
+      } catch {}
+      return asMcpResult(response ?? {});
+    } catch (error: any) {
+      try {
+        await tx.rollback();
+      } catch {}
+      const isTimeout = String(error?.message || "").includes("timed out");
+      const msg = isTimeout
+        ? `${toolName} timed out after ${TIMEOUT_MS}ms`
+        : `CREATE_FAILED: ${error?.message || String(error)}`;
+      LOGGER.error(msg, error);
+      return toolError(isTimeout ? "TIMEOUT" : "CREATE_FAILED", msg);
+    }
   };
 
-  server.registerTool(toolName, { title: toolName, description: desc, inputSchema }, createHandler as any);
+  server.registerTool(
+    toolName,
+    { title: toolName, description: desc, inputSchema },
+    createHandler as any,
+  );
 }
 
 /**
@@ -454,81 +530,89 @@ function registerUpdateTool(
   const desc = `Update ${resAnno.target} by key(s): ${keyList}. Provide fields to update.${hint}`;
 
   const updateHandler = async (args: Record<string, unknown>) => {
-      const CDS = getCds();
-      const { UPDATE } = CDS.ql;
-      const svc = await resolveServiceInstance(resAnno.serviceName);
-      if (!svc) {
-        const msg = `Service not found: ${resAnno.serviceName}. Available: ${Object.keys(CDS.services || {}).join(", ")}`;
-        LOGGER.error(msg);
-        return toolError("ERR_MISSING_SERVICE", msg);
-      }
+    const CDS = getCds();
+    const { UPDATE } = CDS.ql;
+    const svc = await resolveServiceInstance(resAnno.serviceName);
+    if (!svc) {
+      const msg = `Service not found: ${resAnno.serviceName}. Available: ${Object.keys(CDS.services || {}).join(", ")}`;
+      LOGGER.error(msg);
+      return toolError("ERR_MISSING_SERVICE", msg);
+    }
 
-      // Extract keys and update fields
-      const keys: Record<string, unknown> = {};
-      for (const [k] of resAnno.resourceKeys.entries()) {
-        if (args[k] === undefined) {
-          return {
-            isError: true,
-            content: [{ type: "text", text: `Missing key '${k}'` }],
-          };
-        }
-        keys[k] = args[k];
+    // Extract keys and update fields
+    const keys: Record<string, unknown> = {};
+    for (const [k] of resAnno.resourceKeys.entries()) {
+      if (args[k] === undefined) {
+        return {
+          isError: true,
+          content: [{ type: "text", text: `Missing key '${k}'` }],
+        };
       }
+      keys[k] = args[k];
+    }
 
-      // Normalize updates: prefer *_ID for associations and coerce numeric strings
-      const updates: Record<string, unknown> = {};
-      for (const [propName, cdsType] of resAnno.properties.entries()) {
-        if (resAnno.resourceKeys.has(propName)) continue;
-        const isAssociation = String(cdsType).toLowerCase().includes("association");
-        if (isAssociation) {
-          const fkName = `${propName}_ID`;
-          if (args[fkName] !== undefined) {
-            const val = (args as any)[fkName];
-            updates[fkName] = typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
-          }
-          continue;
+    // Normalize updates: prefer *_ID for associations and coerce numeric strings
+    const updates: Record<string, unknown> = {};
+    for (const [propName, cdsType] of resAnno.properties.entries()) {
+      if (resAnno.resourceKeys.has(propName)) continue;
+      const isAssociation = String(cdsType)
+        .toLowerCase()
+        .includes("association");
+      if (isAssociation) {
+        const fkName = `${propName}_ID`;
+        if (args[fkName] !== undefined) {
+          const val = (args as any)[fkName];
+          updates[fkName] =
+            typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
         }
-        if (args[propName] !== undefined) {
-          const val = (args as any)[propName];
-          updates[propName] = typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
-        }
+        continue;
       }
-      if (Object.keys(updates).length === 0) {
-        return toolError("NO_FIELDS", "No fields provided to update");
+      if (args[propName] !== undefined) {
+        const val = (args as any)[propName];
+        updates[propName] =
+          typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
       }
+    }
+    if (Object.keys(updates).length === 0) {
+      return toolError("NO_FIELDS", "No fields provided to update");
+    }
 
-      const tx = svc.tx({ user: getAccessRights(authEnabled) });
+    const tx = svc.tx({ user: getAccessRights(authEnabled) });
+    try {
+      const response = await withTimeout(
+        tx.run(UPDATE(resAnno.target).set(updates).where(keys)),
+        TIMEOUT_MS,
+        toolName,
+        async () => {
+          try {
+            await tx.rollback();
+          } catch {}
+        },
+      );
+
       try {
-        const response = await withTimeout(
-          tx.run(UPDATE(resAnno.target).set(updates).where(keys)),
-          TIMEOUT_MS,
-          toolName,
-          async () => {
-            try {
-              await tx.rollback();
-            } catch {}
-          },
-        );
+        await tx.commit();
+      } catch {}
 
-        try {
-          await tx.commit();
-        } catch {}
-
-        return asMcpResult(response ?? {});
-      } catch (error: any) {
-        try {
-          await tx.rollback();
-        } catch {}
-        const isTimeout = String(error?.message || "").includes("timed out");
-        const msg = isTimeout
-          ? `${toolName} timed out after ${TIMEOUT_MS}ms`
-          : `UPDATE_FAILED: ${error?.message || String(error)}`;
-        LOGGER.error(msg, error);
-        return toolError(isTimeout ? "TIMEOUT" : "UPDATE_FAILED", msg);
-      }
+      return asMcpResult(response ?? {});
+    } catch (error: any) {
+      try {
+        await tx.rollback();
+      } catch {}
+      const isTimeout = String(error?.message || "").includes("timed out");
+      const msg = isTimeout
+        ? `${toolName} timed out after ${TIMEOUT_MS}ms`
+        : `UPDATE_FAILED: ${error?.message || String(error)}`;
+      LOGGER.error(msg, error);
+      return toolError(isTimeout ? "TIMEOUT" : "UPDATE_FAILED", msg);
+    }
   };
 
-  server.registerTool(toolName, { title: toolName, description: desc, inputSchema }, updateHandler as any);
+  server.registerTool(
+    toolName,
+    { title: toolName, description: desc, inputSchema },
+    updateHandler as any,
+  );
 }
 
 // Helper: compile structured inputs into a CDS query
@@ -554,22 +638,29 @@ function buildQuery(
     qy = qy.orderBy(orderFragments);
   }
 
-  if ((typeof args.q === "string" && args.q.length > 0) || (args.where?.length)) {
+  if ((typeof args.q === "string" && args.q.length > 0) || args.where?.length) {
     const ands: any[] = [];
 
     if (args.q) {
       const textFields = Array.from(resAnno.properties.keys()).filter((k) =>
         /string/i.test(String(resAnno.properties.get(k))),
       );
-      const ors = textFields.map((f) => CDS.parse.expr(`contains(${f}, '${String(args.q).replace(/'/g, "''")}')`));
-      if (ors.length) ands.push(CDS.parse.expr(ors.map((x) => `(${x})`).join(" or ")));
+      const ors = textFields.map((f) =>
+        CDS.parse.expr(
+          `contains(${f}, '${String(args.q).replace(/'/g, "''")}')`,
+        ),
+      );
+      if (ors.length)
+        ands.push(CDS.parse.expr(ors.map((x) => `(${x})`).join(" or ")));
     }
 
     for (const c of args.where || []) {
       const { field, op, value } = c;
       if (op === "in" && Array.isArray(value)) {
         const list = value
-          .map((v) => (typeof v === "string" ? `'${v.replace(/'/g, "''")}'` : String(v)))
+          .map((v) =>
+            typeof v === "string" ? `'${v.replace(/'/g, "''")}'` : String(v),
+          )
           .join(",");
         ands.push(CDS.parse.expr(`${field} in (${list})`));
         continue;
@@ -595,18 +686,27 @@ function buildQuery(
 // - rows (default): returns the selected rows
 // - count: returns { count: number }
 // - aggregate: returns aggregation result rows based on provided definitions
-async function executeQuery(CDS: any, svc: any, args: any, baseQuery: any): Promise<any> {
+async function executeQuery(
+  CDS: any,
+  svc: any,
+  args: any,
+  baseQuery: any,
+): Promise<any> {
   const { SELECT } = CDS.ql;
   switch (args.return) {
     case "count": {
-      const countQuery = SELECT.from(baseQuery.SELECT.from).columns("count(1) as count");
+      const countQuery = SELECT.from(baseQuery.SELECT.from).columns(
+        "count(1) as count",
+      );
       const result = await svc.run(countQuery);
       const row = Array.isArray(result) ? result[0] : result;
       return { count: row?.count ?? 0 };
     }
     case "aggregate": {
       if (!args.aggregate?.length) return [];
-      const cols = args.aggregate.map((a: any) => `${a.fn}(${a.field}) as ${a.fn}_${a.field}`);
+      const cols = args.aggregate.map(
+        (a: any) => `${a.fn}(${a.field}) as ${a.fn}_${a.field}`,
+      );
       const aggQuery = SELECT.from(baseQuery.SELECT.from).columns(...cols);
       return svc.run(aggQuery);
     }
@@ -614,7 +714,3 @@ async function executeQuery(CDS: any, svc: any, args: any, baseQuery: any): Prom
       return svc.run(baseQuery);
   }
 }
-
-
-
-

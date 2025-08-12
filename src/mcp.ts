@@ -114,21 +114,27 @@ export default class McpPlugin {
    */
   private registerMcpSessionRoute(): void {
     LOGGER.debug("Registering MCP entry point");
-    
+
     // Test log to verify logger is working
     LOGGER.info("MCP endpoint registration started");
     LOGGER.debug("MCP endpoint registration debug test");
     LOGGER.warn("MCP endpoint registration warning test");
-    
+
     this.expressApp?.post("/mcp", (req, res) => {
       LOGGER.debug("CONTEXT", cds.context); // TODO: Remove this line after testing
       try {
         // Shallow log of incoming method to trace timeouts/hangs without leaking sensitive payloads
-        const method = typeof req.body?.method === "string" ? req.body.method : undefined;
+        const method =
+          typeof req.body?.method === "string" ? req.body.method : undefined;
         const toolOrResource = req.body?.params?.name || req.body?.params?.uri;
         const id = req.body?.id;
         const requiresResponse = typeof id !== "undefined";
-        LOGGER.debug("MCP JSON-RPC", { method, toolOrResource, id, requiresResponse });
+        LOGGER.debug("MCP JSON-RPC", {
+          method,
+          toolOrResource,
+          id,
+          requiresResponse,
+        });
       } catch (e) {
         // Defensive: never let logging break the handler
         LOGGER.warn("Failed to log MCP JSON-RPC overview", e);
@@ -139,18 +145,18 @@ export default class McpPlugin {
         // Store original methods
         const originalJson = res.json;
         const originalSend = res.send;
-        
+
         // Override json method with proper binding
-        res.json = function(body: any) {
+        res.json = function (body: any) {
           try {
-            LOGGER.info("MCP response (json) - RESPONSE LOGGER WORKING!", { 
+            LOGGER.info("MCP response (json) - RESPONSE LOGGER WORKING!", {
               statusCode: res.statusCode,
-              body: body 
+              body: body,
             });
             // Fallback console.log to ensure visibility
-            console.log("🎯 MCP RESPONSE LOGGER (json):", { 
+            console.log("🎯 MCP RESPONSE LOGGER (json):", {
               statusCode: res.statusCode,
-              body: body 
+              body: body,
             });
           } catch (logError) {
             LOGGER.warn("Failed to log MCP JSON response", logError);
@@ -160,21 +166,21 @@ export default class McpPlugin {
         };
 
         // Override send method with proper binding
-        res.send = function(body: any) {
+        res.send = function (body: any) {
           try {
             let out: any = body;
             // Avoid logging raw buffers unreadably
             if (Buffer.isBuffer(body)) {
               out = body.toString("utf8");
             }
-            LOGGER.info("MCP response (send) - RESPONSE LOGGER WORKING!", { 
+            LOGGER.info("MCP response (send) - RESPONSE LOGGER WORKING!", {
               statusCode: res.statusCode,
-              body: out 
+              body: out,
             });
             // Fallback console.log to ensure visibility
-            console.log("🎯 MCP RESPONSE LOGGER (send):", { 
+            console.log("🎯 MCP RESPONSE LOGGER (send):", {
               statusCode: res.statusCode,
-              body: out 
+              body: out,
             });
           } catch (logError) {
             LOGGER.warn("Failed to log MCP send response", logError);
@@ -195,10 +201,13 @@ export default class McpPlugin {
       if (!wantsJson || !wantsSse) {
         const patched = "application/json,text/event-stream";
         req.headers["accept"] = patched;
-        LOGGER.warn("Patched Accept header to ensure compatibility with MCP transport", {
-          originalAccept,
-          patchedAccept: patched,
-        });
+        LOGGER.warn(
+          "Patched Accept header to ensure compatibility with MCP transport",
+          {
+            originalAccept,
+            patchedAccept: patched,
+          },
+        );
       }
       LOGGER.debug("MCP request received", {
         hasSessionId: !!sessionIdHeader,
@@ -209,103 +218,106 @@ export default class McpPlugin {
 
       (async () => {
         let session =
-        !sessionIdHeader && isInitializeRequest(req.body)
-          ? await this.sessionManager.createSession(
-              this.config,
-              this.annotations,
-            )
-          : this.sessionManager.getSession(sessionIdHeader);
+          !sessionIdHeader && isInitializeRequest(req.body)
+            ? await this.sessionManager.createSession(
+                this.config,
+                this.annotations,
+              )
+            : this.sessionManager.getSession(sessionIdHeader);
 
-      // Strict: if no session is found and this isn't an initialize, reject per spec
-      if (!session) {
-        if (!isInitializeRequest(req.body)) {
-          // If auth is enabled and missing/invalid, return 401 to reflect auth boundary first
-          if (this.config.auth === "inherit") {
-            return res.status(401).json({ error: { code: 10, message: "Unauthorized" } });
+        // Strict: if no session is found and this isn't an initialize, reject per spec
+        if (!session) {
+          if (!isInitializeRequest(req.body)) {
+            // If auth is enabled and missing/invalid, return 401 to reflect auth boundary first
+            if (this.config.auth === "inherit") {
+              return res
+                .status(401)
+                .json({ error: { code: 10, message: "Unauthorized" } });
+            }
+            res.status(400).json({
+              error: {
+                code: -32000,
+                message: "No valid sessions ID provided",
+              },
+            });
+            return;
           }
-          res.status(400).json({
+        }
+        if (!session) return; // Type narrowing for TS
+
+        try {
+          const t0 = Date.now();
+          await session.transport.handleRequest(req, res, req.body);
+          // Allow one tick for flushing
+          await new Promise((r) => setImmediate(r));
+          LOGGER.debug("MCP request handled", { durationMs: Date.now() - t0 });
+          // Additional logging to verify response was sent
+          const requiresResponse = typeof req.body?.id !== "undefined";
+          if (res.headersSent) {
+            LOGGER.debug("Response headers were sent successfully");
+          } else if (requiresResponse) {
+            LOGGER.warn(
+              "Response headers were not sent - request had an id and expected a response",
+            );
+            // Defensive fallback to avoid client hangs (e.g., OpenAI)
+            // For tools/call specifically, return a spec-compliant 'result' with content instead of JSON-RPC error
+            const isToolsCall = req.body?.method === "tools/call";
+            const fallbackResult = isToolsCall
+              ? {
+                  jsonrpc: "2.0",
+                  id: req.body?.id ?? null,
+                  result: {
+                    content: [
+                      {
+                        type: "text",
+                        text: "MCP transport did not produce a response. Hint: Ensure Accept includes application/json and text/event-stream and a valid mcp-session-id is forwarded.",
+                      },
+                    ],
+                  },
+                }
+              : {
+                  jsonrpc: "2.0",
+                  id: req.body?.id ?? null,
+                  error: {
+                    code: -32000,
+                    message: "No response produced by MCP transport",
+                    data: {
+                      hint: "Ensure Accept includes application/json and text/event-stream and a valid mcp-session-id is forwarded",
+                      originalAccept,
+                      effectiveAccept: req.headers["accept"],
+                      hasSessionId: !!sessionIdHeader,
+                    },
+                  },
+                };
+            try {
+              if (!res.headersSent) res.status(200).json(fallbackResult);
+            } catch (_) {}
+          } else {
+            LOGGER.debug("No response expected (notification)");
+          }
+
+          return;
+        } catch (e) {
+          LOGGER.error("MCP request handling failed", e);
+          if (res.headersSent) return;
+          res.status(500).json({
+            jsonrpc: "2.0",
             error: {
-              code: -32000,
-              message: "No valid sessions ID provided",
+              code: -32603,
+              message: "Internal Error: Transport failed",
+              id: null,
             },
           });
           return;
         }
-      }
-      if (!session) return; // Type narrowing for TS
-
-      try {
-        const t0 = Date.now();
-        await session.transport.handleRequest(req, res, req.body);
-        // Allow one tick for flushing
-        await new Promise((r) => setImmediate(r));
-        LOGGER.debug("MCP request handled", { durationMs: Date.now() - t0 });
-        // Additional logging to verify response was sent
-        const requiresResponse = typeof req.body?.id !== "undefined";
-        if (res.headersSent) {
-          LOGGER.debug("Response headers were sent successfully");
-        } else if (requiresResponse) {
-          LOGGER.warn("Response headers were not sent - request had an id and expected a response");
-          // Defensive fallback to avoid client hangs (e.g., OpenAI)
-          // For tools/call specifically, return a spec-compliant 'result' with content instead of JSON-RPC error
-          const isToolsCall = req.body?.method === "tools/call";
-          const fallbackResult = isToolsCall
-            ? {
-                jsonrpc: "2.0",
-                id: req.body?.id ?? null,
-                result: {
-                  content: [
-                    {
-                      type: "text",
-                      text:
-                        "MCP transport did not produce a response. Hint: Ensure Accept includes application/json and text/event-stream and a valid mcp-session-id is forwarded.",
-                    },
-                  ],
-                },
-              }
-            : {
-                jsonrpc: "2.0",
-                id: req.body?.id ?? null,
-                error: {
-                  code: -32000,
-                  message: "No response produced by MCP transport",
-                  data: {
-                    hint:
-                      "Ensure Accept includes application/json and text/event-stream and a valid mcp-session-id is forwarded",
-                    originalAccept,
-                    effectiveAccept: req.headers["accept"],
-                    hasSessionId: !!sessionIdHeader,
-                  },
-                },
-              };
-          try {
-            if (!res.headersSent) res.status(200).json(fallbackResult);
-          } catch (_) {}
-        } else {
-          LOGGER.debug("No response expected (notification)");
-        }
-        
-        return;
-      } catch (e) {
-        LOGGER.error("MCP request handling failed", e);
-        if (res.headersSent) return;
-        res.status(500).json({
-          jsonrpc: "2.0",
-          error: {
-            code: -32603,
-            message: "Internal Error: Transport failed",
-            id: null,
-          },
-        });
-        return;
-      }
       })().catch((e) => {
         LOGGER.error("Unhandled MCP handler error", e);
         if (!res.headersSent) {
-          res.status(500).json({ error: { code: -32603, message: "Internal Error" } });
+          res
+            .status(500)
+            .json({ error: { code: -32603, message: "Internal Error" } });
         }
       });
     });
   }
 }
-

@@ -39,7 +39,9 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
   }
 
   const result: ParsedAnnotations = new Map<string, AnnotatedMcpEntry>();
-  for (const [key, value] of Object.entries(model.definitions as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(
+    model.definitions as Record<string, unknown>,
+  )) {
     // Narrow unknown to csn.Definition with a runtime check
     const def = value as csn.Definition;
     const parsedAnnotations = parseAnnotations(def);
