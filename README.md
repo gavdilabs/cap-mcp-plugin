@@ -504,7 +504,6 @@ npm test -- --testPathPattern=integration
 ### Known Limitations
 - **SDK Bug**: Dynamic resource queries require all query parameters due to `@modelcontextprotocol/sdk` RFC template string issue
 - **Authentication Inheritance**: MCP authentication is tightly coupled to CAP's authentication system
-- **Session Cleanup**: MCP sessions are cleaned up on HTTP connection close, not on explicit disconnect
 
 ### Performance Considerations
 - **Large Datasets**: Use `resource: ['top']` or similar constraints for entities with many records
