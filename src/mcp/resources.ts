@@ -12,6 +12,24 @@ import { getAccessRights } from "../auth/utils";
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
+function getCds(): any {
+  // Fallback to locally required cds for test environments
+  return (global as any).cds || cds;
+}
+
+async function resolveServiceInstance(serviceName: string): Promise<any | undefined> {
+  const CDS = getCds();
+  let svc = CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
+  if (svc) return svc;
+  const providers: any[] = (CDS.service && (CDS.service as any).providers) || (CDS.services && (CDS.services as any).providers) || [];
+  if (Array.isArray(providers)) {
+    const found = providers.find((p: any) => p?.definition?.name === serviceName || p?.name === serviceName);
+    if (found) return found;
+  }
+  // do not connect; rely on served providers only to avoid duplicate cds contexts
+  return undefined;
+}
+
 /**
  * Registers a CAP entity as an MCP resource with optional OData query support
  * Creates either static or dynamic resources based on configured functionalities
@@ -48,7 +66,7 @@ export function assignResourceToServer(
     { title: model.target, description: detailedDescription },
     async (uri: URL, variables: unknown) => {
       const queryParameters = variables as McpResourceQueryParams;
-      const service: Service = cds.services[model.serviceName];
+      const service: Service = await resolveServiceInstance(model.serviceName);
       if (!service) {
         LOGGER.error(
           `Invalid service found for service '${model.serviceName}'`,
@@ -79,7 +97,7 @@ export function assignResourceToServer(
             case "filter":
               // BUG: If filter value is e.g. "filter=1234" the value 1234 will go through
               const validatedFilter = validator.validateFilter(v);
-              const expression = cds.parse.expr(validatedFilter);
+              const expression = getCds().parse.expr(validatedFilter);
               query.where(expression);
               continue;
             case "select":

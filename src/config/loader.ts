@@ -29,6 +29,8 @@ export function loadConfiguration(): CAPConfiguration {
       resources: cdsEnv?.capabilities?.resources ?? { listChanged: true },
       prompts: cdsEnv?.capabilities?.prompts ?? { listChanged: true },
     },
+    wrap_entities_to_actions: cdsEnv?.wrap_entities_to_actions ?? false,
+    wrap_entity_modes: cdsEnv?.wrap_entity_modes ?? ["query", "get", "create", "update"],
   };
 }
 

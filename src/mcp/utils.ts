@@ -86,3 +86,57 @@ export function writeODataDescriptionForResource(
 
   return description;
 }
+
+/**
+ * Unified MCP tool error response helper
+ * Returns a consistent JSON error payload inside MCP content
+ */
+export function toolError(code: string, message: string, extra?: Record<string, unknown>): any {
+  const payload = { error: code, message, ...(extra || {}) };
+  return {
+    isError: true,
+    content: [
+      {
+        type: "text",
+        text: JSON.stringify(payload),
+      } as any,
+    ],
+  };
+}
+
+/**
+ * Formats a payload as MCP result content with a single text part.
+ * This ensures compatibility with all MCP clients.
+ */
+export function asMcpResult(payload: unknown): { content: Array<any>; structuredContent?: Record<string, unknown> } {
+  // Pretty-print for objects, stringify primitives, and split arrays into multiple parts
+  const toText = (value: unknown): string => {
+    if (typeof value === "string") return value;
+    if (value === undefined) return "undefined";
+    try {
+      if (value !== null && typeof value === "object") {
+        return JSON.stringify(value, null, 2);
+      }
+      return String(value);
+    } catch {
+      // Circular structures fall back to default string conversion
+      return String(value);
+    }
+  };
+
+  if (Array.isArray(payload)) {
+    if (payload.length === 0) return { content: [] };
+    return {
+      content: payload.map((item) => ({ type: "text", text: toText(item) }) as any),
+    };
+  }
+
+  return {
+    content: [
+      {
+        type: "text",
+        text: toText(payload),
+      } as any,
+    ],
+  };
+}

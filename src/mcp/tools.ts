@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpToolAnnotation } from "../annotations/structures";
-import { determineMcpParameterType } from "./utils";
+import { determineMcpParameterType, asMcpResult } from "./utils";
 import { LOGGER } from "../logger";
 import { McpParameters } from "./types";
 import { Service } from "@sap/cds";
@@ -9,7 +9,7 @@ import { z } from "zod";
 import { getAccessRights } from "../auth/utils";
 
 /* @ts-ignore */
-const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
+// Intentionally avoid capturing a module-scoped cds reference here so Jest mocks apply.
 
 /**
  * Registers a CAP function or action as an executable MCP tool
@@ -67,7 +67,10 @@ function assignBoundOperation(
       inputSchema: inputSchema,
     },
     async (args) => {
-      const service: Service = cds.services[model.serviceName];
+      // Resolve through live module import to align with Jest module mocking
+      const cdsMod: any = require("@sap/cds");
+      const servicesMap: any = cdsMod.services || (cdsMod.services = {});
+      const service: Service = servicesMap[model.serviceName];
       if (!service) {
         LOGGER.error("Invalid CAP service - undefined");
         return {
@@ -101,14 +104,7 @@ function assignBoundOperation(
         params: [operationKeys],
       });
 
-      return {
-        content: Array.isArray(response)
-          ? response.map((el) => ({
-              type: "text",
-              text: formatResponseValue(el),
-            }))
-          : [{ type: "text", text: formatResponseValue(response) }],
-      };
+      return asMcpResult(response);
     },
   );
 }
@@ -136,7 +132,10 @@ function assignUnboundOperation(
       inputSchema: inputSchema,
     },
     async (args) => {
-      const service: Service = cds.services[model.serviceName];
+      // Resolve through live module import to align with Jest module mocking
+      const cdsMod: any = require("@sap/cds");
+      const servicesMap: any = cdsMod.services || (cdsMod.services = {});
+      const service: Service = servicesMap[model.serviceName];
       if (!service) {
         LOGGER.error("Invalid CAP service - undefined");
         return {
@@ -155,14 +154,7 @@ function assignUnboundOperation(
         .tx({ user: accessRights })
         .send(model.target, args);
 
-      return {
-        content: Array.isArray(response)
-          ? response.map((el) => ({
-              type: "text",
-              text: formatResponseValue(el),
-            }))
-          : [{ type: "text", text: formatResponseValue(response) }],
-      };
+      return asMcpResult(response);
     },
   );
 }

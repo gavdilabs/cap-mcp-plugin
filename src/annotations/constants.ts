@@ -26,6 +26,8 @@ export const MCP_ANNOTATION_PROPS = {
   MCP_TOOL: "@mcp.tool",
   /** Prompt templates annotation for CAP services */
   MCP_PROMPT: "@mcp.prompts",
+  /** Wrapper configuration for exposing entities as tools */
+  MCP_WRAP: "@mcp.wrap",
 };
 
 /**

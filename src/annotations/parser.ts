@@ -1,3 +1,4 @@
+// @ts-ignore - types for '@sap/cds' are not always present during build
 import { csn } from "@sap/cds";
 import { LOGGER } from "../logger";
 import {
@@ -38,23 +39,25 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
   }
 
   const result: ParsedAnnotations = new Map<string, AnnotatedMcpEntry>();
-  for (const [key, value] of Object.entries(model.definitions)) {
-    const parsedAnnotations = parseAnnotations(value);
+  for (const [key, value] of Object.entries(model.definitions as Record<string, unknown>)) {
+    // Narrow unknown to csn.Definition with a runtime check
+    const def = value as csn.Definition;
+    const parsedAnnotations = parseAnnotations(def);
     const { serviceName, target } = splitDefinitionName(key);
-    parseBoundOperations(serviceName, target, value, result); // Mutates result map with bound operations
+    parseBoundOperations(serviceName, target, def, result); // Mutates result map with bound operations
 
     if (!parsedAnnotations || !containsRequiredAnnotations(parsedAnnotations)) {
       continue; // This check must occur here, since we do want the bound operations even if the parent is not annotated
     }
 
     const verifiedAnnotations = parsedAnnotations as McpAnnotationStructure;
-    switch (value.kind) {
+    switch (def.kind) {
       case "entity":
         const resourceAnnotation = constructResourceAnnotation(
           serviceName,
           target,
           verifiedAnnotations,
-          value,
+          def,
         );
         if (!resourceAnnotation) continue;
         result.set(resourceAnnotation.target, resourceAnnotation);
@@ -106,24 +109,28 @@ function parseAnnotations(
     definition: definition,
   };
 
-  for (const [k, v] of Object.entries(definition)) {
+  for (const [k, v] of Object.entries(definition as any)) {
     if (!k.includes(MCP_ANNOTATION_KEY)) continue;
     LOGGER.debug("Parsing: ", k, v);
     switch (k) {
       case MCP_ANNOTATION_PROPS.MCP_NAME:
-        annotations.name = v;
+        annotations.name = v as string;
         continue;
       case MCP_ANNOTATION_PROPS.MCP_DESCRIPTION:
-        annotations.description = v;
+        annotations.description = v as string;
         continue;
       case MCP_ANNOTATION_PROPS.MCP_RESOURCE:
-        annotations.resource = v;
+        annotations.resource = v as any;
         continue;
       case MCP_ANNOTATION_PROPS.MCP_TOOL:
-        annotations.tool = v;
+        annotations.tool = v as boolean;
         continue;
       case MCP_ANNOTATION_PROPS.MCP_PROMPT:
-        annotations.prompts = v;
+        annotations.prompts = v as any;
+        continue;
+      case MCP_ANNOTATION_PROPS.MCP_WRAP:
+        // Wrapper container to expose resources as tools
+        (annotations as any).wrap = v as any;
         continue;
       default:
         continue;
@@ -160,6 +167,7 @@ function constructResourceAnnotation(
     functionalities,
     properties,
     resourceKeys,
+    annotations.wrap,
   );
 }
 

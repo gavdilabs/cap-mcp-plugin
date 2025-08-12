@@ -2,7 +2,6 @@ using my.bookshop as my from '../db/schema';
 
 service CatalogService {
 
-  @readonly
   @mcp: {
     name       : 'books',
     description: 'Book data list',
@@ -15,6 +14,13 @@ service CatalogService {
     ]
   }
   entity Books            as projection on my.Books;
+
+  // Wrap Books entity as tools for query/get/create/update (demo)
+  annotate CatalogService.Books with @mcp.wrap: {
+    tools: true,
+    modes: ['query','get','create','update'],
+    hint: 'Use for read and write demo operations'
+  };
 
   extend projection Books with actions {
     @mcp: {
@@ -64,6 +70,7 @@ service CatalogService {
     tool       : true
   }
   function getBookRecommendation()               returns String;
+
 
 }
 

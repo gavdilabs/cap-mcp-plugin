@@ -31,6 +31,8 @@ export function mockLoadConfiguration(testConfig?: CAPConfiguration): void {
           resources: { listChanged: true, subscribe: false },
           prompts: { listChanged: true },
         },
+        wrap_entities_to_actions: true,
+        wrap_entity_modes: ["query", "get", "create", "update"],
       }
     );
   };

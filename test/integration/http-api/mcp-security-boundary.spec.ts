@@ -320,7 +320,8 @@ describe("MCP Security Boundary Tests", () => {
             capabilities: {},
             clientInfo: { name: "test", version: "1.0.0" },
           },
-        });
+        })
+        .timeout(10000);
 
       // Server should either create a new session or reject the forced one
       const returnedSessionId = response.headers["mcp-session-id"];

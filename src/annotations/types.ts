@@ -1,3 +1,4 @@
+// @ts-ignore - types for '@sap/cds' are not available at compile time in all environments
 import { csn } from "@sap/cds";
 import {
   McpPromptAnnotation,
@@ -66,6 +67,22 @@ export type McpAnnotationStructure = {
   resource?: boolean | Array<McpResourceOption>;
   tool?: boolean;
   prompts?: McpAnnotationPrompt[];
+  /**
+   * Optional wrapper configuration to expose resources as tools
+   */
+  wrap?: McpAnnotationWrap;
+};
+
+/**
+ * Wrapper configuration allowing entities to be exposed as tools with specific modes
+ */
+export type McpAnnotationWrap = {
+  /** Opt-in or out per entity. Undefined means inherit global default */
+  tools?: boolean;
+  /** Tool modes to create; defaults are provided via configuration */
+  modes?: ("query" | "get" | "create" | "update" | "delete")[];
+  /** Additional description hint appended to tool descriptions */
+  hint?: string;
 };
 
 /**
