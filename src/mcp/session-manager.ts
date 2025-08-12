@@ -94,6 +94,34 @@ export class McpSessionManager {
   }
 
   /**
+   * Gracefully terminates a session by session ID
+   * Closes server and transport connections before removing from sessions map
+   * @param sessionId - Unique identifier for the session to terminate
+   * @returns Promise resolving to true if session was found and terminated, false otherwise
+   */
+  public async terminateSession(sessionId: string): Promise<boolean> {
+    const session = this.sessions.get(sessionId);
+    if (!session) {
+      LOGGER.debug("Session not found for termination:", sessionId);
+      return false;
+    }
+
+    try {
+      LOGGER.debug("Terminating session:", sessionId);
+      await session.transport.close();
+      await session.server.close();
+      this.sessions.delete(sessionId);
+      LOGGER.debug("Session terminated successfully:", sessionId);
+      return true;
+    } catch (error) {
+      LOGGER.error("Error terminating session:", sessionId, error);
+      // Still remove from sessions map to prevent memory leaks
+      this.sessions.delete(sessionId);
+      return false;
+    }
+  }
+
+  /**
    * Handles session cleanup when transport connection closes
    * Removes the session from active sessions map when connection terminates
    * @param transport - Transport instance that was closed
@@ -103,6 +131,7 @@ export class McpSessionManager {
       return;
     }
 
+    LOGGER.debug("Session closed via transport:", transport.sessionId);
     this.sessions.delete(transport.sessionId);
   }
 }

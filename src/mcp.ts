@@ -103,9 +103,47 @@ export default class McpPlugin {
       handleMcpSessionRequest(req, res, this.sessionManager.getSessions()),
     );
 
-    this.expressApp?.delete("/mcp", (req, res) =>
-      handleMcpSessionRequest(req, res, this.sessionManager.getSessions()),
-    );
+    this.expressApp?.delete("/mcp", async (req, res) => {
+      const sessionIdHeader = req.headers[MCP_SESSION_HEADER] as string;
+
+      if (!sessionIdHeader) {
+        LOGGER.warn("DELETE request received without session ID header");
+        res.status(400).json({
+          jsonrpc: "2.0",
+          error: {
+            code: -32000,
+            message: "Bad Request: Session ID header required for disconnect",
+            id: null,
+          },
+        });
+        return;
+      }
+
+      LOGGER.debug(
+        "Explicit disconnect request received for session:",
+        sessionIdHeader,
+      );
+
+      const terminated =
+        await this.sessionManager.terminateSession(sessionIdHeader);
+
+      if (terminated) {
+        res.status(200).json({
+          jsonrpc: "2.0",
+          result: { message: "Session terminated successfully" },
+          id: null,
+        });
+      } else {
+        res.status(404).json({
+          jsonrpc: "2.0",
+          error: {
+            code: -32001,
+            message: "Session not found or already terminated",
+            id: null,
+          },
+        });
+      }
+    });
   }
 
   /**
@@ -115,7 +153,6 @@ export default class McpPlugin {
   private registerMcpSessionRoute(): void {
     LOGGER.debug("Registering MCP entry point");
     this.expressApp?.post("/mcp", async (req, res) => {
-      LOGGER.debug("CONTEXT", cds.context); // TODO: Remove this line after testing
       const sessionIdHeader = req.headers[MCP_SESSION_HEADER] as string;
       LOGGER.debug("MCP request received", {
         hasSessionId: !!sessionIdHeader,

@@ -21,7 +21,7 @@
     "mcp": {
       "name": "mock-service",
       "version": "0.0.1",
-      "auth": "inherit"
+      "auth": "none"
     }
   }
 }
