@@ -67,8 +67,8 @@ function assignBoundOperation(
       inputSchema: inputSchema,
     },
     async (args) => {
-      // Resolve through live module import to align with Jest module mocking
-      const cdsMod: any = require("@sap/cds");
+      // Resolve from current CAP context; prefer global to align with Jest mocks
+      const cdsMod: any = (global as any).cds || cds;
       const servicesMap: any = cdsMod.services || (cdsMod.services = {});
       const service: Service = servicesMap[model.serviceName];
       if (!service) {
@@ -132,8 +132,8 @@ function assignUnboundOperation(
       inputSchema: inputSchema,
     },
     async (args) => {
-      // Resolve through live module import to align with Jest module mocking
-      const cdsMod: any = require("@sap/cds");
+      // Resolve from current CAP context; prefer global to align with Jest mocks
+      const cdsMod: any = (global as any).cds || cds;
       const servicesMap: any = cdsMod.services || (cdsMod.services = {});
       const service: Service = servicesMap[model.serviceName];
       if (!service) {
