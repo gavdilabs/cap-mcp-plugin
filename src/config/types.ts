@@ -24,6 +24,8 @@
  * ======================================
  */
 
+import { EntityOperationMode } from "../mcp/types";
+
 /**
  * Configuration object which can be configured from the project's package.json or cdsrc
  * Is used both at parsing but also at runtime to pass along the configuration
@@ -46,7 +48,7 @@ export interface CAPConfiguration {
    * Default tool modes to register when wrapping entities. Can be overridden per-entity via @mcp.wrap.modes
    * Default: ['query','get']
    */
-  wrap_entity_modes?: ("query" | "get" | "create" | "update" | "delete")[];
+  wrap_entity_modes?: EntityOperationMode[];
 }
 
 /**

@@ -4,6 +4,7 @@ import { McpResourceAnnotation } from "../annotations/structures";
 import { getAccessRights } from "../auth/utils";
 import { LOGGER } from "../logger";
 import { determineMcpParameterType, toolError, asMcpResult } from "./utils";
+import { EntityOperationMode } from "./types";
 
 /**
  * Resolve the CAP runtime instance from the host app.
@@ -94,7 +95,7 @@ export function registerEntityWrappers(
   resAnno: McpResourceAnnotation,
   server: McpServer,
   authEnabled: boolean,
-  defaultModes: ("query" | "get" | "create" | "update" | "delete")[],
+  defaultModes: EntityOperationMode[],
 ): void {
   const CDS = getCds();
   LOGGER.debug(
@@ -133,7 +134,7 @@ export function registerEntityWrappers(
 function nameFor(
   service: string,
   entity: string,
-  suffix: "query" | "get" | "create" | "update",
+  suffix: Exclude<EntityOperationMode, "delete">,
 ): string {
   // Use explicit Service_Entity_suffix naming to match docs/tests
   const entityName = entity.split(".").pop()!; // keep original case

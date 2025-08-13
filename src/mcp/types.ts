@@ -24,6 +24,17 @@ export interface McpSession {
 }
 
 /**
+ * Entity operation modes supported by MCP entity tools
+ * Defines the different CRUD-like operations available for entities
+ */
+export type EntityOperationMode =
+  | "query"
+  | "get"
+  | "create"
+  | "update"
+  | "delete";
+
+/**
  * OData v4 query parameters supported by MCP resources
  * All parameters are optional and passed as strings from HTTP requests
  */

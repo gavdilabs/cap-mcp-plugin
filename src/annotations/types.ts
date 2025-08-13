@@ -1,5 +1,6 @@
 // @ts-ignore - types for '@sap/cds' are not available at compile time in all environments
 import { csn } from "@sap/cds";
+import { EntityOperationMode } from "../mcp/types";
 import {
   McpPromptAnnotation,
   McpResourceAnnotation,
@@ -80,7 +81,7 @@ export type McpAnnotationWrap = {
   /** Opt-in or out per entity. Undefined means inherit global default */
   tools?: boolean;
   /** Tool modes to create; defaults are provided via configuration */
-  modes?: ("query" | "get" | "create" | "update" | "delete")[];
+  modes?: EntityOperationMode[];
   /** Additional description hint appended to tool descriptions */
   hint?: string;
 };
