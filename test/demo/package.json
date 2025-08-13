@@ -15,13 +15,26 @@
     "@cap-js/cds-types": "^0.10.0"
   },
   "scripts": {
-    "start": "cds-serve"
+    "start": "cds-serve",
+    "watch": "cds w  --port 4015"
   },
   "cds": {
     "mcp": {
       "name": "mock-service",
       "version": "0.0.1",
-      "auth": "inherit"
+      "auth": "none",
+      "wrap_entities_to_actions": true,
+      "wrap_entity_modes": [
+        "query",
+        "get",
+        "create",
+        "update"
+      ]
+    },
+    "log": {
+      "levels": {
+        "mcp": "debug"
+      }
     }
   }
 }

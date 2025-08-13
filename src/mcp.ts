@@ -1,4 +1,4 @@
-import cds, { csn, User } from "@sap/cds";
+import type { csn, User } from "@sap/cds";
 import { Application, RequestHandler } from "express";
 import { LOGGER } from "./logger";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
@@ -14,7 +14,7 @@ import { authHandlerFactory } from "./auth/handler";
 import { registerAuthMiddleware } from "./auth/utils";
 
 /* @ts-ignore */
-// const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
+const cds = (global as any).cds; // Use hosting app's CDS instance exclusively
 
 // TODO: Handle auth
 
@@ -103,9 +103,26 @@ export default class McpPlugin {
       handleMcpSessionRequest(req, res, this.sessionManager.getSessions()),
     );
 
-    this.expressApp?.delete("/mcp", (req, res) =>
-      handleMcpSessionRequest(req, res, this.sessionManager.getSessions()),
-    );
+    this.expressApp?.delete("/mcp", ((req: any, res: any) => {
+      const sessionIdHeader = req.headers[MCP_SESSION_HEADER] as string;
+      const sessions = this.sessionManager.getSessions();
+      if (!sessionIdHeader || !sessions.has(sessionIdHeader)) {
+        return res.status(400).json({
+          jsonrpc: "2.0",
+          error: {
+            code: -32000,
+            message: "Bad Request: No valid sessions ID provided",
+            id: null,
+          },
+        });
+      }
+      const session = sessions.get(sessionIdHeader)!;
+      // Fire-and-forget close operations
+      void session.transport.close();
+      void session.server.close();
+      sessions.delete(sessionIdHeader);
+      return res.status(200).json({ jsonrpc: "2.0", result: { closed: true } });
+    }) as any);
   }
 
   /**
@@ -114,15 +131,14 @@ export default class McpPlugin {
    */
   private registerMcpSessionRoute(): void {
     LOGGER.debug("Registering MCP entry point");
+
     this.expressApp?.post("/mcp", async (req, res) => {
-      LOGGER.debug("CONTEXT", cds.context); // TODO: Remove this line after testing
       const sessionIdHeader = req.headers[MCP_SESSION_HEADER] as string;
       LOGGER.debug("MCP request received", {
         hasSessionId: !!sessionIdHeader,
         isInitialize: isInitializeRequest(req.body),
         contentType: req.headers["content-type"],
       });
-
       const session =
         !sessionIdHeader && isInitializeRequest(req.body)
           ? await this.sessionManager.createSession(
@@ -145,7 +161,9 @@ export default class McpPlugin {
       }
 
       try {
+        const t0 = Date.now();
         await session.transport.handleRequest(req, res, req.body);
+        LOGGER.debug("MCP request handled", { durationMs: Date.now() - t0 });
         return;
       } catch (e) {
         if (res.headersSent) return;

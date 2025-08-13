@@ -22,6 +22,7 @@
   "repository": "github:gavdilabs/cap-mcp-plugin",
   "scripts": {
     "mock": "npm run start --workspace=test/demo",
+    "mock:watch": "npm run build && npm run watch --workspace=test/demo",
     "test": "NODE_ENV=test jest --silent",
     "test:unit": "NODE_ENV=test jest --silent test/unit",
     "test:integration": "NODE_ENV=test jest --silent test/integration",
@@ -30,7 +31,9 @@
     "prepare": "husky",
     "lint": "eslint",
     "lint-staged": "lint-staged",
-    "format": "prettier --check ./src"
+    "format": "prettier --check ./src",
+    "format:fix": "prettier --write ./src \"**/*.json\"",
+    "build:watch": "tsc --watch"
   },
   "peerDependencies": {
     "@sap/cds": "^9",

@@ -1,4 +1,8 @@
-import { McpAnnotationPrompt, McpResourceOption } from "./types";
+import {
+  McpAnnotationPrompt,
+  McpResourceOption,
+  McpAnnotationWrap,
+} from "./types";
 
 /**
  * Base class for all MCP annotations that provides common properties
@@ -77,6 +81,8 @@ export class McpResourceAnnotation extends McpAnnotation {
   private readonly _properties: Map<string, string>;
   /** Map of resource key fields to their types */
   private readonly _resourceKeys: Map<string, string>;
+  /** Optional wrapper configuration to expose this resource as tools */
+  private readonly _wrap?: McpAnnotationWrap;
 
   /**
    * Creates a new MCP resource annotation
@@ -96,11 +102,13 @@ export class McpResourceAnnotation extends McpAnnotation {
     functionalities: Set<McpResourceOption>,
     properties: Map<string, string>,
     resourceKeys: Map<string, string>,
+    wrap?: McpAnnotationWrap,
   ) {
     super(name, description, target, serviceName);
     this._functionalities = functionalities;
     this._properties = properties;
     this._resourceKeys = resourceKeys;
+    this._wrap = wrap;
   }
 
   /**
@@ -125,6 +133,13 @@ export class McpResourceAnnotation extends McpAnnotation {
    */
   get resourceKeys(): Map<string, string> {
     return this._resourceKeys;
+  }
+
+  /**
+   * Gets the wrapper configuration for exposing this resource as tools
+   */
+  get wrap(): McpAnnotationWrap | undefined {
+    return this._wrap;
   }
 }
 

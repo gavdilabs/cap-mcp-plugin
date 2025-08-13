@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import type { ql, Query, Service } from "@sap/cds";
 
 /**
  * Type definitions for MCP (Model Context Protocol) server implementation
@@ -24,6 +25,24 @@ export interface McpSession {
 }
 
 /**
+ * Re-export commonly used CAP types for standardized usage across the plugin
+ */
+export type CdsQuery = Query;
+export type CdsSelect<T = any> = ql.SELECT<T>;
+export type CdsService = Service;
+
+/**
+ * Entity operation modes supported by MCP entity tools
+ * Defines the different CRUD-like operations available for entities
+ */
+export type EntityOperationMode =
+  | "query"
+  | "get"
+  | "create"
+  | "update"
+  | "delete";
+
+/**
  * OData v4 query parameters supported by MCP resources
  * All parameters are optional and passed as strings from HTTP requests
  */
@@ -38,4 +57,52 @@ export interface McpResourceQueryParams {
   skip?: string;
   /** OData $orderby parameter for sorting results (e.g., "name asc") */
   orderby?: string;
+}
+
+/**
+ * Structured query arguments used by entity wrapper tools (query mode)
+ * Mirrors the validated Zod schema in entity-tools while being reusable across modules
+ */
+export type OrderDirection = "asc" | "desc";
+
+export type AggregateFunction = "sum" | "avg" | "min" | "max" | "count";
+
+export interface OrderByClause {
+  field: string;
+  dir: OrderDirection;
+}
+
+export type WhereOperator =
+  | "eq"
+  | "ne"
+  | "gt"
+  | "ge"
+  | "lt"
+  | "le"
+  | "contains"
+  | "startswith"
+  | "endswith"
+  | "in";
+
+export interface WhereClause {
+  field: string;
+  op: WhereOperator;
+  value: string | number | boolean | Array<string | number>;
+}
+
+export interface AggregateClause {
+  field: string;
+  fn: AggregateFunction;
+}
+
+export interface EntityListQueryArgs {
+  top: number;
+  skip: number;
+  select?: string[];
+  orderby?: OrderByClause[];
+  where?: WhereClause[];
+  q?: string;
+  return?: "rows" | "count" | "aggregate";
+  aggregate?: AggregateClause[];
+  explain?: boolean;
 }

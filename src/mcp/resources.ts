@@ -7,10 +7,31 @@ import { writeODataDescriptionForResource } from "./utils";
 import { ODataQueryValidator, ODataValidationError } from "./validation";
 import { McpResourceQueryParams } from "./types";
 import { getAccessRights } from "../auth/utils";
-// import cds from "@sap/cds";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
+
+async function resolveServiceInstance(
+  serviceName: string,
+): Promise<Service | undefined> {
+  const CDS = (global as any).cds || cds;
+  let svc: Service | undefined =
+    CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
+  if (svc) return svc;
+  const providers: unknown[] =
+    (CDS.service && (CDS.service as any).providers) ||
+    (CDS.services && (CDS.services as any).providers) ||
+    [];
+  if (Array.isArray(providers)) {
+    const found = providers.find(
+      (p: any) =>
+        p?.definition?.name === serviceName || p?.name === serviceName,
+    );
+    if (found) return found as Service;
+  }
+  // do not connect; rely on served providers only to avoid duplicate cds contexts
+  return undefined;
+}
 
 /**
  * Registers a CAP entity as an MCP resource with optional OData query support
@@ -48,7 +69,7 @@ export function assignResourceToServer(
     { title: model.target, description: detailedDescription },
     async (uri: URL, variables: unknown) => {
       const queryParameters = variables as McpResourceQueryParams;
-      const service: Service = cds.services[model.serviceName];
+      const service = await resolveServiceInstance(model.serviceName);
       if (!service) {
         LOGGER.error(
           `Invalid service found for service '${model.serviceName}'`,
@@ -79,7 +100,9 @@ export function assignResourceToServer(
             case "filter":
               // BUG: If filter value is e.g. "filter=1234" the value 1234 will go through
               const validatedFilter = validator.validateFilter(v);
-              const expression = cds.parse.expr(validatedFilter);
+              const expression = ((global as any).cds || cds).parse.expr(
+                validatedFilter,
+              );
               query.where(expression);
               continue;
             case "select":

@@ -4,7 +4,7 @@ import { CAPConfiguration } from "../config/types";
 import { McpSession } from "./types";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { randomUUID } from "crypto";
-import { isTestEnvironment } from "../config/env-sanitizer";
+import { getSafeEnvVar, isTestEnvironment } from "../config/env-sanitizer";
 import { LOGGER } from "../logger";
 import { createMcpServer } from "./factory";
 
@@ -76,11 +76,17 @@ export class McpSessionManager {
    * @returns Configured StreamableHTTPServerTransport instance
    */
   private createTransport(server: McpServer): StreamableHTTPServerTransport {
+    // Prefer JSON responses to avoid SSE client compatibility issues in dev/mock
+    const enableJson =
+      getSafeEnvVar("MCP_ENABLE_JSON", "true") === "true" ||
+      isTestEnvironment();
+
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => randomUUID(),
-      enableJsonResponse: isTestEnvironment(),
+      enableJsonResponse: enableJson,
       onsessioninitialized: (sid) => {
         LOGGER.debug("Session initialized with ID: ", sid);
+        LOGGER.debug("Transport mode", { enableJsonResponse: enableJson });
         this.sessions.set(sid, {
           server: server,
           transport: transport,
@@ -88,7 +94,14 @@ export class McpSessionManager {
       },
     });
 
-    transport.onclose = () => this.onCloseSession(transport);
+    // In JSON response mode, HTTP connections are short-lived per request.
+    // Closing the underlying connection does NOT mean the MCP session is over.
+    // Avoid deleting the session on close when enableJson is true.
+    transport.onclose = () => {
+      if (!enableJson) {
+        this.onCloseSession(transport);
+      }
+    };
 
     return transport;
   }

@@ -60,7 +60,9 @@ Add MCP configuration to your `package.json`:
   "cds": {
     "mcp": {
       "name": "my-bookshop-mcp",
-      "auth": "inherit"
+      "auth": "inherit",
+      "wrap_entities_to_actions": false,
+      "wrap_entity_modes": ["query", "get"]
     }
   }
 }
@@ -80,6 +82,13 @@ service CatalogService {
     resource: ['filter', 'orderby', 'select', 'top', 'skip']
   }
   entity Books as projection on my.Books;
+  
+  // Optionally expose Books as tools for LLMs (query/get enabled by default config)
+  annotate CatalogService.Books with @mcp.wrap: {
+    tools: true,
+    modes: ['query','get'],
+    hint: 'Use for read-only lookups of books'
+  };
 
   @mcp: {
     name: 'get-book-recommendations',
@@ -114,9 +123,31 @@ This plugin transforms your annotated CAP services into a fully functional MCP s
 
 - **📊 Resources**: Expose CAP entities as MCP resources with OData v4 query capabilities
 - **🔧 Tools**: Convert CAP functions and actions into executable MCP tools
+- **🧩 Entity Wrappers (optional)**: Expose CAP entities as tools (`query`, `get`, and optionally `create`, `update`) for LLM tool use while keeping resources intact
 - **💡 Prompts**: Define reusable prompt templates for AI interactions
 - **🔄 Auto-generation**: Automatically creates MCP server endpoints based on annotations
 - **⚙️ Flexible Configuration**: Support for custom parameter sets and descriptions
+
+## 🧪 Testing & Inspector
+
+- Run tests: `npm test`
+- Start demo app: `npm run mock`
+- Inspector: `npx @modelcontextprotocol/inspector`
+
+### New wrapper tools
+
+When `wrap_entities_to_actions` is enabled (globally or via `@mcp.wrap.tools: true`), you will see tools named like:
+
+- `CatalogService_Books_query`
+- `CatalogService_Books_get`
+- `CatalogService_Books_create` (if enabled)
+- `CatalogService_Books_update` (if enabled)
+
+Each tool includes a description with fields and OData notes to guide the model. You can add `@mcp.wrap.hint` per entity to enrich descriptions for LLMs.
+
+### Bruno collection
+
+The `bruno/` folder contains HTTP requests for the MCP endpoint (handy for local manual testing using Bruno or any HTTP client). You may add calls for `tools/list` and `tools/call` to exercise the new wrapper tools.
 
 ## 📝 Usage
 
@@ -424,6 +455,10 @@ npm test -- --verbose
 # Run in watch mode for development
 npm test -- --watch
 ```
+
+### Further reading
+
+- Short guide on entity tools and configuration: `docs/entity-tools.md`
 
 ## 🤝 Contributing
 

@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpToolAnnotation } from "../annotations/structures";
-import { determineMcpParameterType } from "./utils";
+import { determineMcpParameterType, asMcpResult } from "./utils";
 import { LOGGER } from "../logger";
 import { McpParameters } from "./types";
 import { Service } from "@sap/cds";
@@ -67,7 +67,10 @@ function assignBoundOperation(
       inputSchema: inputSchema,
     },
     async (args) => {
-      const service: Service = cds.services[model.serviceName];
+      // Resolve from current CAP context; prefer global to align with Jest mocks
+      const cdsMod: any = (global as any).cds || cds;
+      const servicesMap: any = cdsMod.services || (cdsMod.services = {});
+      const service: Service = servicesMap[model.serviceName];
       if (!service) {
         LOGGER.error("Invalid CAP service - undefined");
         return {
@@ -101,14 +104,7 @@ function assignBoundOperation(
         params: [operationKeys],
       });
 
-      return {
-        content: Array.isArray(response)
-          ? response.map((el) => ({
-              type: "text",
-              text: formatResponseValue(el),
-            }))
-          : [{ type: "text", text: formatResponseValue(response) }],
-      };
+      return asMcpResult(response);
     },
   );
 }
@@ -136,7 +132,10 @@ function assignUnboundOperation(
       inputSchema: inputSchema,
     },
     async (args) => {
-      const service: Service = cds.services[model.serviceName];
+      // Resolve from current CAP context; prefer global to align with Jest mocks
+      const cdsMod: any = (global as any).cds || cds;
+      const servicesMap: any = cdsMod.services || (cdsMod.services = {});
+      const service: Service = servicesMap[model.serviceName];
       if (!service) {
         LOGGER.error("Invalid CAP service - undefined");
         return {
@@ -155,14 +154,7 @@ function assignUnboundOperation(
         .tx({ user: accessRights })
         .send(model.target, args);
 
-      return {
-        content: Array.isArray(response)
-          ? response.map((el) => ({
-              type: "text",
-              text: formatResponseValue(el),
-            }))
-          : [{ type: "text", text: formatResponseValue(response) }],
-      };
+      return asMcpResult(response);
     },
   );
 }

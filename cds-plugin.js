@@ -1,4 +1,4 @@
-const cds = global.cds || require("@sap/cds");
+const cds = global.cds; // enforce host app cds instance
 const McpPlugin = require("./lib/mcp").default;
 
 const plugin = new McpPlugin();

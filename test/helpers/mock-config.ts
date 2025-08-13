@@ -28,6 +28,7 @@ export function createTestConfig(
  */
 export function mockCdsEnvironment(): void {
   (global as any).cds = {
+    log: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} }),
     env: {
       mcp: {
         auth: "none",

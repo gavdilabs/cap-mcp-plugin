@@ -24,6 +24,8 @@
  * ======================================
  */
 
+import { EntityOperationMode } from "../mcp/types";
+
 /**
  * Configuration object which can be configured from the project's package.json or cdsrc
  * Is used both at parsing but also at runtime to pass along the configuration
@@ -37,6 +39,16 @@ export interface CAPConfiguration {
     resources: ResourcesConfiguration;
     prompts: PromptsConfiguration;
   };
+  /**
+   * Global switch to expose CAP entities (annotated as resources) as MCP tools as well.
+   * Default: false (opt-in).
+   */
+  wrap_entities_to_actions?: boolean;
+  /**
+   * Default tool modes to register when wrapping entities. Can be overridden per-entity via @mcp.wrap.modes
+   * Default: ['query','get']
+   */
+  wrap_entity_modes?: EntityOperationMode[];
 }
 
 /**
