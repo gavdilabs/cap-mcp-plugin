@@ -43,15 +43,15 @@ async function withTimeout<T>(
  */
 async function resolveServiceInstance(
   serviceName: string,
-): Promise<any | undefined> {
+): Promise<Service | undefined> {
   const CDS = (global as any).cds;
   // Direct lookup (both exact and lowercase variants)
-  let svc =
+  let svc: Service | undefined =
     CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
   if (svc) return svc;
 
   // Look through known service providers
-  const providers: any[] =
+  const providers: unknown[] =
     (CDS.service && (CDS.service as any).providers) ||
     (CDS.services && (CDS.services as any).providers) ||
     [];
@@ -63,7 +63,7 @@ async function resolveServiceInstance(
         (typeof p?.path === "string" &&
           p.path.includes(serviceName.toLowerCase())),
     );
-    if (found) return found;
+    if (found) return found as Service;
   }
 
   // Last resort: connect by name
@@ -361,7 +361,7 @@ function registerGetTool(
 
     try {
       const response = await withTimeout(
-        svc.read(resAnno.target, keys),
+        svc.run(svc.read(resAnno.target, keys)),
         TIMEOUT_MS,
         `${toolName}`,
       );

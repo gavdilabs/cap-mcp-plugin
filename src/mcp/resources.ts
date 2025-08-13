@@ -13,12 +13,12 @@ const cds = global.cds || require("@sap/cds"); // This is a work around for miss
 
 async function resolveServiceInstance(
   serviceName: string,
-): Promise<any | undefined> {
+): Promise<Service | undefined> {
   const CDS = (global as any).cds || cds;
-  let svc =
+  let svc: Service | undefined =
     CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
   if (svc) return svc;
-  const providers: any[] =
+  const providers: unknown[] =
     (CDS.service && (CDS.service as any).providers) ||
     (CDS.services && (CDS.services as any).providers) ||
     [];
@@ -27,7 +27,7 @@ async function resolveServiceInstance(
       (p: any) =>
         p?.definition?.name === serviceName || p?.name === serviceName,
     );
-    if (found) return found;
+    if (found) return found as Service;
   }
   // do not connect; rely on served providers only to avoid duplicate cds contexts
   return undefined;
@@ -69,7 +69,7 @@ export function assignResourceToServer(
     { title: model.target, description: detailedDescription },
     async (uri: URL, variables: unknown) => {
       const queryParameters = variables as McpResourceQueryParams;
-      const service: Service = await resolveServiceInstance(model.serviceName);
+      const service = await resolveServiceInstance(model.serviceName);
       if (!service) {
         LOGGER.error(
           `Invalid service found for service '${model.serviceName}'`,
