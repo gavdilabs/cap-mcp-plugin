@@ -24,7 +24,12 @@
       "version": "0.0.1",
       "auth": "none",
       "wrap_entities_to_actions": true,
-      "wrap_entity_modes": ["query","get","create","update"]
+      "wrap_entity_modes": [
+        "query",
+        "get",
+        "create",
+        "update"
+      ]
     },
     "log": {
       "levels": {

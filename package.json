@@ -32,7 +32,7 @@
     "lint": "eslint",
     "lint-staged": "lint-staged",
     "format": "prettier --check ./src",
-    "format:fix": "prettier --write ./src",
+    "format:fix": "prettier --write ./src \"**/*.json\"",
     "build:watch": "tsc --watch"
   },
   "peerDependencies": {

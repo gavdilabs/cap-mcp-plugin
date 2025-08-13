@@ -4,7 +4,8 @@ import { McpResourceAnnotation } from "../annotations/structures";
 import { getAccessRights } from "../auth/utils";
 import { LOGGER } from "../logger";
 import { determineMcpParameterType, toolError, asMcpResult } from "./utils";
-import { EntityOperationMode } from "./types";
+import { EntityOperationMode, EntityListQueryArgs } from "./types";
+import type { ql, Service } from "@sap/cds";
 
 /**
  * Resolve the CAP runtime instance from the host app.
@@ -241,7 +242,7 @@ function registerQueryTool(
         issues: parsed.error.issues,
       });
     }
-    const args = parsed.data;
+    const args = parsed.data as EntityListQueryArgs;
     const CDS = getCds();
     LOGGER.debug(
       `[EXECUTION TIME] Query tool: Looking for service: ${resAnno.serviceName}, available services:`,
@@ -255,7 +256,7 @@ function registerQueryTool(
       return toolError("ERR_MISSING_SERVICE", msg);
     }
 
-    let q: any;
+    let q: ql.SELECT<any>;
     try {
       q = buildQuery(CDS, args, resAnno, propKeys);
     } catch (e: any) {
@@ -621,14 +622,17 @@ function registerUpdateTool(
 // including a basic escape of string literals to avoid invalid syntax.
 function buildQuery(
   CDS: any,
-  args: any,
+  args: EntityListQueryArgs,
   resAnno: McpResourceAnnotation,
   propKeys?: string[],
-): any {
+): ql.SELECT<any> {
   const { SELECT } = CDS.ql;
   const limitTop = args.top ?? 25;
   const limitSkip = args.skip ?? 0;
-  let qy: any = SELECT.from(resAnno.target).limit(limitTop, limitSkip);
+  let qy: ql.SELECT<any> = SELECT.from(resAnno.target).limit(
+    limitTop,
+    limitSkip,
+  );
   if ((propKeys?.length ?? 0) === 0) return qy;
 
   if (args.select?.length) qy = qy.columns(...args.select);
@@ -636,7 +640,7 @@ function buildQuery(
   if (args.orderby?.length) {
     // Map to CQN-compatible order by fragments
     const orderFragments = args.orderby.map((o: any) => `${o.field} ${o.dir}`);
-    qy = qy.orderBy(orderFragments);
+    qy = qy.orderBy(...orderFragments);
   }
 
   if ((typeof args.q === "string" && args.q.length > 0) || args.where?.length) {
@@ -689,9 +693,9 @@ function buildQuery(
 // - aggregate: returns aggregation result rows based on provided definitions
 async function executeQuery(
   CDS: any,
-  svc: any,
-  args: any,
-  baseQuery: any,
+  svc: Service,
+  args: EntityListQueryArgs,
+  baseQuery: ql.SELECT<any>,
 ): Promise<any> {
   const { SELECT } = CDS.ql;
   switch (args.return) {
