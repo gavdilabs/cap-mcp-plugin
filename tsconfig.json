@@ -7,7 +7,7 @@
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
-    "types": ["@cap-js/cds-types"],
+    "types": ["@cap-js/cds-types", "jest"],
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },

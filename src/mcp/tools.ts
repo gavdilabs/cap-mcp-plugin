@@ -9,7 +9,7 @@ import { z } from "zod";
 import { getAccessRights } from "../auth/utils";
 
 /* @ts-ignore */
-// Intentionally avoid capturing a module-scoped cds reference here so Jest mocks apply.
+const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
 /**
  * Registers a CAP function or action as an executable MCP tool
