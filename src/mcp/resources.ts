@@ -7,20 +7,14 @@ import { writeODataDescriptionForResource } from "./utils";
 import { ODataQueryValidator, ODataValidationError } from "./validation";
 import { McpResourceQueryParams } from "./types";
 import { getAccessRights } from "../auth/utils";
-// import cds from "@sap/cds";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
-function getCds(): any {
-  // Fallback to locally required cds for test environments
-  return (global as any).cds || cds;
-}
-
 async function resolveServiceInstance(
   serviceName: string,
 ): Promise<any | undefined> {
-  const CDS = getCds();
+  const CDS = (global as any).cds || cds;
   let svc =
     CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
   if (svc) return svc;
@@ -106,7 +100,9 @@ export function assignResourceToServer(
             case "filter":
               // BUG: If filter value is e.g. "filter=1234" the value 1234 will go through
               const validatedFilter = validator.validateFilter(v);
-              const expression = getCds().parse.expr(validatedFilter);
+              const expression = ((global as any).cds || cds).parse.expr(
+                validatedFilter,
+              );
               query.where(expression);
               continue;
             case "select":

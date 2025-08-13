@@ -8,14 +8,6 @@ import { EntityOperationMode, EntityListQueryArgs } from "./types";
 import type { ql, Service } from "@sap/cds";
 
 /**
- * Resolve the CAP runtime instance from the host app.
- * We intentionally do not import @sap/cds here to avoid creating a second instance.
- */
-function getCds(): any {
-  return (global as any).cds;
-}
-
-/**
  * Wraps a promise with a timeout to avoid indefinite hangs in MCP tool calls.
  * Ensures we always either resolve within the expected time or fail gracefully.
  */
@@ -52,7 +44,7 @@ async function withTimeout<T>(
 async function resolveServiceInstance(
   serviceName: string,
 ): Promise<any | undefined> {
-  const CDS = getCds();
+  const CDS = (global as any).cds;
   // Direct lookup (both exact and lowercase variants)
   let svc =
     CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
@@ -98,7 +90,7 @@ export function registerEntityWrappers(
   authEnabled: boolean,
   defaultModes: EntityOperationMode[],
 ): void {
-  const CDS = getCds();
+  const CDS = (global as any).cds;
   LOGGER.debug(
     `[REGISTRATION TIME] Registering entity wrappers for ${resAnno.serviceName}.${resAnno.target}, available services:`,
     Object.keys(CDS.services || {}),
@@ -243,7 +235,7 @@ function registerQueryTool(
       });
     }
     const args = parsed.data as EntityListQueryArgs;
-    const CDS = getCds();
+    const CDS = (global as any).cds;
     LOGGER.debug(
       `[EXECUTION TIME] Query tool: Looking for service: ${resAnno.serviceName}, available services:`,
       Object.keys(CDS.services || {}),
@@ -314,7 +306,7 @@ function registerGetTool(
 
   const getHandler = async (args: Record<string, unknown>) => {
     const startTime = Date.now();
-    const CDS = getCds();
+    const CDS = (global as any).cds;
     LOGGER.debug(`[EXECUTION TIME] Get tool invoked: ${toolName}`, { args });
 
     const svc = await resolveServiceInstance(resAnno.serviceName);
@@ -425,7 +417,7 @@ function registerCreateTool(
   const desc = `Create a new ${resAnno.target}. Provide fields; service applies defaults.${hint}`;
 
   const createHandler = async (args: Record<string, unknown>) => {
-    const CDS = getCds();
+    const CDS = (global as any).cds;
     const { INSERT } = CDS.ql;
     const svc = await resolveServiceInstance(resAnno.serviceName);
     if (!svc) {
@@ -532,7 +524,7 @@ function registerUpdateTool(
   const desc = `Update ${resAnno.target} by key(s): ${keyList}. Provide fields to update.${hint}`;
 
   const updateHandler = async (args: Record<string, unknown>) => {
-    const CDS = getCds();
+    const CDS = (global as any).cds;
     const { UPDATE } = CDS.ql;
     const svc = await resolveServiceInstance(resAnno.serviceName);
     if (!svc) {
