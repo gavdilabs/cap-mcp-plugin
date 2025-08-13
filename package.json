@@ -62,15 +62,15 @@
   },
   "lint-staged": {
     "*.json": [
-      "prettier --check"
+      "prettier --write"
     ],
     "*.ts": [
       "eslint",
-      "prettier ./src --check"
+      "prettier --write"
     ],
     "*.js": [
       "eslint",
-      "prettier ./src --check"
+      "prettier --write"
     ]
   },
   "workspaces": [
