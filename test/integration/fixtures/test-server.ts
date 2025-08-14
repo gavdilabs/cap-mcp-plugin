@@ -18,7 +18,12 @@ export class TestMcpServer {
     // Mock both CDS environment AND configuration loader
     mockCdsEnvironment();
     // Ensure logger exists on cds mock for integration tests
-    (global as any).cds.log = () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} });
+    (global as any).cds.log = () => ({
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+    });
     mockLoadConfiguration({
       name: "Test MCP Server",
       version: "1.0.0",
@@ -29,7 +34,7 @@ export class TestMcpServer {
         prompts: { listChanged: true },
       },
       wrap_entities_to_actions: true,
-      wrap_entity_modes: ["query", "get", "create", "update"],
+      wrap_entity_modes: ["query", "get", "create", "update", "delete"],
     } as any);
 
     // Initialize plugin AFTER mocking environment
@@ -105,7 +110,11 @@ export class TestMcpServer {
           "@mcp.name": "test-books",
           "@mcp.description": "Test books resource",
           "@mcp.resource": ["filter", "orderby", "select", "top", "skip"],
-          "@mcp.wrap": { tools: true, modes: ["query", "get", "create", "update"], hint: "Use for tests" },
+          "@mcp.wrap": {
+            tools: true,
+            modes: ["query", "get", "create", "update", "delete"],
+            hint: "Use for tests",
+          },
           elements: {
             ID: { type: "cds.Integer", key: true },
             title: { type: "cds.String" },

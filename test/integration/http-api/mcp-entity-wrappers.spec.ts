@@ -51,6 +51,7 @@ describe("MCP HTTP API - Entity Wrappers", () => {
         "TestService_Books_get",
         "TestService_Books_create",
         "TestService_Books_update",
+        "TestService_Books_delete",
       ]),
     );
   });
@@ -60,7 +61,9 @@ describe("MCP HTTP API - Entity Wrappers", () => {
     await testServer.stop();
     const express = require("express");
     const { default: McpPlugin } = require("../../../src/mcp");
-    const { mockLoadConfiguration } = require("../../helpers/test-config-loader");
+    const {
+      mockLoadConfiguration,
+    } = require("../../helpers/test-config-loader");
     const { mockCdsEnvironment } = require("../../helpers/mock-config");
     const app = express();
     mockCdsEnvironment();
@@ -86,7 +89,14 @@ describe("MCP HTTP API - Entity Wrappers", () => {
           "@mcp.name": "test-service",
           "@mcp.description": "Test service",
           "@mcp.prompts": [
-            { name: "p", title: "t", description: "d", template: "x", role: "user", inputs: [] },
+            {
+              name: "p",
+              title: "t",
+              description: "d",
+              template: "x",
+              role: "user",
+              inputs: [],
+            },
           ],
         },
         "TestService.Books": {
@@ -150,7 +160,9 @@ describe("MCP HTTP API - Entity Wrappers", () => {
     await testServer.stop();
     const express = require("express");
     const { default: McpPlugin } = require("../../../src/mcp");
-    const { mockLoadConfiguration } = require("../../helpers/test-config-loader");
+    const {
+      mockLoadConfiguration,
+    } = require("../../helpers/test-config-loader");
     const { mockCdsEnvironment } = require("../../helpers/mock-config");
     const app = express();
     mockCdsEnvironment();
@@ -172,7 +184,21 @@ describe("MCP HTTP API - Entity Wrappers", () => {
     // Create CSN with override
     const model = {
       definitions: {
-        TestService: { kind: "service", "@mcp.name": "test-service", "@mcp.description": "d", "@mcp.prompts": [ { name: "p", title: "t", description: "d", template: "x", role: "user", inputs: [] } ] },
+        TestService: {
+          kind: "service",
+          "@mcp.name": "test-service",
+          "@mcp.description": "d",
+          "@mcp.prompts": [
+            {
+              name: "p",
+              title: "t",
+              description: "d",
+              template: "x",
+              role: "user",
+              inputs: [],
+            },
+          ],
+        },
         "TestService.Books": {
           kind: "entity",
           "@mcp.name": "test-books",
@@ -212,7 +238,7 @@ describe("MCP HTTP API - Entity Wrappers", () => {
           clientInfo: { name: "test", version: "1.0.0" },
         },
       });
-    const sid = init.headers["mcp-session-id"]; 
+    const sid = init.headers["mcp-session-id"];
 
     const resp = await request(app)
       .post("/mcp")
@@ -224,12 +250,40 @@ describe("MCP HTTP API - Entity Wrappers", () => {
     const names3 = (resp.body?.result?.tools || []).map((t: any) => t.name);
 
     // Books has update only; ensure no query tool for Books
-    expect(names3).toEqual(expect.arrayContaining(["TestService_Books_update"]));
-    expect(names3).not.toEqual(expect.arrayContaining(["TestService_Books_query"]));
+    expect(names3).toEqual(
+      expect.arrayContaining(["TestService_Books_update"]),
+    );
+    expect(names3).not.toEqual(
+      expect.arrayContaining(["TestService_Books_query"]),
+    );
 
     // Authors inherits global query/get; ensure query exists for Authors and not affected by Books override
-    expect(names3).toEqual(expect.arrayContaining(["TestService_Authors_query", "TestService_Authors_get"]));
+    expect(names3).toEqual(
+      expect.arrayContaining([
+        "TestService_Authors_query",
+        "TestService_Authors_get",
+      ]),
+    );
+  });
+
+  it("registers delete tools with proper schema for keyed entities", async () => {
+    const response = await request(app)
+      .post("/mcp")
+      .set("Content-Type", "application/json")
+      .set("Accept", "application/json, text/event-stream")
+      .set("mcp-session-id", sessionId)
+      .send({ jsonrpc: "2.0", id: 2, method: "tools/list" })
+      .expect(200);
+
+    const tools = response.body?.result?.tools || [];
+    const deleteBooksTool = tools.find(
+      (t: any) => t.name === "TestService_Books_delete",
+    );
+
+    expect(deleteBooksTool).toBeDefined();
+    expect(deleteBooksTool.description).toContain("Delete");
+    expect(deleteBooksTool.description).toContain("cannot be undone");
+    expect(deleteBooksTool.inputSchema).toBeDefined();
+    expect(deleteBooksTool.inputSchema.properties).toHaveProperty("ID");
   });
 });
-
-

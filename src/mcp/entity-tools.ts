@@ -82,7 +82,7 @@ const TIMEOUT_MS = 10_000; // Standard timeout for tool calls (ms)
  * Modes can be controlled globally via configuration and per-entity via @mcp.wrap.
  *
  * Example tool names (naming is explicit for easier LLM usage):
- *   Service_Entity_query, Service_Entity_get, Service_Entity_create, Service_Entity_update
+ *   Service_Entity_query, Service_Entity_get, Service_Entity_create, Service_Entity_update, Service_Entity_delete
  */
 export function registerEntityWrappers(
   resAnno: McpResourceAnnotation,
@@ -117,6 +117,13 @@ export function registerEntityWrappers(
   ) {
     registerUpdateTool(resAnno, server, authEnabled);
   }
+  if (
+    modes.includes("delete") &&
+    resAnno.resourceKeys &&
+    resAnno.resourceKeys.size > 0
+  ) {
+    registerDeleteTool(resAnno, server, authEnabled);
+  }
 }
 
 /**
@@ -127,7 +134,7 @@ export function registerEntityWrappers(
 function nameFor(
   service: string,
   entity: string,
-  suffix: Exclude<EntityOperationMode, "delete">,
+  suffix: EntityOperationMode,
 ): string {
   // Use explicit Service_Entity_suffix naming to match docs/tests
   const entityName = entity.split(".").pop()!; // keep original case
@@ -606,6 +613,100 @@ function registerUpdateTool(
     toolName,
     { title: toolName, description: desc, inputSchema },
     updateHandler as any,
+  );
+}
+
+/**
+ * Registers the delete tool for an entity.
+ * Requires keys to identify the entity to delete.
+ */
+function registerDeleteTool(
+  resAnno: McpResourceAnnotation,
+  server: McpServer,
+  authEnabled: boolean,
+): void {
+  const toolName = nameFor(resAnno.serviceName, resAnno.target, "delete");
+
+  const inputSchema: Record<string, z.ZodType> = {};
+  // Keys required for deletion
+  for (const [k, cdsType] of resAnno.resourceKeys.entries()) {
+    inputSchema[k] = (determineMcpParameterType(cdsType) as z.ZodType).describe(
+      `Key ${k}`,
+    );
+  }
+
+  const keyList = Array.from(resAnno.resourceKeys.keys()).join(", ");
+  const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
+  const desc = `Delete ${resAnno.target} by key(s): ${keyList}. This operation cannot be undone.${hint}`;
+
+  const deleteHandler = async (args: Record<string, unknown>) => {
+    const CDS = (global as any).cds;
+    const { DELETE } = CDS.ql;
+    const svc = await resolveServiceInstance(resAnno.serviceName);
+    if (!svc) {
+      const msg = `Service not found: ${resAnno.serviceName}. Available: ${Object.keys(CDS.services || {}).join(", ")}`;
+      LOGGER.error(msg);
+      return toolError("ERR_MISSING_SERVICE", msg);
+    }
+
+    // Extract keys - similar to get/update handlers
+    const keys: Record<string, unknown> = {};
+    for (const [k] of resAnno.resourceKeys.entries()) {
+      let provided = (args as any)[k];
+      if (provided === undefined) {
+        // Case-insensitive key matching (like in get handler)
+        const alt = Object.entries(args || {}).find(
+          ([kk]) => String(kk).toLowerCase() === String(k).toLowerCase(),
+        );
+        if (alt) provided = (args as any)[alt[0]];
+      }
+      if (provided === undefined) {
+        LOGGER.warn(`Delete tool missing required key`, { key: k, toolName });
+        return toolError("MISSING_KEY", `Missing key '${k}'`);
+      }
+      // Coerce numeric strings (like in get handler)
+      const raw = provided;
+      keys[k] =
+        typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : raw;
+    }
+
+    LOGGER.debug(`Executing DELETE on ${resAnno.target} with keys`, keys);
+
+    const tx = svc.tx({ user: getAccessRights(authEnabled) });
+    try {
+      const response = await withTimeout(
+        tx.run(DELETE.from(resAnno.target).where(keys)),
+        TIMEOUT_MS,
+        toolName,
+        async () => {
+          try {
+            await tx.rollback();
+          } catch {}
+        },
+      );
+
+      try {
+        await tx.commit();
+      } catch {}
+
+      return asMcpResult(response ?? { deleted: true });
+    } catch (error: any) {
+      try {
+        await tx.rollback();
+      } catch {}
+      const isTimeout = String(error?.message || "").includes("timed out");
+      const msg = isTimeout
+        ? `${toolName} timed out after ${TIMEOUT_MS}ms`
+        : `DELETE_FAILED: ${error?.message || String(error)}`;
+      LOGGER.error(msg, error);
+      return toolError(isTimeout ? "TIMEOUT" : "DELETE_FAILED", msg);
+    }
+  };
+
+  server.registerTool(
+    toolName,
+    { title: toolName, description: desc, inputSchema },
+    deleteHandler as any,
   );
 }
 
