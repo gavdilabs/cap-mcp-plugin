@@ -12,8 +12,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Linting
-        run: echo "The event type is ${{ github.event.action }}"
+        run: npm run lint
       - name: Unit Tests
-        run: echo "The event type is ${{ github.event.action }}"
+        run: npm run test:unit
       - name: Integration Tests
-        run: echo "The event type is ${{ github.event.action }}"
+        run: npm run test:integration
