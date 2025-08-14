@@ -1,0 +1,19 @@
+name: Pull-Request Workflow
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: npm ci
+      - name: Linting
+        run: echo "The event type is ${{ github.event.action }}"
+      - name: Unit Tests
+        run: echo "The event type is ${{ github.event.action }}"
+      - name: Integration Tests
+        run: echo "The event type is ${{ github.event.action }}"
