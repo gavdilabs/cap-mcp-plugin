@@ -1,5 +1,5 @@
-import type { csn, User } from "@sap/cds";
-import { Application, RequestHandler } from "express";
+import type { csn } from "@sap/cds";
+import { Application } from "express";
 import { LOGGER } from "./logger";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import express from "express";
@@ -10,13 +10,10 @@ import { MCP_SESSION_HEADER } from "./mcp/constants";
 import { CAPConfiguration } from "./config/types";
 import { loadConfiguration } from "./config/loader";
 import { McpSessionManager } from "./mcp/session-manager";
-import { authHandlerFactory } from "./auth/handler";
 import { registerAuthMiddleware } from "./auth/utils";
 
 /* @ts-ignore */
 const cds = (global as any).cds; // Use hosting app's CDS instance exclusively
-
-// TODO: Handle auth
 
 /**
  * Main MCP plugin class that integrates CAP services with Model Context Protocol
