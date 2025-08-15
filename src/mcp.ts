@@ -43,7 +43,7 @@ export default class McpPlugin {
   public async onBootstrap(app: Application): Promise<void> {
     LOGGER.debug("Event received for 'bootstrap'");
     this.expressApp = app;
-    this.expressApp.use(express.json());
+    this.expressApp.use("/mcp", express.json());
 
     if (this.config.auth === "inherit") {
       registerAuthMiddleware(this.expressApp);
