@@ -10,6 +10,7 @@ For an annotated entity (e.g., `CatalogService.Books`) the plugin can register t
 - `CatalogService_Books_get`: Get one row by key(s)
 - `CatalogService_Books_create`: Create a row (optional)
 - `CatalogService_Books_update`: Update a row by key(s) (optional)
+- `CatalogService_Books_delete`: Delete a row by key(s) (optional)
 
 The names are intentionally descriptive for humans and LLMs: `Service_Entity_mode`.
 
@@ -33,7 +34,7 @@ Per-entity (in CDS):
 ```cds
 annotate CatalogService.Books with @mcp.wrap: {
   tools: true,
-  modes: ['query','get','create','update'],
+  modes: ['query','get','create','update','delete'],
   hint: 'Use for read and write demo operations'
 };
 ```
@@ -43,7 +44,7 @@ Rules of precedence:
 - If `@mcp.wrap.tools` is set on the entity, it takes precedence over global.
 - `@mcp.wrap.modes` overrides the global `wrap_entity_modes` for that entity.
 
-Recommended defaults: enable only `query` and `get` globally; opt into `create`/`update` per entity.
+Recommended defaults: enable only `query` and `get` globally; opt into `create`/`update`/`delete` per entity.
 
 ### Inputs and behavior
 
@@ -55,6 +56,7 @@ Recommended defaults: enable only `query` and `get` globally; opt into `create`/
 - `get`: keys required; for single-key entities you can pass the value directly (shorthand)
 - `create`: non-association fields as-is; associations via `<assoc>_ID`
 - `update`: keys required; non-key fields optional; associations via `<assoc>_ID`
+- `delete`: keys required; this operation cannot be undone
 
 All tools run with a standard timeout and produce consistent MCP responses; errors are returned as JSON text payloads.
 

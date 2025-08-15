@@ -3,7 +3,7 @@ import { registerEntityWrappers } from "../../../src/mcp/entity-tools";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 
 describe("entity-tools - registration", () => {
-  it("registers query/get/create/update based on modes", () => {
+  it("registers query/get/create/update/delete based on modes", () => {
     const server = new McpServer({ name: "t", version: "1" });
     const reg: string[] = [];
     // @ts-ignore override registerTool to capture registrations
@@ -24,7 +24,7 @@ describe("entity-tools - registration", () => {
         ["title", "String"],
       ]),
       new Map([["ID", "Integer"]]),
-      { tools: true, modes: ["query", "get", "create", "update"] },
+      { tools: true, modes: ["query", "get", "create", "update", "delete"] },
     );
 
     registerEntityWrappers(res, server, false, ["query", "get"]);
@@ -35,9 +35,66 @@ describe("entity-tools - registration", () => {
         "CatalogService_Books_get",
         "CatalogService_Books_create",
         "CatalogService_Books_update",
+        "CatalogService_Books_delete",
       ]),
     );
   });
+
+  it("registers only delete when delete mode is specified", () => {
+    const server = new McpServer({ name: "t", version: "1" });
+    const reg: string[] = [];
+    // @ts-ignore override registerTool to capture registrations
+    server.registerTool = (name: string) => {
+      reg.push(name);
+      // return noop handler
+      return undefined as any;
+    };
+
+    const res = new McpResourceAnnotation(
+      "books",
+      "Books",
+      "Books",
+      "CatalogService",
+      new Set(["filter", "orderby", "select", "top", "skip"]),
+      new Map([
+        ["ID", "Integer"],
+        ["title", "String"],
+      ]),
+      new Map([["ID", "Integer"]]),
+      { tools: true, modes: ["delete"] },
+    );
+
+    registerEntityWrappers(res, server, false, []);
+
+    expect(reg).toEqual(["CatalogService_Books_delete"]);
+  });
+
+  it("does not register delete for entities without keys", () => {
+    const server = new McpServer({ name: "t", version: "1" });
+    const reg: string[] = [];
+    // @ts-ignore override registerTool to capture registrations
+    server.registerTool = (name: string) => {
+      reg.push(name);
+      // return noop handler
+      return undefined as any;
+    };
+
+    const res = new McpResourceAnnotation(
+      "books",
+      "Books",
+      "Books",
+      "CatalogService",
+      new Set(["filter", "orderby", "select", "top", "skip"]),
+      new Map([
+        ["ID", "Integer"],
+        ["title", "String"],
+      ]),
+      new Map([]), // No keys - delete should not be registered
+      { tools: true, modes: ["delete"] },
+    );
+
+    registerEntityWrappers(res, server, false, []);
+
+    expect(reg).toEqual([]);
+  });
 });
-
-
