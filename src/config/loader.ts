@@ -36,6 +36,7 @@ export function loadConfiguration(): CAPConfiguration {
       "create",
       "update",
     ],
+    instructions: cdsEnv?.instructions,
   };
 }
 

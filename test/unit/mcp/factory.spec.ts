@@ -73,11 +73,14 @@ describe("Factory", () => {
     test("should create server without annotations", () => {
       const server = createMcpServer(mockConfig);
 
-      expect(McpServer).toHaveBeenCalledWith({
-        name: "Test Server",
-        version: "1.0.0",
-        capabilities: mockConfig.capabilities,
-      });
+      expect(McpServer).toHaveBeenCalledWith(
+        {
+          name: "Test Server",
+          version: "1.0.0",
+          capabilities: mockConfig.capabilities,
+        },
+        { instructions: mockConfig.instructions },
+      );
       expect(server).toBeDefined();
       expect(LOGGER.debug).toHaveBeenCalledWith("Creating MCP server instance");
     });

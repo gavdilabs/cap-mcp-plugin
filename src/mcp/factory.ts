@@ -27,11 +27,14 @@ export function createMcpServer(
   annotations?: ParsedAnnotations,
 ): McpServer {
   LOGGER.debug("Creating MCP server instance");
-  const server = new McpServer({
-    name: config.name,
-    version: config.version,
-    capabilities: config.capabilities,
-  });
+  const server = new McpServer(
+    {
+      name: config.name,
+      version: config.version,
+      capabilities: config.capabilities,
+    },
+    { instructions: config.instructions },
+  );
 
   if (!annotations) {
     LOGGER.debug("No annotations provided, skipping registration...");
