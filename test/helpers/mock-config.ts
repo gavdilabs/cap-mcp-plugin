@@ -19,6 +19,7 @@ export function createTestConfig(
       resources: { listChanged: true, subscribe: false },
       prompts: { listChanged: true },
     },
+    instructions: "Use this server to test the MCP server implementation",
     ...overrides,
   };
 }
@@ -28,7 +29,12 @@ export function createTestConfig(
  */
 export function mockCdsEnvironment(): void {
   (global as any).cds = {
-    log: () => ({ debug: () => {}, info: () => {}, warn: () => {}, error: () => {} }),
+    log: () => ({
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+    }),
     env: {
       mcp: {
         auth: "none",
