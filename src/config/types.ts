@@ -49,6 +49,10 @@ export interface CAPConfiguration {
    * Default: ['query','get']
    */
   wrap_entity_modes?: EntityOperationMode[];
+  /**
+   * Instructions for the MCP server
+   */
+  instructions?: string;
 }
 
 /**

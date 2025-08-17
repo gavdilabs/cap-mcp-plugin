@@ -62,7 +62,8 @@ Add MCP configuration to your `package.json`:
       "name": "my-bookshop-mcp",
       "auth": "inherit",
       "wrap_entities_to_actions": false,
-      "wrap_entity_modes": ["query", "get"]
+      "wrap_entity_modes": ["query", "get"],
+      "instructions": "MCP server instructions for agents"
     }
   }
 }
@@ -251,6 +252,7 @@ Configure the MCP plugin through your CAP application's `package.json` or `.cdsr
       "name": "my-mcp-server",
       "version": "1.0.0",
       "auth": "inherit",
+      "instructions": "mcp server instructions for agents",
       "capabilities": {
         "resources": {
           "listChanged": true,
