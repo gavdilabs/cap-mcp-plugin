@@ -80,6 +80,11 @@ service CatalogService {
   function getAuthor(input : String)             returns String;
 
   @requires: 'author-specialist'
+  @mcp     : {
+    name       : 'get-author-details',
+    description: 'Gets the desired authors details',
+    tool       : true
+  }
   function getAuthorDetails()                    returns String;
 
   annotate getAuthor with @requires: 'book-keeper';
