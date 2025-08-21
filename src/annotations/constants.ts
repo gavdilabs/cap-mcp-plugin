@@ -31,6 +31,15 @@ export const MCP_ANNOTATION_PROPS = {
 };
 
 /**
+ * Set of annotations used for CDS auth annotations
+ * Maps logical names to their actual annotation keys used in CDS files.
+ */
+export const CDS_AUTH_ANNOTATIONS = {
+  REQUIRES: "@requires",
+  RESTRICT: "@restrict",
+};
+
+/**
  * Default set of all available OData query options for MCP resources
  * Used when @mcp.resource is set to `true` to enable all capabilities
  * Includes: $filter, $orderby, $top, $skip, $select

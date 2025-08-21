@@ -4,6 +4,7 @@ import { authHandlerFactory, errorHandlerFactory } from "./handler";
 import { McpAuthType } from "../config/types";
 import { ProxyOAuthServerProvider } from "@modelcontextprotocol/sdk/server/auth/providers/proxyProvider.js";
 import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
+import { McpRestriction } from "../annotations/types";
 
 /**
  * @fileoverview Authentication utilities for MCP-CAP integration.
@@ -242,4 +243,73 @@ function configureOAuthProxy(expressApp: Application): void {
       ),
     }),
   );
+}
+
+/**
+ * Checks whether the requesting user's access matches that of the roles required
+ * @param user
+ * @returns true if the user has access
+ */
+export function hasToolOperationAccess(
+  user: User,
+  roles: McpRestriction[],
+): boolean {
+  for (const el of roles) {
+    if (user.is(el.role)) return true;
+  }
+  return false;
+}
+
+/**
+ * Access for resource annotation wraps object
+ */
+export interface WrapAccess {
+  canRead?: boolean;
+  canCreate?: boolean;
+  canUpdate?: boolean;
+  canDelete?: boolean;
+}
+
+/**
+ * Determines wrap accesses based on the given MCP restrictions derived from annotations
+ * @param user
+ * @param restrictions
+ * @returns wrap tool accesses
+ */
+export function getWrapAccesses(
+  user: User,
+  restrictions: McpRestriction[],
+): WrapAccess {
+  const access: WrapAccess = {};
+
+  for (const el of restrictions) {
+    // If the user does not even have the role then no reason to check
+    if (!user.is(el.role)) continue;
+
+    if (!el.operations || el.operations.length <= 0) {
+      access.canRead = true;
+      access.canCreate = true;
+      access.canDelete = true;
+      access.canUpdate = true;
+      break;
+    }
+
+    if (el.operations.includes("READ")) {
+      access.canRead = true;
+    }
+
+    if (el.operations.includes("UPDATE")) {
+      access.canUpdate = true;
+    }
+
+    if (el.operations.includes("CREATE")) {
+      access.canCreate = true;
+    }
+
+    if (el.operations.includes("DELETE")) {
+      access.canDelete = true;
+    }
+  }
+
+  return access;
 }

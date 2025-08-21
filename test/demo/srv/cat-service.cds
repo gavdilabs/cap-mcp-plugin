@@ -18,8 +18,13 @@ service CatalogService {
   // Wrap Books entity as tools for query/get/create/update (demo)
   annotate CatalogService.Books with @mcp.wrap: {
     tools: true,
-    modes: ['query','get','create','update'],
-    hint: 'Use for read and write demo operations'
+    modes: [
+      'query',
+      'get',
+      'create',
+      'update'
+    ],
+    hint : 'Use for read and write demo operations'
   };
 
   extend projection Books with actions {
@@ -39,6 +44,23 @@ service CatalogService {
   }
   entity Authors          as projection on my.Authors;
 
+  @restrict: [
+    {
+      grant: ['READ'],
+      to   : ['read-role']
+    },
+    {
+      grant: [
+        'CREATE',
+        'UPDATE'
+      ],
+      to   : ['maintainer']
+    },
+    {
+      grant: ['*'],
+      to   : ['admin']
+    }
+  ]
   entity MultiKeyExamples as projection on my.MultiKeyExample;
 
   extend projection MultiKeyExamples with actions {
@@ -50,12 +72,15 @@ service CatalogService {
     function getMultiKey() returns String;
   }
 
-  @mcp: {
+  @mcp     : {
     name       : 'get-author',
     description: 'Gets the desired author',
     tool       : true
   }
+  @requires: 'author-specialist'
   function getAuthor(input : String)             returns String;
+
+  annotate getAuthor with @requires: 'book-keeper';
 
   @mcp: {
     name       : 'books-by-author',
