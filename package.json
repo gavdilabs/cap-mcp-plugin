@@ -41,12 +41,12 @@
     "express": "^4"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.17.1",
+    "@modelcontextprotocol/sdk": "^1.17.3",
     "zod": "^3.25.67",
     "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
-    "@cap-js/cds-types": "^0.12.0",
+    "@cap-js/cds-types": "^0.13.0",
     "@release-it/conventional-changelog": "^10.0.1",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
