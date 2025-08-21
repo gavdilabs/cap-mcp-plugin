@@ -3,7 +3,7 @@
 > This implementation is based on the Model Context Protocol (MCP) put forward by Anthropic.
 > For more information on MCP, please have a look at their [official documentation.](https://modelcontextprotocol.io/introduction)
 
-> 🔧 **In active development - 1.0 release scheduled for Summer 2025**
+> 🔧 **In active development - 1.0 release scheduled for September 2025**
 
 # CAP-MCP Plugin
 
@@ -15,7 +15,7 @@ Transform your CAP OData services into AI-accessible resources, tools, and promp
 The Model Context Protocol bridges the gap between your enterprise data and AI agents.
 By integrating MCP with your CAP applications, you unlock:
 
-- **AI-Native Data Access**: Your CAP services become directly accessible to AI agents like Claude, enabling natural language queries against your business data
+- **AI-Native Data Access**: Your CAP services become directly accessible to MCP enabled AI agents like Claude, enabling natural language queries against your business data
 - **Enterprise Integration**: Seamlessly connect AI tools to your SAP systems, databases, and business logic
 - **Intelligent Automation**: Enable AI agents to perform complex business operations by combining multiple CAP service calls
 - **Developer Productivity**: Allow AI assistants to help developers understand, query, and work with your CAP data models
@@ -23,18 +23,10 @@ By integrating MCP with your CAP applications, you unlock:
 
 ## ⚠️ Development Status
 
-**This plugin is currently in active development (v0.9.2) and approaching production readiness.**
+**This plugin is currently in active development and approaching production readiness.**
 APIs and annotations may change in future releases. Authentication and security features are implemented and tested.
 
 Version 1.0 of the plugin is scheduled for release in Summer 2025 after final stability testing and documentation completion.
-
-## 📦 Installation
-
-```bash
-npm install @gavdi/cap-mcp
-```
-
-The plugin follows CAP's standard plugin architecture and will automatically integrate with your CAP application.
 
 ## 🚀 Quick Setup
 
@@ -50,6 +42,8 @@ The plugin follows CAP's standard plugin architecture and will automatically int
 ```bash
 npm install @gavdi/cap-mcp
 ```
+
+The plugin follows CAP's standard plugin architecture and will automatically integrate with your CAP application upon installation.
 
 ### Step 2: Configure Your CAP Application
 
@@ -83,7 +77,7 @@ service CatalogService {
     resource: ['filter', 'orderby', 'select', 'top', 'skip']
   }
   entity Books as projection on my.Books;
-  
+
   // Optionally expose Books as tools for LLMs (query/get enabled by default config)
   annotate CatalogService.Books with @mcp.wrap: {
     tools: true,
@@ -135,17 +129,6 @@ This plugin transforms your annotated CAP services into a fully functional MCP s
 - Start demo app: `npm run mock`
 - Inspector: `npx @modelcontextprotocol/inspector`
 
-### New wrapper tools
-
-When `wrap_entities_to_actions` is enabled (globally or via `@mcp.wrap.tools: true`), you will see tools named like:
-
-- `CatalogService_Books_query`
-- `CatalogService_Books_get`
-- `CatalogService_Books_create` (if enabled)
-- `CatalogService_Books_update` (if enabled)
-
-Each tool includes a description with fields and OData notes to guide the model. You can add `@mcp.wrap.hint` per entity to enrich descriptions for LLMs.
-
 ### Bruno collection
 
 The `bruno/` folder contains HTTP requests for the MCP endpoint (handy for local manual testing using Bruno or any HTTP client). You may add calls for `tools/list` and `tools/call` to exercise the new wrapper tools.
@@ -196,6 +179,33 @@ service CatalogService {
 - **Natural Language Queries**: "Find books by Stephen King with stock > 20"
 - **Dynamic Filtering**: Complex filter expressions using OData syntax
 - **Flexible Selection**: Choose specific fields and sort orders
+
+### Wrapper tools
+
+When `wrap_entities_to_actions` is enabled (globally or via `@mcp.wrap.tools: true`), you will see tools named like:
+
+- `CatalogService_Books_query`
+- `CatalogService_Books_get`
+- `CatalogService_Books_create` (if enabled)
+- `CatalogService_Books_update` (if enabled)
+
+Each tool includes a description with fields and OData notes to guide the model. You can add `@mcp.wrap.hint` per entity to enrich descriptions for LLMs.
+
+Example:
+
+```cds
+  // Wrap Books entity as tools for query/get/create/update (demo)
+  annotate CatalogService.Books with @mcp.wrap: {
+    tools: true,
+    modes: [
+      'query',
+      'get',
+      'create',
+      'update'
+    ],
+    hint : 'Use for read and write demo operations'
+  };
+```
 
 ### Tool Annotations
 
@@ -277,6 +287,7 @@ Configure the MCP plugin through your CAP application's `package.json` or `.cdsr
 | `name` | string | package.json name | MCP server name |
 | `version` | string | package.json version | MCP server version |
 | `auth` | `"inherit"` \| `"none"` | `"inherit"` | Authentication mode |
+| `instructions` | string | `null` | MCP server instructions for agents |
 | `capabilities.resources.listChanged` | boolean | `true` | Enable resource list change notifications |
 | `capabilities.resources.subscribe` | boolean | `false` | Enable resource subscriptions |
 | `capabilities.tools.listChanged` | boolean | `true` | Enable tool list change notifications |
@@ -540,8 +551,6 @@ npm test -- --testPathPattern=integration
 
 ### Known Limitations
 - **SDK Bug**: Dynamic resource queries require all query parameters due to `@modelcontextprotocol/sdk` RFC template string issue
-- **Authentication Inheritance**: MCP authentication is tightly coupled to CAP's authentication system
-- **Session Cleanup**: MCP sessions are cleaned up on HTTP connection close, not on explicit disconnect
 
 ### Performance Considerations
 - **Large Datasets**: Use `resource: ['top']` or similar constraints for entities with many records
