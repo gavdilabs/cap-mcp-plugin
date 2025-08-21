@@ -324,6 +324,7 @@ function mapOperationRestriction(
         result.push("READ");
         result.push("UPDATE");
         result.push("DELETE");
+        continue;
       default:
         result.push(el as McpRestrictionType);
         continue;

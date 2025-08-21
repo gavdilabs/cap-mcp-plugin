@@ -254,6 +254,9 @@ export function hasToolOperationAccess(
   user: User,
   roles: McpRestriction[],
 ): boolean {
+  // If no restrictions are defined, allow access
+  if (!roles || roles.length === 0) return true;
+
   for (const el of roles) {
     if (user.is(el.role)) return true;
   }
@@ -280,6 +283,16 @@ export function getWrapAccesses(
   user: User,
   restrictions: McpRestriction[],
 ): WrapAccess {
+  // If no restrictions are defined, allow all access
+  if (!restrictions || restrictions.length === 0) {
+    return {
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canDelete: true,
+    };
+  }
+
   const access: WrapAccess = {};
 
   for (const el of restrictions) {

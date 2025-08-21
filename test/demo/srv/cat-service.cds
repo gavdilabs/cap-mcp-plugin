@@ -72,13 +72,15 @@ service CatalogService {
     function getMultiKey() returns String;
   }
 
-  @mcp     : {
+  @mcp: {
     name       : 'get-author',
     description: 'Gets the desired author',
     tool       : true
   }
-  @requires: 'author-specialist'
   function getAuthor(input : String)             returns String;
+
+  @requires: 'author-specialist'
+  function getAuthorDetails()                    returns String;
 
   annotate getAuthor with @requires: 'book-keeper';
 

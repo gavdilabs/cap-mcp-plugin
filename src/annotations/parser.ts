@@ -118,7 +118,15 @@ function parseAnnotations(
   };
 
   for (const [k, v] of Object.entries(definition as any)) {
-    if (!k.includes(MCP_ANNOTATION_KEY)) continue;
+    // Process MCP annotations and CDS auth annotations
+    if (
+      !k.includes(MCP_ANNOTATION_KEY) &&
+      !k.startsWith("@requires") &&
+      !k.startsWith("@restrict")
+    ) {
+      continue;
+    }
+
     LOGGER.debug("Parsing: ", k, v);
     switch (k) {
       case MCP_ANNOTATION_PROPS.MCP_NAME:
@@ -145,6 +153,7 @@ function parseAnnotations(
         continue;
       case CDS_AUTH_ANNOTATIONS.RESTRICT:
         annotations.restrict = v as CdsRestriction[];
+        continue;
       default:
         continue;
     }

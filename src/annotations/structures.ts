@@ -81,7 +81,7 @@ export class McpAnnotation {
    * @returns List of required roles
    */
   get restrictions(): McpRestriction[] {
-    return this.restrictions;
+    return this._restrictions;
   }
 }
 

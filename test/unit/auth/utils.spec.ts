@@ -3,8 +3,11 @@ import {
   isAuthEnabled,
   getAccessRights,
   registerAuthMiddleware,
+  hasToolOperationAccess,
+  getWrapAccesses,
 } from "../../../src/auth/utils";
 import { McpAuthType } from "../../../src/config/types";
+import { McpRestriction } from "../../../src/annotations/types";
 
 // Mock the CDS module
 jest.mock("@sap/cds", () => ({
@@ -409,6 +412,176 @@ describe("Authentication Utils", () => {
         // Assert
         expect(mockProxyOAuthServerProvider).not.toHaveBeenCalled();
         expect(mockMcpAuthRouter).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe("hasToolOperationAccess", () => {
+    it("should return true when user has required role", () => {
+      // Arrange
+      const mockUser = {
+        is: jest.fn().mockReturnValue(true),
+      } as any;
+      const restrictions: McpRestriction[] = [
+        { role: "admin" },
+        { role: "user" },
+      ];
+
+      // Act
+      const result = hasToolOperationAccess(mockUser, restrictions);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockUser.is).toHaveBeenCalledWith("admin");
+    });
+
+    it("should return false when user does not have any required roles", () => {
+      // Arrange
+      const mockUser = {
+        is: jest.fn().mockReturnValue(false),
+      } as any;
+      const restrictions: McpRestriction[] = [
+        { role: "admin" },
+        { role: "maintainer" },
+      ];
+
+      // Act
+      const result = hasToolOperationAccess(mockUser, restrictions);
+
+      // Assert
+      expect(result).toBe(false);
+      expect(mockUser.is).toHaveBeenCalledWith("admin");
+      expect(mockUser.is).toHaveBeenCalledWith("maintainer");
+    });
+
+    it("should return true for empty restrictions (no access control)", () => {
+      // Arrange
+      const mockUser = {
+        is: jest.fn(),
+      } as any;
+      const restrictions: McpRestriction[] = [];
+
+      // Act
+      const result = hasToolOperationAccess(mockUser, restrictions);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(mockUser.is).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getWrapAccesses", () => {
+    it("should grant no access when user has no matching roles", () => {
+      // Arrange
+      const mockUser = {
+        is: jest.fn().mockReturnValue(false),
+      } as any;
+      const restrictions: McpRestriction[] = [
+        { role: "admin", operations: ["READ", "CREATE"] },
+      ];
+
+      // Act
+      const result = getWrapAccesses(mockUser, restrictions);
+
+      // Assert
+      expect(result).toEqual({});
+    });
+
+    it("should grant all access when user has role without specific operations", () => {
+      // Arrange
+      const mockUser = {
+        is: jest.fn().mockImplementation((role) => role === "admin"),
+      } as any;
+      const restrictions: McpRestriction[] = [{ role: "admin" }];
+
+      // Act
+      const result = getWrapAccesses(mockUser, restrictions);
+
+      // Assert
+      expect(result).toEqual({
+        canRead: true,
+        canCreate: true,
+        canUpdate: true,
+        canDelete: true,
+      });
+    });
+
+    it("should grant specific access based on operations", () => {
+      // Arrange
+      const mockUser = {
+        is: jest.fn().mockImplementation((role) => role === "reader"),
+      } as any;
+      const restrictions: McpRestriction[] = [
+        { role: "reader", operations: ["READ"] },
+        { role: "admin", operations: ["CREATE", "UPDATE", "DELETE"] },
+      ];
+
+      // Act
+      const result = getWrapAccesses(mockUser, restrictions);
+
+      // Assert
+      expect(result).toEqual({
+        canRead: true,
+      });
+    });
+
+    it("should combine access from multiple matching roles", () => {
+      // Arrange
+      const mockUser = {
+        is: jest.fn().mockReturnValue(true), // User has all roles
+      } as any;
+      const restrictions: McpRestriction[] = [
+        { role: "reader", operations: ["READ"] },
+        { role: "writer", operations: ["CREATE", "UPDATE"] },
+      ];
+
+      // Act
+      const result = getWrapAccesses(mockUser, restrictions);
+
+      // Assert
+      expect(result).toEqual({
+        canRead: true,
+        canCreate: true,
+        canUpdate: true,
+      });
+    });
+
+    it("should grant all access for empty restrictions (no access control)", () => {
+      // Arrange
+      const mockUser = {
+        is: jest.fn(),
+      } as any;
+      const restrictions: McpRestriction[] = [];
+
+      // Act
+      const result = getWrapAccesses(mockUser, restrictions);
+
+      // Assert
+      expect(result).toEqual({
+        canRead: true,
+        canCreate: true,
+        canUpdate: true,
+        canDelete: true,
+      });
+      expect(mockUser.is).not.toHaveBeenCalled();
+    });
+
+    it("should handle restrictions with empty operations", () => {
+      // Arrange
+      const mockUser = {
+        is: jest.fn().mockImplementation((role) => role === "user"),
+      } as any;
+      const restrictions: McpRestriction[] = [{ role: "user", operations: [] }];
+
+      // Act
+      const result = getWrapAccesses(mockUser, restrictions);
+
+      // Assert
+      expect(result).toEqual({
+        canRead: true,
+        canCreate: true,
+        canUpdate: true,
+        canDelete: true,
       });
     });
   });
