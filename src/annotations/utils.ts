@@ -1,6 +1,13 @@
 import { csn } from "@sap/cds";
 import { DEFAULT_ALL_RESOURCE_OPTIONS, MCP_ANNOTATION_KEY } from "./constants";
-import { McpAnnotationStructure, McpResourceOption } from "./types";
+import {
+  CdsRestriction,
+  CdsRestrictionType,
+  McpAnnotationStructure,
+  McpResourceOption,
+  McpRestriction,
+  McpRestrictionType,
+} from "./types";
 import { LOGGER } from "../logger";
 
 /**
@@ -251,5 +258,78 @@ export function parseEntityKeys(
 
     result.set(k, v.type.replace("cds.", ""));
   }
+  return result;
+}
+
+/**
+ * Parses the CDS role restrictions to be used for MCP
+ */
+export function parseCdsRestrictions(
+  restrictions: CdsRestriction[] | undefined,
+  requires: string | undefined,
+): McpRestriction[] {
+  if (!restrictions && !requires) return [];
+
+  const result: McpRestriction[] = [];
+  if (requires) {
+    result.push({
+      role: requires,
+    });
+  }
+
+  if (!restrictions || restrictions.length <= 0) return result;
+  for (const el of restrictions) {
+    const ops = mapOperationRestriction(el.grant);
+    if (!el.to) {
+      result.push({
+        role: "authenticated-user",
+        operations: ops,
+      });
+      continue;
+    }
+
+    const mapped: McpRestriction[] = el.to.map((to) => ({
+      role: to,
+      operations: ops,
+    }));
+
+    result.push(...mapped);
+  }
+  return result;
+}
+
+/**
+ * Maps the "grant" property from CdsRestriction to McpRestriction
+ */
+function mapOperationRestriction(
+  cdsRestrictions: CdsRestrictionType[],
+): McpRestrictionType[] {
+  const result: McpRestrictionType[] = [];
+
+  if (!cdsRestrictions || cdsRestrictions.length <= 0) {
+    result.push("CREATE");
+    result.push("READ");
+    result.push("UPDATE");
+    result.push("DELETE");
+    return result;
+  }
+
+  for (const el of cdsRestrictions) {
+    switch (el) {
+      case "CHANGE":
+        result.push("UPDATE");
+        continue;
+      case "*":
+        result.push("CREATE");
+        result.push("READ");
+        result.push("UPDATE");
+        result.push("DELETE");
+        continue;
+      default:
+        result.push(el as McpRestrictionType);
+        continue;
+    }
+  }
+
   return result;
 }

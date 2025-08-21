@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerEntityWrappers } from "../../../src/mcp/entity-tools";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
+import { WrapAccess } from "../../../src/auth/utils";
 
 describe("entity-tools - registration", () => {
   it("registers query/get/create/update/delete based on modes", () => {
@@ -27,7 +28,13 @@ describe("entity-tools - registration", () => {
       { tools: true, modes: ["query", "get", "create", "update", "delete"] },
     );
 
-    registerEntityWrappers(res, server, false, ["query", "get"]);
+    const accesses: WrapAccess = {
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canDelete: true,
+    };
+    registerEntityWrappers(res, server, false, ["query", "get"], accesses);
 
     expect(reg).toEqual(
       expect.arrayContaining([
@@ -64,7 +71,8 @@ describe("entity-tools - registration", () => {
       { tools: true, modes: ["delete"] },
     );
 
-    registerEntityWrappers(res, server, false, []);
+    const accesses: WrapAccess = { canDelete: true };
+    registerEntityWrappers(res, server, false, ["delete"], accesses);
 
     expect(reg).toEqual(["CatalogService_Books_delete"]);
   });
@@ -93,7 +101,8 @@ describe("entity-tools - registration", () => {
       { tools: true, modes: ["delete"] },
     );
 
-    registerEntityWrappers(res, server, false, []);
+    const accesses: WrapAccess = { canDelete: true };
+    registerEntityWrappers(res, server, false, ["delete"], accesses);
 
     expect(reg).toEqual([]);
   });

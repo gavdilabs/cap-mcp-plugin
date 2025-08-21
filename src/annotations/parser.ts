@@ -8,6 +8,7 @@ import {
 } from "./structures";
 import {
   AnnotatedMcpEntry,
+  CdsRestriction,
   McpAnnotationPrompt,
   McpAnnotationStructure,
   ParsedAnnotations,
@@ -19,12 +20,17 @@ import {
   isValidPromptsAnnotation,
   isValidResourceAnnotation,
   isValidToolAnnotation,
+  parseCdsRestrictions,
   parseEntityKeys,
   parseOperationElements,
   parseResourceElements,
   splitDefinitionName,
 } from "./utils";
-import { MCP_ANNOTATION_KEY, MCP_ANNOTATION_PROPS } from "./constants";
+import {
+  CDS_AUTH_ANNOTATIONS,
+  MCP_ANNOTATION_KEY,
+  MCP_ANNOTATION_PROPS,
+} from "./constants";
 
 /**
  * Parses model definitions to extract MCP annotations and return them as a map of annotated entries
@@ -112,7 +118,15 @@ function parseAnnotations(
   };
 
   for (const [k, v] of Object.entries(definition as any)) {
-    if (!k.includes(MCP_ANNOTATION_KEY)) continue;
+    // Process MCP annotations and CDS auth annotations
+    if (
+      !k.includes(MCP_ANNOTATION_KEY) &&
+      !k.startsWith("@requires") &&
+      !k.startsWith("@restrict")
+    ) {
+      continue;
+    }
+
     LOGGER.debug("Parsing: ", k, v);
     switch (k) {
       case MCP_ANNOTATION_PROPS.MCP_NAME:
@@ -132,7 +146,13 @@ function parseAnnotations(
         continue;
       case MCP_ANNOTATION_PROPS.MCP_WRAP:
         // Wrapper container to expose resources as tools
-        (annotations as any).wrap = v as any;
+        annotations.wrap = v as any;
+        continue;
+      case CDS_AUTH_ANNOTATIONS.REQUIRES:
+        annotations.requires = v as string;
+        continue;
+      case CDS_AUTH_ANNOTATIONS.RESTRICT:
+        annotations.restrict = v as CdsRestriction[];
         continue;
       default:
         continue;
@@ -160,6 +180,10 @@ function constructResourceAnnotation(
 
   const functionalities = determineResourceOptions(annotations);
   const { properties, resourceKeys } = parseResourceElements(definition);
+  const restrictions = parseCdsRestrictions(
+    annotations.restrict,
+    annotations.requires,
+  );
 
   return new McpResourceAnnotation(
     annotations.name as string,
@@ -170,6 +194,7 @@ function constructResourceAnnotation(
     properties,
     resourceKeys,
     annotations.wrap,
+    restrictions,
   );
 }
 
@@ -192,6 +217,10 @@ function constructToolAnnotation(
   if (!isValidToolAnnotation(annotations)) return undefined;
 
   const { parameters, operationKind } = parseOperationElements(annotations);
+  const restrictions = parseCdsRestrictions(
+    annotations.restrict,
+    annotations.requires,
+  );
   return new McpToolAnnotation(
     annotations.name,
     annotations.description,
@@ -201,6 +230,7 @@ function constructToolAnnotation(
     entityKey,
     operationKind,
     keyParams,
+    restrictions,
   );
 }
 

@@ -14,6 +14,39 @@ import {
 export type McpDataType = "prompt" | "tool" | "resource";
 
 /**
+ * CDS restriction types
+ */
+export type CdsRestrictionType =
+  | "READ"
+  | "UPDATE"
+  | "CREATE"
+  | "DELETE"
+  | "*"
+  | "CHANGE";
+
+/**
+ * Object type for the standard @restriction annotation for CDS
+ */
+export interface CdsRestriction {
+  grant: CdsRestrictionType[];
+  to?: string[];
+  where?: string;
+}
+
+/**
+ * MCP parsed restriction types
+ */
+export type McpRestrictionType = "CREATE" | "READ" | "UPDATE" | "DELETE";
+
+/**
+ * Restriction mapping for MCP
+ */
+export interface McpRestriction {
+  role: string;
+  operations?: McpRestrictionType[];
+}
+
+/**
  * OData query capabilities that can be enabled for MCP resources
  * Each option corresponds to a specific OData v4 query parameter
  */
@@ -72,6 +105,14 @@ export type McpAnnotationStructure = {
    * Optional wrapper configuration to expose resources as tools
    */
   wrap?: McpAnnotationWrap;
+  /**
+   * Requirement for authorization annotated on element
+   */
+  requires?: string;
+  /**
+   * Restriction of access to annotated element
+   */
+  restrict?: CdsRestriction[];
 };
 
 /**

@@ -1,5 +1,4 @@
 import { McpResourceAnnotation } from "../annotations/structures";
-import { LOGGER } from "../logger";
 import { MCP_SESSION_HEADER, NEW_LINE } from "./constants";
 import { McpSession } from "./types";
 import { Request, Response } from "express";

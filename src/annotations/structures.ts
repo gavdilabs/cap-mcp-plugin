@@ -2,6 +2,7 @@ import {
   McpAnnotationPrompt,
   McpResourceOption,
   McpAnnotationWrap,
+  McpRestriction,
 } from "./types";
 
 /**
@@ -17,6 +18,8 @@ export class McpAnnotation {
   protected readonly _target: string;
   /** The name of the CAP service this annotation belongs to */
   protected readonly _serviceName: string;
+  /** Auth roles by providing CDS that is required for use */
+  protected readonly _restrictions: McpRestriction[];
 
   /**
    * Creates a new MCP annotation instance
@@ -24,17 +27,20 @@ export class McpAnnotation {
    * @param description - Human-readable description
    * @param target - The target element this annotation applies to
    * @param serviceName - Name of the associated CAP service
+   * @param restrictions - Roles required for the given annotation
    */
   constructor(
     name: string,
     description: string,
     target: string,
     serviceName: string,
+    restrictions: McpRestriction[],
   ) {
     this._name = name;
     this._description = description;
     this._target = target;
     this._serviceName = serviceName;
+    this._restrictions = restrictions;
   }
 
   /**
@@ -68,6 +74,15 @@ export class McpAnnotation {
   get serviceName(): string {
     return this._serviceName;
   }
+
+  /**
+   * Gets the list of roles required for access to the annotation.
+   * If the list is empty, then all can access.
+   * @returns List of required roles
+   */
+  get restrictions(): McpRestriction[] {
+    return this._restrictions;
+  }
 }
 
 /**
@@ -93,6 +108,7 @@ export class McpResourceAnnotation extends McpAnnotation {
    * @param functionalities - Set of enabled OData query options (filter, top, skip, etc.)
    * @param properties - Map of entity properties to their CDS types
    * @param resourceKeys - Map of key fields to their types
+   * @param restrictions - Optional restrictions based on CDS roles
    */
   constructor(
     name: string,
@@ -103,8 +119,9 @@ export class McpResourceAnnotation extends McpAnnotation {
     properties: Map<string, string>,
     resourceKeys: Map<string, string>,
     wrap?: McpAnnotationWrap,
+    restrictions?: McpRestriction[],
   ) {
-    super(name, description, target, serviceName);
+    super(name, description, target, serviceName, restrictions ?? []);
     this._functionalities = functionalities;
     this._properties = properties;
     this._resourceKeys = resourceKeys;
@@ -167,6 +184,7 @@ export class McpToolAnnotation extends McpAnnotation {
    * @param entityKey - Optional entity key field for bound operations
    * @param operationKind - Optional operation type ('function' or 'action')
    * @param keyTypeMap - Optional map of key fields to types for bound operations
+   * @param restrictions - Optional restrictions based on CDS roles
    */
   constructor(
     name: string,
@@ -177,8 +195,9 @@ export class McpToolAnnotation extends McpAnnotation {
     entityKey?: string,
     operationKind?: string,
     keyTypeMap?: Map<string, string>,
+    restrictions?: McpRestriction[],
   ) {
-    super(name, description, operation, serviceName);
+    super(name, description, operation, serviceName, restrictions ?? []);
     this._parameters = parameters;
     this._entityKey = entityKey;
     this._operationKind = operationKind;
@@ -239,7 +258,7 @@ export class McpPromptAnnotation extends McpAnnotation {
     serviceName: string,
     prompts: McpAnnotationPrompt[],
   ) {
-    super(name, description, serviceName, serviceName);
+    super(name, description, serviceName, serviceName, []);
     this._prompts = prompts;
   }
 

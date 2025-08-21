@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpResourceAnnotation } from "../annotations/structures";
-import { getAccessRights } from "../auth/utils";
+import { getAccessRights, WrapAccess } from "../auth/utils";
 import { LOGGER } from "../logger";
 import { determineMcpParameterType, toolError, asMcpResult } from "./utils";
 import { EntityOperationMode, EntityListQueryArgs } from "./types";
@@ -89,6 +89,7 @@ export function registerEntityWrappers(
   server: McpServer,
   authEnabled: boolean,
   defaultModes: EntityOperationMode[],
+  accesses: WrapAccess,
 ): void {
   const CDS = (global as any).cds;
   LOGGER.debug(
@@ -97,30 +98,33 @@ export function registerEntityWrappers(
   );
   const modes = resAnno.wrap?.modes ?? defaultModes;
 
-  if (modes.includes("query")) {
+  if (modes.includes("query") && accesses.canRead) {
     registerQueryTool(resAnno, server, authEnabled);
   }
   if (
     modes.includes("get") &&
     resAnno.resourceKeys &&
-    resAnno.resourceKeys.size > 0
+    resAnno.resourceKeys.size > 0 &&
+    accesses.canRead
   ) {
     registerGetTool(resAnno, server, authEnabled);
   }
-  if (modes.includes("create")) {
+  if (modes.includes("create") && accesses.canCreate) {
     registerCreateTool(resAnno, server, authEnabled);
   }
   if (
     modes.includes("update") &&
     resAnno.resourceKeys &&
-    resAnno.resourceKeys.size > 0
+    resAnno.resourceKeys.size > 0 &&
+    accesses.canUpdate
   ) {
     registerUpdateTool(resAnno, server, authEnabled);
   }
   if (
     modes.includes("delete") &&
     resAnno.resourceKeys &&
-    resAnno.resourceKeys.size > 0
+    resAnno.resourceKeys.size > 0 &&
+    accesses.canDelete
   ) {
     registerDeleteTool(resAnno, server, authEnabled);
   }

@@ -47,6 +47,39 @@ describe("Parser", () => {
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation!.name).toBe("Test Entity");
       expect(annotation!.serviceName).toBe("TestService");
+      expect((annotation as McpResourceAnnotation).restrictions).toEqual([]);
+    });
+
+    test("should parse entity with resource annotation and restrictions", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity description",
+            "@mcp.resource": true,
+            "@restrict": [
+              {
+                grant: ["READ"],
+                to: ["read-role"],
+              },
+            ],
+            elements: {
+              id: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation.restrictions).toEqual([
+        { role: "read-role", operations: ["READ"] },
+      ]);
     });
 
     test("should parse function with tool annotation", () => {
@@ -70,6 +103,31 @@ describe("Parser", () => {
       const annotation = result.get("TestFunction");
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation!.name).toBe("Test Function");
+      expect((annotation as McpToolAnnotation).restrictions).toEqual([]);
+    });
+
+    test("should parse function with tool annotation and requires", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestFunction": {
+            kind: "function",
+            "@mcp.name": "Test Function",
+            "@mcp.description": "Test function description",
+            "@mcp.tool": true,
+            "@requires": "author-specialist",
+            params: {
+              input: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestFunction") as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation.restrictions).toEqual([{ role: "author-specialist" }]);
     });
 
     test("should parse service with prompts annotation", () => {

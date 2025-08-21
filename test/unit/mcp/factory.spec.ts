@@ -50,6 +50,22 @@ jest.mock("../../../src/logger", () => ({
   },
 }));
 
+jest.mock("../../../src/auth/utils", () => ({
+  isAuthEnabled: jest.fn(() => false),
+  getAccessRights: jest.fn(() => ({ is: () => true })),
+  hasToolOperationAccess: jest.fn(() => true),
+  getWrapAccesses: jest.fn(() => ({
+    canRead: true,
+    canCreate: true,
+    canUpdate: true,
+    canDelete: true,
+  })),
+}));
+
+jest.mock("../../../src/mcp/entity-tools", () => ({
+  registerEntityWrappers: jest.fn(),
+}));
+
 describe("Factory", () => {
   let mockConfig: CAPConfiguration;
 

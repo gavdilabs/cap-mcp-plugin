@@ -9,10 +9,13 @@ import {
   parseResourceElements,
   parseOperationElements,
   parseEntityKeys,
+  parseCdsRestrictions,
 } from "../../../src/annotations/utils";
 import {
   McpAnnotationStructure,
   McpResourceOption,
+  CdsRestriction,
+  McpRestriction,
 } from "../../../src/annotations/types";
 import { csn } from "@sap/cds";
 
@@ -433,6 +436,125 @@ describe("Utils", () => {
       expect(() => parseEntityKeys(definition)).toThrow(
         "Invalid key type found for bound operation",
       );
+    });
+  });
+
+  describe("parseCdsRestrictions", () => {
+    test("should return empty array when no restrictions or requires", () => {
+      const result = parseCdsRestrictions(undefined, undefined);
+      expect(result).toEqual([]);
+    });
+
+    test("should parse requires annotation only", () => {
+      const result = parseCdsRestrictions(undefined, "admin");
+      expect(result).toEqual([{ role: "admin" }]);
+    });
+
+    test("should parse simple restriction with specific roles", () => {
+      const restrictions: CdsRestriction[] = [
+        {
+          grant: ["READ", "UPDATE"],
+          to: ["maintainer", "admin"],
+        },
+      ];
+
+      const result = parseCdsRestrictions(restrictions, undefined);
+      expect(result).toEqual([
+        { role: "maintainer", operations: ["READ", "UPDATE"] },
+        { role: "admin", operations: ["READ", "UPDATE"] },
+      ]);
+    });
+
+    test("should handle restriction without 'to' field", () => {
+      const restrictions: CdsRestriction[] = [
+        {
+          grant: ["READ"],
+        },
+      ];
+
+      const result = parseCdsRestrictions(restrictions, undefined);
+      expect(result).toEqual([
+        { role: "authenticated-user", operations: ["READ"] },
+      ]);
+    });
+
+    test("should map CHANGE to UPDATE operation", () => {
+      const restrictions: CdsRestriction[] = [
+        {
+          grant: ["CHANGE"],
+          to: ["editor"],
+        },
+      ];
+
+      const result = parseCdsRestrictions(restrictions, undefined);
+      expect(result).toEqual([{ role: "editor", operations: ["UPDATE"] }]);
+    });
+
+    test("should map * to all operations", () => {
+      const restrictions: CdsRestriction[] = [
+        {
+          grant: ["*"],
+          to: ["admin"],
+        },
+      ];
+
+      const result = parseCdsRestrictions(restrictions, undefined);
+      expect(result).toEqual([
+        { role: "admin", operations: ["CREATE", "READ", "UPDATE", "DELETE"] },
+      ]);
+    });
+
+    test("should handle empty grant array", () => {
+      const restrictions: CdsRestriction[] = [
+        {
+          grant: [],
+          to: ["user"],
+        },
+      ];
+
+      const result = parseCdsRestrictions(restrictions, undefined);
+      expect(result).toEqual([
+        { role: "user", operations: ["CREATE", "READ", "UPDATE", "DELETE"] },
+      ]);
+    });
+
+    test("should combine requires and restrictions", () => {
+      const restrictions: CdsRestriction[] = [
+        {
+          grant: ["READ"],
+          to: ["read-role"],
+        },
+      ];
+
+      const result = parseCdsRestrictions(restrictions, "book-keeper");
+      expect(result).toEqual([
+        { role: "book-keeper" },
+        { role: "read-role", operations: ["READ"] },
+      ]);
+    });
+
+    test("should handle multiple restrictions", () => {
+      const restrictions: CdsRestriction[] = [
+        {
+          grant: ["READ"],
+          to: ["read-role"],
+        },
+        {
+          grant: ["CREATE", "UPDATE"],
+          to: ["maintainer"],
+        },
+        {
+          grant: ["*"],
+          to: ["admin"],
+        },
+      ];
+
+      const result = parseCdsRestrictions(restrictions, undefined);
+      expect(result).toEqual([
+        { role: "read-role", operations: ["READ"] },
+        { role: "maintainer", operations: ["CREATE", "UPDATE"] },
+        { role: "admin", operations: ["CREATE", "READ", "UPDATE", "DELETE"] },
+      ]);
     });
   });
 });

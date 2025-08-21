@@ -7,6 +7,7 @@ import {
 import {
   McpResourceOption,
   McpAnnotationPrompt,
+  McpRestriction,
 } from "../../../src/annotations/types";
 
 describe("McpAnnotation", () => {
@@ -18,6 +19,7 @@ describe("McpAnnotation", () => {
       "test-description",
       "test-target",
       "test-service",
+      [],
     );
   });
 
@@ -26,14 +28,31 @@ describe("McpAnnotation", () => {
     expect(annotation.description).toBe("test-description");
     expect(annotation.target).toBe("test-target");
     expect(annotation.serviceName).toBe("test-service");
+    expect(annotation.restrictions).toEqual([]);
   });
 
   test("should handle empty strings", () => {
-    const emptyAnnotation = new McpAnnotation("", "", "", "");
+    const emptyAnnotation = new McpAnnotation("", "", "", "", []);
     expect(emptyAnnotation.name).toBe("");
     expect(emptyAnnotation.description).toBe("");
     expect(emptyAnnotation.target).toBe("");
     expect(emptyAnnotation.serviceName).toBe("");
+    expect(emptyAnnotation.restrictions).toEqual([]);
+  });
+
+  test("should create instance with restrictions", () => {
+    const restrictions: McpRestriction[] = [
+      { role: "admin", operations: ["READ", "UPDATE"] },
+      { role: "user", operations: ["READ"] },
+    ];
+    const annotationWithRestrictions = new McpAnnotation(
+      "test-name",
+      "test-description",
+      "test-target",
+      "test-service",
+      restrictions,
+    );
+    expect(annotationWithRestrictions.restrictions).toEqual(restrictions);
   });
 });
 
@@ -85,6 +104,24 @@ describe("McpResourceAnnotation", () => {
     expect(emptyAnnotation.properties.size).toBe(0);
     expect(emptyAnnotation.resourceKeys.size).toBe(0);
   });
+
+  test("should create resource annotation with restrictions", () => {
+    const restrictions: McpRestriction[] = [
+      { role: "read-role", operations: ["READ"] },
+    ];
+    const annotationWithRestrictions = new McpResourceAnnotation(
+      "resource-name",
+      "resource-description",
+      "resource-target",
+      "resource-service",
+      new Set(["filter"]),
+      new Map([["id", "UUID"]]),
+      new Map([["id", "UUID"]]),
+      undefined,
+      restrictions,
+    );
+    expect(annotationWithRestrictions.restrictions).toEqual(restrictions);
+  });
 });
 
 describe("McpToolAnnotation", () => {
@@ -127,6 +164,22 @@ describe("McpToolAnnotation", () => {
     expect(annotation.entityKey).toBeUndefined();
     expect(annotation.operationKind).toBeUndefined();
     expect(annotation.keyTypeMap).toBeUndefined();
+  });
+
+  test("should create tool annotation with restrictions", () => {
+    const restrictions: McpRestriction[] = [{ role: "author-specialist" }];
+    const annotation = new McpToolAnnotation(
+      "tool-name",
+      "tool-description",
+      "tool-operation",
+      "tool-service",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      restrictions,
+    );
+    expect(annotation.restrictions).toEqual(restrictions);
   });
 });
 

@@ -11,7 +11,12 @@ import { assignToolToServer } from "./tools";
 import { assignResourceToServer } from "./resources";
 import { CAPConfiguration } from "../config/types";
 import { assignPromptToServer } from "./prompts";
-import { isAuthEnabled } from "../auth/utils";
+import {
+  getAccessRights,
+  getWrapAccesses,
+  hasToolOperationAccess,
+  isAuthEnabled,
+} from "../auth/utils";
 // Use relative import without extension for ts-jest resolver compatibility
 import { registerEntityWrappers } from "./entity-tools";
 import { registerDescribeModelTool } from "./describe-model";
@@ -46,13 +51,20 @@ export function createMcpServer(
 
   // Always register discovery tool for better model planning
   registerDescribeModelTool(server);
+  const accessRights = getAccessRights(authEnabled);
 
   for (const entry of annotations.values()) {
     if (entry instanceof McpToolAnnotation) {
+      if (!hasToolOperationAccess(accessRights, entry.restrictions)) continue;
       assignToolToServer(entry, server, authEnabled);
       continue;
     } else if (entry instanceof McpResourceAnnotation) {
-      assignResourceToServer(entry, server, authEnabled);
+      const accesses = getWrapAccesses(accessRights, entry.restrictions);
+
+      if (accesses.canRead) {
+        assignResourceToServer(entry, server, authEnabled);
+      }
+
       // Optionally expose entities as tools based on global/per-entity switches
       const globalWrap = !!config.wrap_entities_to_actions;
       const localWrap = entry.wrap?.tools;
@@ -60,7 +72,7 @@ export function createMcpServer(
         localWrap === true || (localWrap === undefined && globalWrap);
       if (enabled) {
         const modes = config.wrap_entity_modes ?? ["query", "get"];
-        registerEntityWrappers(entry, server, authEnabled, modes);
+        registerEntityWrappers(entry, server, authEnabled, modes, accesses);
       }
       continue;
     } else if (entry instanceof McpPromptAnnotation) {
