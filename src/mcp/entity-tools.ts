@@ -120,11 +120,12 @@ function buildFieldDocumentation(resAnno: McpResourceAnnotation): string {
   const docs: string[] = [];
   for (const [propName, cdsType] of resAnno.properties.entries()) {
     const isAssociation = String(cdsType).toLowerCase().includes("association");
-    const fieldName = propName;
-    const type = isAssociation
-      ? `association(compare by key value)`
-      : String(cdsType).toLowerCase();
-    docs.push(`${fieldName}(${type})`);
+    if (isAssociation) {
+      docs.push(`${propName}(association: compare by key value)`);
+      docs.push(`${propName}_ID(foreign key for ${propName})`);
+    } else {
+      docs.push(`${propName}(${String(cdsType).toLowerCase()})`);
+    }
   }
   return docs.join(", ");
 }
@@ -216,8 +217,26 @@ function registerQueryTool(
       ([, cdsType]) => !String(cdsType).toLowerCase().includes("association"),
     )
     .map(([name]) => name);
-  const whereFieldEnum = (allKeys.length
-    ? z.enum(allKeys as [string, ...string[]])
+
+  // Add foreign key fields for associations to scalar keys for select/orderby
+  for (const [propName, cdsType] of resAnno.properties.entries()) {
+    const isAssociation = String(cdsType).toLowerCase().includes("association");
+    if (isAssociation) {
+      scalarKeys.push(`${propName}_ID`);
+    }
+  }
+
+  // Build where field enum: include all fields plus foreign key fields for associations
+  const whereKeys = [...allKeys];
+  for (const [propName, cdsType] of resAnno.properties.entries()) {
+    const isAssociation = String(cdsType).toLowerCase().includes("association");
+    if (isAssociation) {
+      whereKeys.push(`${propName}_ID`);
+    }
+  }
+
+  const whereFieldEnum = (whereKeys.length
+    ? z.enum(whereKeys as [string, ...string[]])
     : z
         .enum(["__dummy__"])
         .transform(() => "__dummy__")) as unknown as z.ZodEnum<
@@ -243,6 +262,9 @@ function registerQueryTool(
       select: z
         .array(selectFieldEnum)
         .optional()
+        .transform((val: string[] | undefined) =>
+          val && val.length > 0 ? val : undefined,
+        )
         .describe(
           `Select/orderby allow only scalar fields: ${scalarKeys.join(", ")}`,
         ),
@@ -253,7 +275,11 @@ function registerQueryTool(
             dir: z.enum(["asc", "desc"]).default("asc"),
           }),
         )
-        .optional(),
+        .optional()
+        .transform(
+          (val: { field: string; dir: "asc" | "desc" }[] | undefined) =>
+            val && val.length > 0 ? val : undefined,
+        ),
       where: z
         .array(
           z.object({
@@ -280,7 +306,10 @@ function registerQueryTool(
             ]),
           }),
         )
-        .optional(),
+        .optional()
+        .transform((val: any[] | undefined) =>
+          val && val.length > 0 ? val : undefined,
+        ),
       q: z.string().optional().describe("Quick text search"),
       return: z.enum(["rows", "count", "aggregate"]).default("rows").optional(),
       aggregate: z
@@ -290,7 +319,14 @@ function registerQueryTool(
             fn: z.enum(["sum", "avg", "min", "max", "count"]),
           }),
         )
-        .optional(),
+        .optional()
+        .transform(
+          (
+            val:
+              | { field: string; fn: "sum" | "avg" | "min" | "max" | "count" }[]
+              | undefined,
+          ) => (val && val.length > 0 ? val : undefined),
+        ),
       explain: z.boolean().optional(),
     })
     .strict();
@@ -822,37 +858,72 @@ function buildQuery(
       const textFields = Array.from(resAnno.properties.keys()).filter((k) =>
         /string/i.test(String(resAnno.properties.get(k))),
       );
-      const ors = textFields.map((f) =>
-        CDS.parse.expr(
-          `contains(${f}, '${String(args.q).replace(/'/g, "''")}')`,
-        ),
-      );
-      if (ors.length)
-        ands.push(CDS.parse.expr(ors.map((x) => `(${x})`).join(" or ")));
+      const escaped = String(args.q).replace(/'/g, "''");
+      const ors = textFields.map((f) => `contains(${f}, '${escaped}')`);
+      if (ors.length) {
+        const orExpr = ors.map((x) => `(${x})`).join(" or ");
+        ands.push(CDS.parse.expr(orExpr));
+      }
     }
 
     for (const c of args.where || []) {
       const { field, op, value } = c;
+
+      // Handle association field comparisons by converting to proper CDS syntax
+      let actualField = field;
+      const isAssociationField =
+        resAnno.properties.has(field) &&
+        String(resAnno.properties.get(field))
+          .toLowerCase()
+          .includes("association");
+
+      if (isAssociationField) {
+        // For association fields, convert to foreign key field name
+        actualField = `${field}_ID`;
+      }
+
       if (op === "in" && Array.isArray(value)) {
         const list = value
           .map((v) =>
             typeof v === "string" ? `'${v.replace(/'/g, "''")}'` : String(v),
           )
           .join(",");
-        ands.push(CDS.parse.expr(`${field} in (${list})`));
+        ands.push(CDS.parse.expr(`${actualField} in (${list})`));
         continue;
       }
       const lit =
         typeof value === "string"
           ? `'${String(value).replace(/'/g, "''")}'`
           : String(value);
+
+      // Map OData operators to CDS/SQL operators
+      const cdsOp =
+        op === "eq"
+          ? "="
+          : op === "ne"
+            ? "!="
+            : op === "gt"
+              ? ">"
+              : op === "ge"
+                ? ">="
+                : op === "lt"
+                  ? "<"
+                  : op === "le"
+                    ? "<="
+                    : op;
+
       const expr = ["contains", "startswith", "endswith"].includes(op)
-        ? `${op}(${field}, ${lit})`
-        : `${field} ${op} ${lit}`;
+        ? `${op}(${actualField}, ${lit})`
+        : `${actualField} ${cdsOp} ${lit}`;
       ands.push(CDS.parse.expr(expr));
     }
 
-    if (ands.length) qy = qy.where(ands);
+    if (ands.length) {
+      // Apply each condition individually - CDS will AND them together
+      for (const condition of ands) {
+        qy = qy.where(condition);
+      }
+    }
   }
 
   return qy;
