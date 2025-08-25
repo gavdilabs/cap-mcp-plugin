@@ -78,6 +78,58 @@ const MAX_TOP = 200;
 const TIMEOUT_MS = 10_000; // Standard timeout for tool calls (ms)
 
 /**
+ * Builds enhanced query tool description with field types and association examples
+ * to help LLMs understand how to construct proper query parameters.
+ */
+function buildEnhancedQueryDescription(resAnno: McpResourceAnnotation): string {
+  // Build field descriptions with types and association hints
+  const fieldDescriptions: string[] = [];
+  const associationExamples: string[] = [];
+
+  for (const [propName, cdsType] of resAnno.properties.entries()) {
+    const isAssociation = String(cdsType).toLowerCase().includes("association");
+    if (isAssociation) {
+      const fieldName = `${propName}`;
+      fieldDescriptions.push(
+        `${fieldName}(association: compare by key value e.g. ID)`,
+      );
+      associationExamples.push(`{field:'${fieldName}',op:'eq',value:1}`);
+    } else {
+      const jsType = determineMcpParameterType(cdsType);
+      const typeStr =
+        typeof jsType === "object" && jsType !== null && "type" in jsType
+          ? (jsType as any).type
+          : "unknown";
+      fieldDescriptions.push(`${propName}(${typeStr})`);
+    }
+  }
+
+  const fieldList = fieldDescriptions.join(", ");
+  const exampleText =
+    associationExamples.length > 0
+      ? ` Association examples: ${associationExamples.join(", ")}`
+      : "";
+
+  return `Query ${resAnno.target}. Fields: ${fieldList}.${exampleText} Use structured where clauses with field names exactly as listed.`;
+}
+
+/**
+ * Builds field documentation for schema descriptions
+ */
+function buildFieldDocumentation(resAnno: McpResourceAnnotation): string {
+  const docs: string[] = [];
+  for (const [propName, cdsType] of resAnno.properties.entries()) {
+    const isAssociation = String(cdsType).toLowerCase().includes("association");
+    const fieldName = propName;
+    const type = isAssociation
+      ? `association(compare by key value)`
+      : String(cdsType).toLowerCase();
+    docs.push(`${fieldName}(${type})`);
+  }
+  return docs.join(", ");
+}
+
+/**
  * Registers CRUD-like MCP tools for an annotated entity (resource).
  * Modes can be controlled globally via configuration and per-entity via @mcp.wrap.
  *
@@ -176,7 +228,10 @@ function registerQueryTool(
         .default(25)
         .describe("Rows (default 25)"),
       skip: z.number().int().min(0).default(0).describe("Offset"),
-      select: z.array(fieldEnum).optional(),
+      select: z
+        .array(fieldEnum)
+        .optional()
+        .describe(`Select fields: ${propKeys.join(", ")}`),
       orderby: z
         .array(
           z.object({
@@ -188,7 +243,9 @@ function registerQueryTool(
       where: z
         .array(
           z.object({
-            field: fieldEnum,
+            field: fieldEnum.describe(
+              `Available fields: ${buildFieldDocumentation(resAnno)}`,
+            ),
             op: z.enum([
               "eq",
               "ne",
@@ -236,7 +293,7 @@ function registerQueryTool(
   } as unknown as Record<string, z.ZodType>;
 
   const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
-  const desc = `List ${resAnno.target}. Use structured filters (where), top/skip/orderby/select. For fields & examples call cap_describe_model.${hint}`;
+  const desc = buildEnhancedQueryDescription(resAnno) + hint;
 
   const queryHandler = async (rawArgs: Record<string, unknown>) => {
     const parsed = inputZod.safeParse(rawArgs);
@@ -732,7 +789,9 @@ function buildQuery(
   );
   if ((propKeys?.length ?? 0) === 0) return qy;
 
-  if (args.select?.length) qy = qy.columns(...args.select);
+  if (args.select?.length) {
+    qy = qy.columns(...args.select);
+  }
 
   if (args.orderby?.length) {
     // Map to CQN-compatible order by fragments
