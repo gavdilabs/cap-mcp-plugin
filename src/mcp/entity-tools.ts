@@ -79,38 +79,21 @@ const TIMEOUT_MS = 10_000; // Standard timeout for tool calls (ms)
 
 /**
  * Builds enhanced query tool description with field types and association examples
- * to help LLMs understand how to construct proper query parameters.
  */
 function buildEnhancedQueryDescription(resAnno: McpResourceAnnotation): string {
-  // Build field descriptions with types and association hints
-  const fieldDescriptions: string[] = [];
-  const associationExamples: string[] = [];
+  const associations = Array.from(resAnno.properties.entries())
+    .filter(([, cdsType]) =>
+      String(cdsType).toLowerCase().includes("association"),
+    )
+    .map(([name]) => `${name}_ID`);
 
-  for (const [propName, cdsType] of resAnno.properties.entries()) {
-    const isAssociation = String(cdsType).toLowerCase().includes("association");
-    if (isAssociation) {
-      const fieldName = `${propName}`;
-      fieldDescriptions.push(
-        `${fieldName}(association: compare by key value e.g. ID)`,
-      );
-      associationExamples.push(`{field:'${fieldName}',op:'eq',value:1}`);
-    } else {
-      const jsType = determineMcpParameterType(cdsType);
-      const typeStr =
-        typeof jsType === "object" && jsType !== null && "type" in jsType
-          ? (jsType as any).type
-          : "unknown";
-      fieldDescriptions.push(`${propName}(${typeStr})`);
-    }
-  }
-
-  const fieldList = fieldDescriptions.join(", ");
-  const exampleText =
-    associationExamples.length > 0
-      ? ` Association examples: ${associationExamples.join(", ")}`
+  const baseDesc = `Query ${resAnno.target} with structured filters, select, orderby, top/skip.`;
+  const assocHint =
+    associations.length > 0
+      ? ` Foreign keys (${associations.join(", ")}) available for filtering by association ID.`
       : "";
 
-  return `Query ${resAnno.target}. Fields: ${fieldList}.${exampleText} Use structured where clauses with field names exactly as listed.`;
+  return baseDesc + assocHint;
 }
 
 /**
@@ -226,14 +209,9 @@ function registerQueryTool(
     }
   }
 
-  // Build where field enum: include all fields plus foreign key fields for associations
-  const whereKeys = [...allKeys];
-  for (const [propName, cdsType] of resAnno.properties.entries()) {
-    const isAssociation = String(cdsType).toLowerCase().includes("association");
-    if (isAssociation) {
-      whereKeys.push(`${propName}_ID`);
-    }
-  }
+  // Build where field enum: use same fields as select (scalar + foreign keys)
+  // This ensures consistency - what you can select, you can filter by
+  const whereKeys = [...scalarKeys];
 
   const whereFieldEnum = (whereKeys.length
     ? z.enum(whereKeys as [string, ...string[]])
@@ -284,7 +262,7 @@ function registerQueryTool(
         .array(
           z.object({
             field: whereFieldEnum.describe(
-              `Filterable fields: ${buildFieldDocumentation(resAnno)} (associations compare by key value)`,
+              `Available fields: ${scalarKeys.join(", ")} (use foreign key fields like author_ID for associations)`,
             ),
             op: z.enum([
               "eq",
@@ -344,7 +322,7 @@ function registerQueryTool(
 
   const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
   const desc =
-    `${buildEnhancedQueryDescription(resAnno)} Note: select/orderby only support scalar fields. To filter by association, use the association field name with the key value (e.g., {field:'author',op:'eq',value:4}).` +
+    `${buildEnhancedQueryDescription(resAnno)} All fields in select/where are consistent - use foreign key fields (e.g., author_ID) for associations.` +
     hint;
 
   const queryHandler = async (rawArgs: Record<string, unknown>) => {
@@ -868,19 +846,8 @@ function buildQuery(
 
     for (const c of args.where || []) {
       const { field, op, value } = c;
-
-      // Handle association field comparisons by converting to proper CDS syntax
-      let actualField = field;
-      const isAssociationField =
-        resAnno.properties.has(field) &&
-        String(resAnno.properties.get(field))
-          .toLowerCase()
-          .includes("association");
-
-      if (isAssociationField) {
-        // For association fields, convert to foreign key field name
-        actualField = `${field}_ID`;
-      }
+      // Field names are now consistent - use them directly
+      const actualField = field;
 
       if (op === "in" && Array.isArray(value)) {
         const list = value

@@ -95,7 +95,7 @@ export function registerDescribeModelTool(server: McpServer): void {
             rationale:
               "Entity wrapper tools expose CRUD-like operations for LLMs. Prefer query/get globally; create/update must be explicitly enabled by the developer.",
             guidance:
-              "Use the *_query tool for retrieval with filters and projections. select/orderby support only scalar fields (no associations). To filter by an association, use the association field name with the key value (e.g., {field:'author',op:'eq',value:4}). Use *_get with keys for a single record; use *_create/*_update only if enabled and necessary.",
+              "Use the *_query tool for retrieval with filters and projections. All fields in select/where are consistent. For associations, use foreign key fields (e.g., author_ID not author). Use *_get with keys for a single record; use *_create/*_update only if enabled and necessary.",
           },
           examples: {
             list_tool: listName,
