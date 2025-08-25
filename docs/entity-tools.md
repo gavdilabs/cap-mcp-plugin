@@ -50,6 +50,8 @@ Recommended defaults: enable only `query` and `get` globally; opt into `create`/
 
 - `query`: structured inputs validated by zod
   - `top`, `skip`, `select`, `orderby`, `where`, `q`, `return` (rows|count|aggregate), `aggregate`
+  - **All fields are consistent**: use foreign key fields (e.g., `author_ID`) for associations
+  - Both `select` and `where` support the same field set: scalars + foreign keys
   - `q` performs a simple string contains on string fields
   - `return: 'count'` returns `{ count: number }`
   - `return: 'aggregate'` returns aggregation rows
