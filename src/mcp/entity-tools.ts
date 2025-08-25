@@ -90,7 +90,7 @@ function buildEnhancedQueryDescription(resAnno: McpResourceAnnotation): string {
   const baseDesc = `Query ${resAnno.target} with structured filters, select, orderby, top/skip.`;
   const assocHint =
     associations.length > 0
-      ? ` Foreign keys (${associations.join(", ")}) available for filtering by association ID.`
+      ? ` IMPORTANT: For associations, always use foreign key fields (${associations.join(", ")}) - never use association names directly.`
       : "";
 
   return baseDesc + assocHint;
@@ -262,7 +262,7 @@ function registerQueryTool(
         .array(
           z.object({
             field: whereFieldEnum.describe(
-              `Available fields: ${scalarKeys.join(", ")} (use foreign key fields like author_ID for associations)`,
+              `FILTERABLE FIELDS: ${scalarKeys.join(", ")}. For associations use foreign key (author_ID), NOT association name (author).`,
             ),
             op: z.enum([
               "eq",
@@ -322,7 +322,7 @@ function registerQueryTool(
 
   const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
   const desc =
-    `${buildEnhancedQueryDescription(resAnno)} All fields in select/where are consistent - use foreign key fields (e.g., author_ID) for associations.` +
+    `${buildEnhancedQueryDescription(resAnno)} CRITICAL: Use foreign key fields (e.g., author_ID) for associations - association names (e.g., author) won't work in filters.` +
     hint;
 
   const queryHandler = async (rawArgs: Record<string, unknown>) => {
