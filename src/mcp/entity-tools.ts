@@ -210,9 +210,21 @@ function registerQueryTool(
   const toolName = nameFor(resAnno.serviceName, resAnno.target, "query");
 
   // Structured input schema for queries with guard for empty property lists
-  const propKeys = Array.from(resAnno.properties.keys());
-  const fieldEnum = (propKeys.length
-    ? z.enum(propKeys as [string, ...string[]])
+  const allKeys = Array.from(resAnno.properties.keys());
+  const scalarKeys = Array.from(resAnno.properties.entries())
+    .filter(
+      ([, cdsType]) => !String(cdsType).toLowerCase().includes("association"),
+    )
+    .map(([name]) => name);
+  const whereFieldEnum = (allKeys.length
+    ? z.enum(allKeys as [string, ...string[]])
+    : z
+        .enum(["__dummy__"])
+        .transform(() => "__dummy__")) as unknown as z.ZodEnum<
+    [string, ...string[]]
+  >;
+  const selectFieldEnum = (scalarKeys.length
+    ? z.enum(scalarKeys as [string, ...string[]])
     : z
         .enum(["__dummy__"])
         .transform(() => "__dummy__")) as unknown as z.ZodEnum<
@@ -229,13 +241,15 @@ function registerQueryTool(
         .describe("Rows (default 25)"),
       skip: z.number().int().min(0).default(0).describe("Offset"),
       select: z
-        .array(fieldEnum)
+        .array(selectFieldEnum)
         .optional()
-        .describe(`Select fields: ${propKeys.join(", ")}`),
+        .describe(
+          `Select/orderby allow only scalar fields: ${scalarKeys.join(", ")}`,
+        ),
       orderby: z
         .array(
           z.object({
-            field: fieldEnum,
+            field: selectFieldEnum,
             dir: z.enum(["asc", "desc"]).default("asc"),
           }),
         )
@@ -243,8 +257,8 @@ function registerQueryTool(
       where: z
         .array(
           z.object({
-            field: fieldEnum.describe(
-              `Available fields: ${buildFieldDocumentation(resAnno)}`,
+            field: whereFieldEnum.describe(
+              `Filterable fields: ${buildFieldDocumentation(resAnno)} (associations compare by key value)`,
             ),
             op: z.enum([
               "eq",
@@ -272,7 +286,7 @@ function registerQueryTool(
       aggregate: z
         .array(
           z.object({
-            field: fieldEnum,
+            field: selectFieldEnum,
             fn: z.enum(["sum", "avg", "min", "max", "count"]),
           }),
         )
@@ -293,7 +307,9 @@ function registerQueryTool(
   } as unknown as Record<string, z.ZodType>;
 
   const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
-  const desc = buildEnhancedQueryDescription(resAnno) + hint;
+  const desc =
+    `${buildEnhancedQueryDescription(resAnno)} Note: select/orderby only support scalar fields. To filter by association, use the association field name with the key value (e.g., {field:'author',op:'eq',value:4}).` +
+    hint;
 
   const queryHandler = async (rawArgs: Record<string, unknown>) => {
     const parsed = inputZod.safeParse(rawArgs);
@@ -318,7 +334,7 @@ function registerQueryTool(
 
     let q: ql.SELECT<any>;
     try {
-      q = buildQuery(CDS, args, resAnno, propKeys);
+      q = buildQuery(CDS, args, resAnno, allKeys);
     } catch (e: any) {
       return toolError("FILTER_PARSE_ERROR", e?.message || String(e));
     }
