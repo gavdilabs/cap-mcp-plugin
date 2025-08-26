@@ -77,6 +77,16 @@ async function resolveServiceInstance(
 const MAX_TOP = 200;
 const TIMEOUT_MS = 10_000; // Standard timeout for tool calls (ms)
 
+// Map OData operators to CDS/SQL operators for better performance and readability
+const ODATA_TO_CDS_OPERATORS = new Map<string, string>([
+  ["eq", "="],
+  ["ne", "!="],
+  ["gt", ">"],
+  ["ge", ">="],
+  ["lt", "<"],
+  ["le", "<="],
+]);
+
 /**
  * Builds enhanced query tool description with field types and association examples
  */
@@ -864,20 +874,7 @@ function buildQuery(
           : String(value);
 
       // Map OData operators to CDS/SQL operators
-      const cdsOp =
-        op === "eq"
-          ? "="
-          : op === "ne"
-            ? "!="
-            : op === "gt"
-              ? ">"
-              : op === "ge"
-                ? ">="
-                : op === "lt"
-                  ? "<"
-                  : op === "le"
-                    ? "<="
-                    : op;
+      const cdsOp = ODATA_TO_CDS_OPERATORS.get(op) ?? op;
 
       const expr = ["contains", "startswith", "endswith"].includes(op)
         ? `${op}(${actualField}, ${lit})`
