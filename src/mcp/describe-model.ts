@@ -73,7 +73,11 @@ export function registerDescribeModelTool(server: McpServer): void {
 
         const keys = elements.filter((e) => e.key).map((e) => e.name);
         const sampleTop = 5;
-        const shortFields = elements.slice(0, 5).map((e) => e.name);
+        // Prefer scalar fields for sample selects; exclude associations
+        const scalarFields = elements
+          .filter((e) => String(e.type).toLowerCase() !== "cds.association")
+          .map((e) => e.name);
+        const shortFields = scalarFields.slice(0, 5);
 
         // Match wrapper tool naming: Service_Entity_mode
         const entName = String(ent?.name || "entity");
@@ -91,7 +95,7 @@ export function registerDescribeModelTool(server: McpServer): void {
             rationale:
               "Entity wrapper tools expose CRUD-like operations for LLMs. Prefer query/get globally; create/update must be explicitly enabled by the developer.",
             guidance:
-              "Use the *_query tool for retrieval with filters and projections; use *_get with keys for a single record; use *_create/*_update only if enabled and necessary.",
+              "Use the *_query tool for retrieval with filters and projections. All fields in select/where are consistent. For associations, use foreign key fields (e.g., author_ID not author). Use *_get with keys for a single record; use *_create/*_update only if enabled and necessary.",
           },
           examples: {
             list_tool: listName,

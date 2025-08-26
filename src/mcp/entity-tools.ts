@@ -77,6 +77,52 @@ async function resolveServiceInstance(
 const MAX_TOP = 200;
 const TIMEOUT_MS = 10_000; // Standard timeout for tool calls (ms)
 
+// Map OData operators to CDS/SQL operators for better performance and readability
+const ODATA_TO_CDS_OPERATORS = new Map<string, string>([
+  ["eq", "="],
+  ["ne", "!="],
+  ["gt", ">"],
+  ["ge", ">="],
+  ["lt", "<"],
+  ["le", "<="],
+]);
+
+/**
+ * Builds enhanced query tool description with field types and association examples
+ */
+function buildEnhancedQueryDescription(resAnno: McpResourceAnnotation): string {
+  const associations = Array.from(resAnno.properties.entries())
+    .filter(([, cdsType]) =>
+      String(cdsType).toLowerCase().includes("association"),
+    )
+    .map(([name]) => `${name}_ID`);
+
+  const baseDesc = `Query ${resAnno.target} with structured filters, select, orderby, top/skip.`;
+  const assocHint =
+    associations.length > 0
+      ? ` IMPORTANT: For associations, always use foreign key fields (${associations.join(", ")}) - never use association names directly.`
+      : "";
+
+  return baseDesc + assocHint;
+}
+
+/**
+ * Builds field documentation for schema descriptions
+ */
+function buildFieldDocumentation(resAnno: McpResourceAnnotation): string {
+  const docs: string[] = [];
+  for (const [propName, cdsType] of resAnno.properties.entries()) {
+    const isAssociation = String(cdsType).toLowerCase().includes("association");
+    if (isAssociation) {
+      docs.push(`${propName}(association: compare by key value)`);
+      docs.push(`${propName}_ID(foreign key for ${propName})`);
+    } else {
+      docs.push(`${propName}(${String(cdsType).toLowerCase()})`);
+    }
+  }
+  return docs.join(", ");
+}
+
 /**
  * Registers CRUD-like MCP tools for an annotated entity (resource).
  * Modes can be controlled globally via configuration and per-entity via @mcp.wrap.
@@ -158,9 +204,34 @@ function registerQueryTool(
   const toolName = nameFor(resAnno.serviceName, resAnno.target, "query");
 
   // Structured input schema for queries with guard for empty property lists
-  const propKeys = Array.from(resAnno.properties.keys());
-  const fieldEnum = (propKeys.length
-    ? z.enum(propKeys as [string, ...string[]])
+  const allKeys = Array.from(resAnno.properties.keys());
+  const scalarKeys = Array.from(resAnno.properties.entries())
+    .filter(
+      ([, cdsType]) => !String(cdsType).toLowerCase().includes("association"),
+    )
+    .map(([name]) => name);
+
+  // Add foreign key fields for associations to scalar keys for select/orderby
+  for (const [propName, cdsType] of resAnno.properties.entries()) {
+    const isAssociation = String(cdsType).toLowerCase().includes("association");
+    if (isAssociation) {
+      scalarKeys.push(`${propName}_ID`);
+    }
+  }
+
+  // Build where field enum: use same fields as select (scalar + foreign keys)
+  // This ensures consistency - what you can select, you can filter by
+  const whereKeys = [...scalarKeys];
+
+  const whereFieldEnum = (whereKeys.length
+    ? z.enum(whereKeys as [string, ...string[]])
+    : z
+        .enum(["__dummy__"])
+        .transform(() => "__dummy__")) as unknown as z.ZodEnum<
+    [string, ...string[]]
+  >;
+  const selectFieldEnum = (scalarKeys.length
+    ? z.enum(scalarKeys as [string, ...string[]])
     : z
         .enum(["__dummy__"])
         .transform(() => "__dummy__")) as unknown as z.ZodEnum<
@@ -176,19 +247,33 @@ function registerQueryTool(
         .default(25)
         .describe("Rows (default 25)"),
       skip: z.number().int().min(0).default(0).describe("Offset"),
-      select: z.array(fieldEnum).optional(),
+      select: z
+        .array(selectFieldEnum)
+        .optional()
+        .transform((val: string[] | undefined) =>
+          val && val.length > 0 ? val : undefined,
+        )
+        .describe(
+          `Select/orderby allow only scalar fields: ${scalarKeys.join(", ")}`,
+        ),
       orderby: z
         .array(
           z.object({
-            field: fieldEnum,
+            field: selectFieldEnum,
             dir: z.enum(["asc", "desc"]).default("asc"),
           }),
         )
-        .optional(),
+        .optional()
+        .transform(
+          (val: { field: string; dir: "asc" | "desc" }[] | undefined) =>
+            val && val.length > 0 ? val : undefined,
+        ),
       where: z
         .array(
           z.object({
-            field: fieldEnum,
+            field: whereFieldEnum.describe(
+              `FILTERABLE FIELDS: ${scalarKeys.join(", ")}. For associations use foreign key (author_ID), NOT association name (author).`,
+            ),
             op: z.enum([
               "eq",
               "ne",
@@ -209,17 +294,27 @@ function registerQueryTool(
             ]),
           }),
         )
-        .optional(),
+        .optional()
+        .transform((val: any[] | undefined) =>
+          val && val.length > 0 ? val : undefined,
+        ),
       q: z.string().optional().describe("Quick text search"),
       return: z.enum(["rows", "count", "aggregate"]).default("rows").optional(),
       aggregate: z
         .array(
           z.object({
-            field: fieldEnum,
+            field: selectFieldEnum,
             fn: z.enum(["sum", "avg", "min", "max", "count"]),
           }),
         )
-        .optional(),
+        .optional()
+        .transform(
+          (
+            val:
+              | { field: string; fn: "sum" | "avg" | "min" | "max" | "count" }[]
+              | undefined,
+          ) => (val && val.length > 0 ? val : undefined),
+        ),
       explain: z.boolean().optional(),
     })
     .strict();
@@ -236,7 +331,9 @@ function registerQueryTool(
   } as unknown as Record<string, z.ZodType>;
 
   const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
-  const desc = `List ${resAnno.target}. Use structured filters (where), top/skip/orderby/select. For fields & examples call cap_describe_model.${hint}`;
+  const desc =
+    `${buildEnhancedQueryDescription(resAnno)} CRITICAL: Use foreign key fields (e.g., author_ID) for associations - association names (e.g., author) won't work in filters.` +
+    hint;
 
   const queryHandler = async (rawArgs: Record<string, unknown>) => {
     const parsed = inputZod.safeParse(rawArgs);
@@ -261,7 +358,7 @@ function registerQueryTool(
 
     let q: ql.SELECT<any>;
     try {
-      q = buildQuery(CDS, args, resAnno, propKeys);
+      q = buildQuery(CDS, args, resAnno, allKeys);
     } catch (e: any) {
       return toolError("FILTER_PARSE_ERROR", e?.message || String(e));
     }
@@ -732,7 +829,9 @@ function buildQuery(
   );
   if ((propKeys?.length ?? 0) === 0) return qy;
 
-  if (args.select?.length) qy = qy.columns(...args.select);
+  if (args.select?.length) {
+    qy = qy.columns(...args.select);
+  }
 
   if (args.orderby?.length) {
     // Map to CQN-compatible order by fragments
@@ -747,37 +846,48 @@ function buildQuery(
       const textFields = Array.from(resAnno.properties.keys()).filter((k) =>
         /string/i.test(String(resAnno.properties.get(k))),
       );
-      const ors = textFields.map((f) =>
-        CDS.parse.expr(
-          `contains(${f}, '${String(args.q).replace(/'/g, "''")}')`,
-        ),
-      );
-      if (ors.length)
-        ands.push(CDS.parse.expr(ors.map((x) => `(${x})`).join(" or ")));
+      const escaped = String(args.q).replace(/'/g, "''");
+      const ors = textFields.map((f) => `contains(${f}, '${escaped}')`);
+      if (ors.length) {
+        const orExpr = ors.map((x) => `(${x})`).join(" or ");
+        ands.push(CDS.parse.expr(orExpr));
+      }
     }
 
     for (const c of args.where || []) {
       const { field, op, value } = c;
+      // Field names are now consistent - use them directly
+      const actualField = field;
+
       if (op === "in" && Array.isArray(value)) {
         const list = value
           .map((v) =>
             typeof v === "string" ? `'${v.replace(/'/g, "''")}'` : String(v),
           )
           .join(",");
-        ands.push(CDS.parse.expr(`${field} in (${list})`));
+        ands.push(CDS.parse.expr(`${actualField} in (${list})`));
         continue;
       }
       const lit =
         typeof value === "string"
           ? `'${String(value).replace(/'/g, "''")}'`
           : String(value);
+
+      // Map OData operators to CDS/SQL operators
+      const cdsOp = ODATA_TO_CDS_OPERATORS.get(op) ?? op;
+
       const expr = ["contains", "startswith", "endswith"].includes(op)
-        ? `${op}(${field}, ${lit})`
-        : `${field} ${op} ${lit}`;
+        ? `${op}(${actualField}, ${lit})`
+        : `${actualField} ${cdsOp} ${lit}`;
       ands.push(CDS.parse.expr(expr));
     }
 
-    if (ands.length) qy = qy.where(ands);
+    if (ands.length) {
+      // Apply each condition individually - CDS will AND them together
+      for (const condition of ands) {
+        qy = qy.where(condition);
+      }
+    }
   }
 
   return qy;
