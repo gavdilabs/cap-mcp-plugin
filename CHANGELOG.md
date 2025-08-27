@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.9.9](https://github.com/gavdilabs/cap-mcp-plugin/compare/0.9.8...0.9.9) (2025-08-27)
+
+### Bug Fixes
+
+* improve query description ([#29](https://github.com/gavdilabs/cap-mcp-plugin/issues/29)) ([44079f0](https://github.com/gavdilabs/cap-mcp-plugin/commit/44079f041fa103741966821200519dc57258930b))
+
+### Additional Changes
+
+* Create CODE_OF_CONDUCT.md ([#26](https://github.com/gavdilabs/cap-mcp-plugin/issues/26)) ([d582879](https://github.com/gavdilabs/cap-mcp-plugin/commit/d5828792b0462d8f34b5ca50c0c70cecd435aff8))
+* Create SECURITY.md ([#27](https://github.com/gavdilabs/cap-mcp-plugin/issues/27)) ([bad5842](https://github.com/gavdilabs/cap-mcp-plugin/commit/bad58427fb45521e4b7759e20c97e4f41e62ce7a))
+* README.md update + CONTRIBUTING.md  ([#25](https://github.com/gavdilabs/cap-mcp-plugin/issues/25)) ([c447cde](https://github.com/gavdilabs/cap-mcp-plugin/commit/c447cde9aa73ead2b4fdf38da49c9bbb4f79efb7))
+* Updated dependency versions for MCP and dev tools ([#24](https://github.com/gavdilabs/cap-mcp-plugin/issues/24)) ([d4567d5](https://github.com/gavdilabs/cap-mcp-plugin/commit/d4567d5bb15ef312760ce3acfacca4aef05d915c))
+
 ## [0.9.8](https://github.com/gavdilabs/cap-mcp-plugin/compare/0.9.7...0.9.8) (2025-08-21)
 
 ### Features
