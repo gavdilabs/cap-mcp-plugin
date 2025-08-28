@@ -1,3 +1,5 @@
+[![MSeeP.ai Security Assessment Badge](https://mseep.net/pr/gavdilabs-cap-mcp-plugin-badge.png)](https://mseep.ai/app/gavdilabs-cap-mcp-plugin)
+
 # CAP MCP Plugin - AI With Ease
 
 > This implementation is based on the Model Context Protocol (MCP) put forward by Anthropic.
