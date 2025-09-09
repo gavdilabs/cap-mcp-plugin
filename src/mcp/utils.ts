@@ -15,6 +15,8 @@ export function determineMcpParameterType(cdsType: string): unknown {
       return z.string();
     case "Integer":
       return z.number();
+    case "Boolean":
+      return z.boolean();
     default:
       return z.string();
   }

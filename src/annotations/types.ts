@@ -113,6 +113,10 @@ export type McpAnnotationStructure = {
    * Restriction of access to annotated element
    */
   restrict?: CdsRestriction[];
+  /**
+   * Elicited user input annotated element
+   */
+  elicit?: McpElicit[];
 };
 
 /**
@@ -150,3 +154,8 @@ export type McpAnnotationPromptInput = {
   /** CDS type string for parameter validation (e.g., 'String', 'Integer') */
   type: string;
 };
+
+/**
+ * Allowed types for elicited user inputs
+ */
+export type McpElicit = "confirm" | "input";

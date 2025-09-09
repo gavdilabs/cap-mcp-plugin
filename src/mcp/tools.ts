@@ -7,6 +7,11 @@ import { Service } from "@sap/cds";
 import { ERR_MISSING_SERVICE } from "./constants";
 import { z } from "zod";
 import { getAccessRights } from "../auth/utils";
+import {
+  constructElicitationFunctions,
+  handleElicitationRequests,
+  isElicitInput,
+} from "./elicited-input";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
@@ -57,7 +62,12 @@ function assignBoundOperation(
   }
 
   const keys = buildToolParameters(model.keyTypeMap);
-  const inputSchema = buildZodSchema({ ...keys, ...params });
+  const useElicitInput = isElicitInput(model.elicits);
+  const inputSchema = buildZodSchema({
+    ...keys,
+    ...(useElicitInput ? {} : params),
+  });
+  const elicitationRequests = constructElicitationFunctions(model, params);
 
   server.registerTool(
     model.name,
@@ -96,11 +106,19 @@ function assignBoundOperation(
         operationInput[k] = v;
       }
 
+      const elicitationResult = await handleElicitationRequests(
+        elicitationRequests,
+        server,
+      );
+      if (elicitationResult?.earlyResponse) {
+        return elicitationResult.earlyResponse as any;
+      }
+
       const accessRights = getAccessRights(authEnabled);
       const response = await service.tx({ user: accessRights }).send({
         event: model.target,
         entity: model.entityKey as string,
-        data: operationInput,
+        data: elicitationResult?.data ?? operationInput,
         params: [operationKeys],
       });
 
@@ -122,7 +140,9 @@ function assignUnboundOperation(
   server: McpServer,
   authEnabled: boolean,
 ): void {
-  const inputSchema = buildZodSchema(params);
+  const useElicitInput = isElicitInput(model.elicits);
+  const inputSchema = buildZodSchema(useElicitInput ? {} : params);
+  const elicitationRequests = constructElicitationFunctions(model, params);
 
   server.registerTool(
     model.name,
@@ -149,10 +169,18 @@ function assignUnboundOperation(
         };
       }
 
+      const elicitationResult = await handleElicitationRequests(
+        elicitationRequests,
+        server,
+      );
+      if (elicitationResult?.earlyResponse) {
+        return elicitationResult.earlyResponse as any;
+      }
+
       const accessRights = getAccessRights(authEnabled);
       const response = await service
         .tx({ user: accessRights })
-        .send(model.target, args);
+        .send(model.target, elicitationResult?.data ?? args);
 
       return asMcpResult(response);
     },
@@ -181,6 +209,7 @@ function buildToolParameters(
  * Handles objects and arrays by JSON stringifying them instead of using String()
  * @param value - The value to convert to string
  * @returns String representation of the value
+ * @deprecated - To be removed
  */
 function formatResponseValue(value: unknown): string {
   if (value === null || value === undefined) {

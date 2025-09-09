@@ -66,6 +66,27 @@ export function containsRequiredAnnotations(
 }
 
 /**
+ * Validates that the required params for MCP elicited user input annotations are valid
+ * @param annotations - The annotation structure to validate
+ * @returns True if valid, throw error if invalid
+ * @throws Error if required annotations are missing
+ */
+export function containsRequiredElicitedParams(
+  annotations: Partial<McpAnnotationStructure>,
+): boolean {
+  if (!annotations.elicit) return true;
+
+  const param = annotations.elicit;
+  if (!param || param?.length <= 0) {
+    throw new Error(
+      `Invalid annotation '${annotations.definition?.target}' - Incomplete elicited user input`,
+    );
+  }
+
+  return true;
+}
+
+/**
  * Validates a resource annotation structure
  * @param annotations - The annotation structure to validate
  * @returns True if valid, throws error if invalid

@@ -28,6 +28,8 @@ export const MCP_ANNOTATION_PROPS = {
   MCP_PROMPT: "@mcp.prompts",
   /** Wrapper configuration for exposing entities as tools */
   MCP_WRAP: "@mcp.wrap",
+  /** Elicited user input annotation for tools in CAP services */
+  MCP_ELICIT: "@mcp.elicit",
 };
 
 /**

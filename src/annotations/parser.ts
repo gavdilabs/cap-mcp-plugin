@@ -16,6 +16,7 @@ import {
 import {
   containsMcpAnnotation,
   containsRequiredAnnotations,
+  containsRequiredElicitedParams,
   determineResourceOptions,
   isValidPromptsAnnotation,
   isValidResourceAnnotation,
@@ -56,6 +57,10 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
 
     if (!parsedAnnotations || !containsRequiredAnnotations(parsedAnnotations)) {
       continue; // This check must occur here, since we do want the bound operations even if the parent is not annotated
+    }
+
+    if (!containsRequiredElicitedParams(parsedAnnotations)) {
+      continue; // Really doesn't do anything as the method will throw if the implementation is invalid
     }
 
     const verifiedAnnotations = parsedAnnotations as McpAnnotationStructure;
@@ -148,6 +153,8 @@ function parseAnnotations(
         // Wrapper container to expose resources as tools
         annotations.wrap = v as any;
         continue;
+      case MCP_ANNOTATION_PROPS.MCP_ELICIT:
+        annotations.elicit = v as any;
       case CDS_AUTH_ANNOTATIONS.REQUIRES:
         annotations.requires = v as string;
         continue;
@@ -231,6 +238,7 @@ function constructToolAnnotation(
     operationKind,
     keyParams,
     restrictions,
+    annotations.elicit,
   );
 }
 
@@ -279,7 +287,11 @@ function parseBoundOperations(
     if (v.kind !== "function" && v.kind !== "action") continue;
     const parsedAnnotations = parseAnnotations(v);
 
-    if (!parsedAnnotations || !containsRequiredAnnotations(parsedAnnotations)) {
+    if (
+      !parsedAnnotations ||
+      !containsRequiredAnnotations(parsedAnnotations) ||
+      !containsRequiredElicitedParams(parsedAnnotations)
+    ) {
       continue;
     }
 
