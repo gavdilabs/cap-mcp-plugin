@@ -2,6 +2,7 @@ import {
   splitDefinitionName,
   containsMcpAnnotation,
   containsRequiredAnnotations,
+  containsRequiredElicitedParams,
   isValidResourceAnnotation,
   isValidToolAnnotation,
   isValidPromptsAnnotation,
@@ -555,6 +556,63 @@ describe("Utils", () => {
         { role: "maintainer", operations: ["CREATE", "UPDATE"] },
         { role: "admin", operations: ["CREATE", "READ", "UPDATE", "DELETE"] },
       ]);
+    });
+  });
+
+  describe("containsRequiredElicitedParams", () => {
+    test("should return true when elicit is undefined", () => {
+      const annotations: Partial<McpAnnotationStructure> = {
+        name: "test",
+        description: "test description",
+      };
+
+      expect(containsRequiredElicitedParams(annotations)).toBe(true);
+    });
+
+    test("should return true when elicit array has valid values", () => {
+      const annotations: Partial<McpAnnotationStructure> = {
+        name: "test",
+        description: "test description",
+        elicit: ["input", "confirm"],
+      };
+
+      expect(containsRequiredElicitedParams(annotations)).toBe(true);
+    });
+
+    test("should return true when elicit array has single valid value", () => {
+      const annotations: Partial<McpAnnotationStructure> = {
+        name: "test",
+        description: "test description",
+        elicit: ["input"],
+      };
+
+      expect(containsRequiredElicitedParams(annotations)).toBe(true);
+    });
+
+    test("should throw error when elicit array is empty", () => {
+      const annotations: Partial<McpAnnotationStructure> = {
+        name: "test",
+        description: "test description",
+        elicit: [],
+        target: "test.target",
+        definition: {} as any,
+      };
+
+      expect(() => containsRequiredElicitedParams(annotations)).toThrow(
+        "Invalid annotation 'test.target' - Incomplete elicited user input",
+      );
+    });
+
+    test("should throw error with undefined target when definition is missing", () => {
+      const annotations: Partial<McpAnnotationStructure> = {
+        name: "test",
+        description: "test description",
+        elicit: [],
+      };
+
+      expect(() => containsRequiredElicitedParams(annotations)).toThrow(
+        "Invalid annotation 'undefined' - Incomplete elicited user input",
+      );
     });
   });
 });

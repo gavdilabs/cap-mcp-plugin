@@ -120,6 +120,7 @@ This plugin transforms your annotated CAP services into a fully functional MCP s
 - **🔧 Tools**: Convert CAP functions and actions into executable MCP tools
 - **🧩 Entity Wrappers (optional)**: Expose CAP entities as tools (`query`, `get`, and optionally `create`, `update`) for LLM tool use while keeping resources intact
 - **💡 Prompts**: Define reusable prompt templates for AI interactions
+- **⚡ Elicitation**: Request user confirmation or input parameters before tool execution
 - **🔄 Auto-generation**: Automatically creates MCP server endpoints based on annotations
 - **⚙️ Flexible Configuration**: Support for custom parameter sets and descriptions
 
@@ -230,6 +231,52 @@ extend projection Books with actions {
   function getStock() returns Integer;
 }
 ```
+
+#### Tool Elicitation
+
+Request user confirmation or input before tool execution using the `elicit` property:
+
+```cds
+// Request user confirmation before execution
+@mcp: {
+  name       : 'book-recommendation',
+  description: 'Get a random book recommendation',
+  tool       : true,
+  elicit     : ['confirm']
+}
+function getBookRecommendation() returns String;
+
+// Request user input for parameters
+@mcp: {
+  name       : 'get-author',
+  description: 'Gets the desired author',
+  tool       : true,
+  elicit     : ['input']
+}
+function getAuthor(id: String) returns String;
+
+// Request both input and confirmation
+@mcp: {
+  name       : 'books-by-author',
+  description: 'Gets a list of books made by the author',
+  tool       : true,
+  elicit     : ['input', 'confirm']
+}
+function getBooksByAuthor(authorName: String) returns array of String;
+```
+
+> NOTE: Elicitation is only available for direct tools at this moment. Wrapped entities are not covered by this.
+
+**Elicit Types:**
+- **`confirm`**: Requests user confirmation before executing the tool with a yes/no prompt
+- **`input`**: Prompts the user to provide values for the tool's parameters
+- **Combined**: Use both `['input', 'confirm']` to first collect parameters, then ask for confirmation
+
+**User Experience:**
+- **Confirmation**: "Please confirm that you want to perform action 'Get a random book recommendation'"
+- **Input**: "Please fill out the required parameters" with a form for each parameter
+- **User Actions**: Accept, decline, or cancel the elicitation request
+- **Early Exit**: Tools return appropriate messages if declined or cancelled
 
 ### Prompt Templates
 

@@ -106,3 +106,8 @@ export interface EntityListQueryArgs {
   aggregate?: AggregateClause[];
   explain?: boolean;
 }
+
+export interface McpResult {
+  content: Array<any>;
+  structuredContent?: Record<string, unknown>;
+}

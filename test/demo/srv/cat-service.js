@@ -6,7 +6,7 @@ class CatalogService extends cds.ApplicationService {
     const { Books } = cds.entities;
 
     this.on("getAuthor", async (req) => {
-      return `Hello, I'm not the author but I could be. You searched for: ${req.data.input}`;
+      return `Hello, I'm not the author but I could be. You searched for: ${req.data.id}`;
     });
 
     this.on("getBooksByAuthor", async (req) => {

@@ -3,6 +3,7 @@ import {
   McpResourceOption,
   McpAnnotationWrap,
   McpRestriction,
+  McpElicit,
 } from "./types";
 
 /**
@@ -173,6 +174,8 @@ export class McpToolAnnotation extends McpAnnotation {
   private readonly _operationKind?: string;
   /** Map of key field names to their types for bound operations */
   private readonly _keyTypeMap?: Map<string, string>;
+  /** Elicited user input object */
+  private readonly _elicits?: McpElicit[];
 
   /**
    * Creates a new MCP tool annotation
@@ -185,6 +188,7 @@ export class McpToolAnnotation extends McpAnnotation {
    * @param operationKind - Optional operation type ('function' or 'action')
    * @param keyTypeMap - Optional map of key fields to types for bound operations
    * @param restrictions - Optional restrictions based on CDS roles
+   * @param elicits - Optional elicited input requirement
    */
   constructor(
     name: string,
@@ -196,12 +200,14 @@ export class McpToolAnnotation extends McpAnnotation {
     operationKind?: string,
     keyTypeMap?: Map<string, string>,
     restrictions?: McpRestriction[],
+    elicits?: McpElicit[],
   ) {
     super(name, description, operation, serviceName, restrictions ?? []);
     this._parameters = parameters;
     this._entityKey = entityKey;
     this._operationKind = operationKind;
     this._keyTypeMap = keyTypeMap;
+    this._elicits = elicits;
   }
 
   /**
@@ -234,6 +240,14 @@ export class McpToolAnnotation extends McpAnnotation {
    */
   get keyTypeMap(): Map<string, string> | undefined {
     return this._keyTypeMap;
+  }
+
+  /**
+   * Gets the elicited user input if any is required for the tool
+   * @returns Elicited user input object
+   */
+  get elicits(): McpElicit[] | undefined {
+    return this._elicits;
   }
 }
 

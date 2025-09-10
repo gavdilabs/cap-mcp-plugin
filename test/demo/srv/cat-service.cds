@@ -75,9 +75,10 @@ service CatalogService {
   @mcp: {
     name       : 'get-author',
     description: 'Gets the desired author',
-    tool       : true
+    tool       : true,
+    elicit     : ['input'] // Ask for the function import's input to be elicited
   }
-  function getAuthor(input : String)             returns String;
+  function getAuthor(id : String)                returns String;
 
   @requires: 'author-specialist'
   @mcp     : {
@@ -92,14 +93,19 @@ service CatalogService {
   @mcp: {
     name       : 'books-by-author',
     description: 'Gets a list of books made by the author',
-    tool       : true
+    tool       : true,
+    elicit     : [
+      'input',
+      'confirm'
+    ] // Ask for the function import's input to be elicited
   }
   function getBooksByAuthor(authorName : String) returns array of String;
 
   @mcp: {
     name       : 'book-recommendation',
     description: 'Get a random book recommendation',
-    tool       : true
+    tool       : true,
+    elicit     : ['confirm']
   }
   function getBookRecommendation()               returns String;
 
