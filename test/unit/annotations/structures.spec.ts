@@ -8,6 +8,7 @@ import {
   McpResourceOption,
   McpAnnotationPrompt,
   McpRestriction,
+  McpElicit,
 } from "../../../src/annotations/types";
 
 describe("McpAnnotation", () => {
@@ -180,6 +181,64 @@ describe("McpToolAnnotation", () => {
       restrictions,
     );
     expect(annotation.restrictions).toEqual(restrictions);
+  });
+
+  test("should create tool annotation with elicits", () => {
+    const elicits: McpElicit[] = ["input", "confirm"];
+    const annotation = new McpToolAnnotation(
+      "tool-name",
+      "tool-description",
+      "tool-operation",
+      "tool-service",
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      elicits,
+    );
+    expect(annotation.elicits).toEqual(elicits);
+  });
+
+  test("should create tool annotation with all parameters including elicits", () => {
+    const parameters = new Map([["param1", "String"]]);
+    const keyTypeMap = new Map([["key1", "UUID"]]);
+    const restrictions: McpRestriction[] = [{ role: "admin" }];
+    const elicits: McpElicit[] = ["input"];
+
+    const annotation = new McpToolAnnotation(
+      "tool-name",
+      "tool-description",
+      "tool-operation",
+      "tool-service",
+      parameters,
+      "entity-key",
+      "function",
+      keyTypeMap,
+      restrictions,
+      elicits,
+    );
+
+    expect(annotation.name).toBe("tool-name");
+    expect(annotation.description).toBe("tool-description");
+    expect(annotation.target).toBe("tool-operation");
+    expect(annotation.serviceName).toBe("tool-service");
+    expect(annotation.parameters).toBe(parameters);
+    expect(annotation.entityKey).toBe("entity-key");
+    expect(annotation.operationKind).toBe("function");
+    expect(annotation.keyTypeMap).toBe(keyTypeMap);
+    expect(annotation.restrictions).toEqual(restrictions);
+    expect(annotation.elicits).toEqual(elicits);
+  });
+
+  test("should handle undefined elicits", () => {
+    const annotation = new McpToolAnnotation(
+      "tool-name",
+      "tool-description",
+      "tool-operation",
+      "tool-service",
+    );
+    expect(annotation.elicits).toBeUndefined();
   });
 });
 

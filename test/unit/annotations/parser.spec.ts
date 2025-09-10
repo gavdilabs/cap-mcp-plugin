@@ -238,5 +238,130 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
       expect(result.size).toBe(0);
     });
+
+    test("should parse tool annotation with elicit input", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.testAction": {
+            kind: "action",
+            "@mcp.name": "Test Action",
+            "@mcp.description": "Test action with elicit",
+            "@mcp.tool": true,
+            "@mcp.elicit": ["input"],
+            params: {
+              input: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("testAction") as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation.name).toBe("Test Action");
+      expect(annotation.elicits).toEqual(["input"]);
+    });
+
+    test("should parse tool annotation with multiple elicit types", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.testAction": {
+            kind: "action",
+            "@mcp.name": "Test Action",
+            "@mcp.description": "Test action with multiple elicits",
+            "@mcp.tool": true,
+            "@mcp.elicit": ["input", "confirm"],
+            params: {
+              input: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("testAction") as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation.elicits).toEqual(["input", "confirm"]);
+    });
+
+    test("should parse bound tool annotation with elicit", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+            actions: {
+              boundActionWithElicit: {
+                kind: "action",
+                "@mcp.name": "Bound Action with Elicit",
+                "@mcp.description": "Bound action with elicit",
+                "@mcp.tool": true,
+                "@mcp.elicit": ["confirm"],
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get(
+        "boundActionWithElicit",
+      ) as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation.name).toBe("Bound Action with Elicit");
+      expect(annotation.elicits).toEqual(["confirm"]);
+    });
+
+    test("should handle tool annotation without elicit", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.testAction": {
+            kind: "action",
+            "@mcp.name": "Test Action",
+            "@mcp.description": "Test action without elicit",
+            "@mcp.tool": true,
+            params: {
+              input: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("testAction") as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation.elicits).toBeUndefined();
+    });
+
+    test("should throw error for empty elicit array", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.testAction": {
+            kind: "action",
+            "@mcp.name": "Test Action",
+            "@mcp.description": "Test action with empty elicit",
+            "@mcp.tool": true,
+            "@mcp.elicit": [],
+            params: {
+              input: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      expect(() => parseDefinitions(model)).toThrow(
+        "Invalid annotation 'TestService.testAction' - Incomplete elicited user input",
+      );
+    });
   });
 });

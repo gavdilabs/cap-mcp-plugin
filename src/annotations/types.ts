@@ -96,6 +96,7 @@ export type McpReferenceAnnotationStructure = {
  */
 export type McpAnnotationStructure = {
   definition: csn.Definition; // Runtime only - not for annotations
+  target?: string; // Runtime only - for error reporting
   name: string;
   description: string;
   resource?: boolean | Array<McpResourceOption>;

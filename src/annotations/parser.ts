@@ -59,6 +59,11 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
       continue; // This check must occur here, since we do want the bound operations even if the parent is not annotated
     }
 
+    // Set the target in annotations for error reporting
+    if (parsedAnnotations) {
+      parsedAnnotations.target = key;
+    }
+
     if (!containsRequiredElicitedParams(parsedAnnotations)) {
       continue; // Really doesn't do anything as the method will throw if the implementation is invalid
     }
@@ -155,6 +160,7 @@ function parseAnnotations(
         continue;
       case MCP_ANNOTATION_PROPS.MCP_ELICIT:
         annotations.elicit = v as any;
+        continue;
       case CDS_AUTH_ANNOTATIONS.REQUIRES:
         annotations.requires = v as string;
         continue;
@@ -286,6 +292,11 @@ function parseBoundOperations(
   for (const [k, v] of Object.entries(boundOperations)) {
     if (v.kind !== "function" && v.kind !== "action") continue;
     const parsedAnnotations = parseAnnotations(v);
+
+    // Set the target in annotations for error reporting
+    if (parsedAnnotations) {
+      parsedAnnotations.target = k;
+    }
 
     if (
       !parsedAnnotations ||

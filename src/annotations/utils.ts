@@ -79,7 +79,7 @@ export function containsRequiredElicitedParams(
   const param = annotations.elicit;
   if (!param || param?.length <= 0) {
     throw new Error(
-      `Invalid annotation '${annotations.definition?.target}' - Incomplete elicited user input`,
+      `Invalid annotation '${annotations.target}' - Incomplete elicited user input`,
     );
   }
 

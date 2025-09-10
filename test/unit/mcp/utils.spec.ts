@@ -13,6 +13,7 @@ jest.mock("zod", () => ({
   z: {
     string: jest.fn(() => "string-type"),
     number: jest.fn(() => "number-type"),
+    boolean: jest.fn(() => "boolean-type"),
   },
 }));
 
@@ -32,6 +33,12 @@ describe("Server Utils", () => {
       const result = determineMcpParameterType("Integer");
       expect(z.number).toHaveBeenCalled();
       expect(result).toBe("number-type");
+    });
+
+    test("should return boolean type for Boolean CDS type", () => {
+      const result = determineMcpParameterType("Boolean");
+      expect(z.boolean).toHaveBeenCalled();
+      expect(result).toBe("boolean-type");
     });
 
     test("should default to string type for unknown CDS type", () => {
@@ -68,9 +75,9 @@ describe("Server Utils", () => {
     });
 
     test("should handle special CDS types", () => {
-      const types = ["UUID", "DateTime", "Boolean", "Decimal", "Double"];
+      const stringTypes = ["UUID", "DateTime", "Decimal", "Double"];
 
-      types.forEach((type) => {
+      stringTypes.forEach((type) => {
         const result = determineMcpParameterType(type);
         expect(result).toBe("string-type");
       });
