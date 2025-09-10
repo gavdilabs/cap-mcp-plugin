@@ -1,6 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import type { ql, Query, Service } from "@sap/cds";
 
 /**
  * Type definitions for MCP (Model Context Protocol) server implementation
@@ -23,13 +22,6 @@ export interface McpSession {
   /** MCP server instance managing protocol methods (tools, resources, prompts) */
   server: McpServer;
 }
-
-/**
- * Re-export commonly used CAP types for standardized usage across the plugin
- */
-export type CdsQuery = Query;
-export type CdsSelect<T = any> = ql.SELECT<T>;
-export type CdsService = Service;
 
 /**
  * Entity operation modes supported by MCP entity tools

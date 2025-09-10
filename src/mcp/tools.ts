@@ -205,30 +205,6 @@ function buildToolParameters(
 }
 
 /**
- * Converts a value to a string representation suitable for MCP responses
- * Handles objects and arrays by JSON stringifying them instead of using String()
- * @param value - The value to convert to string
- * @returns String representation of the value
- * @deprecated - To be removed
- */
-function formatResponseValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return String(value);
-  }
-
-  if (typeof value === "object") {
-    try {
-      return JSON.stringify(value, null, 2);
-    } catch (error) {
-      // Fallback to String() if JSON.stringify fails (e.g., circular references)
-      return String(value);
-    }
-  }
-
-  return String(value);
-}
-
-/**
  * Constructs a complete Zod schema object for MCP tool input validation
  * @param params - Record of parameter names to Zod schema types
  * @returns Zod schema record suitable for MCP tool registration
