@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/0.9.9...0.10.0) (2025-09-10)
+
+### Features
+
+* MCP Elicitations ([#31](https://github.com/gavdilabs/cap-mcp-plugin/issues/31)) ([a3b4e05](https://github.com/gavdilabs/cap-mcp-plugin/commit/a3b4e0575586eefc02a3312de231d4cc847a3b2b))
+
+### Additional Changes
+
+* Remove unused methods and types ([#32](https://github.com/gavdilabs/cap-mcp-plugin/issues/32)) ([245191a](https://github.com/gavdilabs/cap-mcp-plugin/commit/245191ad7c4dc7c46e8ba3fdad72a2d8e6a21e54))
+
 ## [0.9.9](https://github.com/gavdilabs/cap-mcp-plugin/compare/0.9.8...0.9.9) (2025-08-27)
 
 ### Bug Fixes
