@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.10.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/0.10.0...0.10.1) (2025-09-11)
+
+### Bug Fixes
+
+* Stop parsing if no definitions or elements ([#33](https://github.com/gavdilabs/cap-mcp-plugin/issues/33)) ([17e632a](https://github.com/gavdilabs/cap-mcp-plugin/commit/17e632a7826cb62b57f259d9aeddd4cb0522dec9))
+
 ## [0.10.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/0.9.9...0.10.0) (2025-09-10)
 
 ### Features
