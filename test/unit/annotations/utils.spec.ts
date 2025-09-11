@@ -16,7 +16,6 @@ import {
   McpAnnotationStructure,
   McpResourceOption,
   CdsRestriction,
-  McpRestriction,
 } from "../../../src/annotations/types";
 import { csn } from "@sap/cds";
 
@@ -425,6 +424,20 @@ describe("Utils", () => {
       expect(result.size).toBe(2);
       expect(result.get("id")).toBe("UUID");
       expect(result.get("secondaryId")).toBe("String");
+    });
+
+    test("should return empty result if there is no definition object", () => {
+      const definition = undefined;
+      const result = parseEntityKeys(definition as any);
+
+      expect(result.size).toBe(0);
+    });
+
+    test("should return empty result if there is no elements defined in definition", () => {
+      const definition = {};
+      const result = parseEntityKeys(definition as any);
+
+      expect(result.size).toBe(0);
     });
 
     test("should throw error for key without type", () => {
