@@ -270,6 +270,9 @@ export function parseEntityKeys(
   definition: csn.Definition,
 ): Map<string, string> {
   const result = new Map<string, string>();
+
+  if (!definition?.elements) return result; // If there is no defined elements, we exit early
+
   for (const [k, v] of Object.entries(definition.elements)) {
     if (!v.key) continue;
     if (!v.type) {
