@@ -69,7 +69,7 @@ export class XSUAAService {
       response_type: "code",
       client_id: this.credentials.clientid,
       redirect_uri: redirectUri,
-      scope: "uaa.resource",
+      // scope: "uaa.resource",
     });
 
     if (state) {

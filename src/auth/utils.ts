@@ -1,9 +1,11 @@
 import { User } from "@sap/cds";
 import { Application, Request, Response } from "express";
+import express from "express";
 import { authHandlerFactory, errorHandlerFactory } from "./handler";
 import { McpAuthType } from "../config/types";
 import { McpRestriction } from "../annotations/types";
 import { XSUAAService, XSUAACredentials } from "./xsuaa-service";
+import { handleTokenRequest } from "./handlers";
 import { LOGGER } from "../logger";
 
 /**
@@ -34,6 +36,7 @@ const cds = global.cds || require("@sap/cds"); // This is a work around for miss
  * OAuth authorization request query parameters
  */
 interface AuthorizeQuery {
+  client_id?: string;
   state?: string;
   redirect_uri?: string;
 }
@@ -256,11 +259,19 @@ function registerOAuthEndpoints(
 ): void {
   const xsuaaService = new XSUAAService();
 
+  // Add JSON and URL-encoded body parsing for OAuth endpoints
+  expressApp.use("/oauth", express.json());
+  expressApp.use("/oauth", express.urlencoded({ extended: true }));
+
   // OAuth Authorization endpoint - stateless redirect to XSUAA
   expressApp.get(
     "/oauth/authorize",
     (req: Request<{}, {}, {}, AuthorizeQuery>, res: Response): void => {
       const { state, redirect_uri } = req.query;
+
+      // Client validation and redirect URI validation is handled by XSUAA
+      // We delegate all client management to XSUAA's built-in OAuth server
+
       const redirectUri =
         redirect_uri || `${req.protocol}://${req.get("host")}/oauth/callback`;
 
@@ -277,6 +288,7 @@ function registerOAuthEndpoints(
       res: Response,
     ): Promise<void> => {
       const { code, state, error, error_description } = req.query;
+      LOGGER.debug("[AUTH] Callback received", code, state);
 
       if (error) {
         res.status(400).json({
@@ -298,35 +310,13 @@ function registerOAuthEndpoints(
         const redirectUri =
           req.query.redirect_uri ||
           `${req.protocol}://${req.get("host")}/oauth/callback`;
+
         const tokenData = await xsuaaService.exchangeCodeForToken(
           code,
           redirectUri,
         );
 
-        const tokenDataJson = JSON.stringify(tokenData).replace(/"/g, "&quot;");
-        const stateValue = (state || "").replace(/"/g, "&quot;");
-
-        const html = `
-        <html>
-          <body>
-            <h1>Authorization Successful</h1>
-            <p>You can now close this window and return to your MCP client.</p>
-            <script>
-              if (window.opener) {
-                window.opener.postMessage({
-                  type: 'oauth_success',
-                  tokens: ${tokenDataJson},
-                  state: '${stateValue}'
-                }, '*');
-              }
-              window.close();
-            </script>
-          </body>
-        </html>
-      `;
-
-        res.setHeader("Content-Type", "text/html");
-        res.send(html);
+        res.json(tokenData);
       } catch (error) {
         LOGGER.error("OAuth callback error:", error);
         const errorMessage =
@@ -339,56 +329,21 @@ function registerOAuthEndpoints(
     },
   );
 
-  // OAuth Token endpoint - proxy to XSUAA
+  // OAuth Token endpoint - POST (standard OAuth 2.0)
   expressApp.post(
     "/oauth/token",
-    async (
-      req: Request<{}, {}, TokenRequestBody>,
-      res: Response,
-    ): Promise<void> => {
-      const { grant_type, code, redirect_uri, refresh_token } = req.body;
+    async (req: Request, res: Response): Promise<void> => {
+      await handleTokenRequest(req, res, xsuaaService);
+    },
+  );
 
-      try {
-        if (grant_type === "authorization_code") {
-          if (!code || !redirect_uri) {
-            res.status(400).json({
-              error: "invalid_request",
-              error_description: "Missing code or redirect_uri",
-            });
-            return;
-          }
-          const tokenData = await xsuaaService.exchangeCodeForToken(
-            code,
-            redirect_uri,
-          );
-          res.json(tokenData);
-        } else if (grant_type === "refresh_token") {
-          if (!refresh_token) {
-            res.status(400).json({
-              error: "invalid_request",
-              error_description: "Missing refresh_token",
-            });
-            return;
-          }
-          const tokenData =
-            await xsuaaService.refreshAccessToken(refresh_token);
-          res.json(tokenData);
-        } else {
-          res.status(400).json({
-            error: "unsupported_grant_type",
-            error_description:
-              "Only authorization_code and refresh_token are supported",
-          });
-        }
-      } catch (error) {
-        LOGGER.error("OAuth token error:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-        res.status(400).json({
-          error: "invalid_grant",
-          error_description: errorMessage,
-        });
-      }
+  // OAuth Token endpoint - GET (workaround for MCP SDK OAuth bug)
+  // The MCP SDK incorrectly uses GET instead of POST for token requests in some environments
+  // This is a known limitation documented in GitHub issues and follows lemaiwo's successful pattern
+  expressApp.get(
+    "/oauth/token",
+    async (req: Request, res: Response): Promise<void> => {
+      await handleTokenRequest(req, res, xsuaaService);
     },
   );
 
@@ -404,11 +359,12 @@ function registerOAuthEndpoints(
         token_endpoint: `${baseUrl}/oauth/token`,
         registration_endpoint: `${baseUrl}/oauth/register`,
         response_types_supported: ["code"],
+        // redirect_uris: [`${baseUrl}/oauth/callback`],
         grant_types_supported: ["authorization_code", "refresh_token"],
         code_challenge_methods_supported: ["S256"],
-        scopes_supported: ["uaa.resource"],
+        // scopes_supported: ["uaa.resource"],
         token_endpoint_auth_methods_supported: [
-          "client_secret_basic",
+          //"client_secret_basic",
           "client_secret_post",
         ],
         registration_endpoint_auth_methods_supported: ["client_secret_basic"],
@@ -416,7 +372,127 @@ function registerOAuthEndpoints(
     },
   );
 
+  // OAuth Dynamic Client Registration discovery endpoint (GET)
+  expressApp.get(
+    "/oauth/register",
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        // Simple proxy for discovery - no CSRF needed
+        const response = await fetch(`${credentials.url}/oauth/register`, {
+          method: "GET",
+          headers: {
+            Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
+            Accept: "application/json",
+          },
+        });
+
+        const xsuaaData = await response.json();
+
+        // Add missing required fields that MCP client expects
+        const enhancedResponse = {
+          ...xsuaaData, // Keep all XSUAA fields
+          client_id: credentials.clientid, // Add our CAP app's client ID
+          redirect_uris: [
+            `${req.protocol}://${req.get("host")}/oauth/callback`,
+          ], // Add our callback URL for discovery
+        };
+
+        LOGGER.debug("[AUTH] Register GET response", enhancedResponse);
+
+        res.status(response.status).json(enhancedResponse);
+      } catch (error) {
+        LOGGER.error("OAuth registration discovery error:", error);
+        res.status(500).json({
+          error: "server_error",
+          error_description:
+            error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    },
+  );
+
+  // OAuth Dynamic Client Registration endpoint (POST) with CSRF handling
+  expressApp.post(
+    "/oauth/register",
+    async (req: Request, res: Response): Promise<void> => {
+      try {
+        // Step 1: Fetch CSRF token from XSUAA
+        const csrfResponse = await fetch(`${credentials.url}/oauth/register`, {
+          method: "GET",
+          headers: {
+            "X-CSRF-Token": "Fetch",
+            Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
+            Accept: "application/json",
+          },
+        });
+
+        if (!csrfResponse.ok) {
+          throw new Error(`CSRF fetch failed: ${csrfResponse.status}`);
+        }
+
+        // Step 2: Extract CSRF token and session cookie
+        const setCookieHeader = csrfResponse.headers.get("set-cookie") || "";
+        const csrfToken = extractCsrfFromCookie(setCookieHeader);
+
+        if (!csrfToken) {
+          throw new Error("Could not extract CSRF token from XSUAA response");
+        }
+
+        // Step 3: Make actual registration POST with CSRF token
+        const registrationResponse = await fetch(
+          `${credentials.url}/oauth/register`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": csrfToken,
+              Cookie: setCookieHeader,
+              Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
+              Accept: "application/json",
+            },
+            body: JSON.stringify(req.body),
+          },
+        );
+
+        const xsuaaData = await registrationResponse.json();
+
+        // Add missing required fields that MCP client expects
+        const enhancedResponse = {
+          ...xsuaaData, // Keep all XSUAA fields
+          client_id: credentials.clientid, // Add our CAP app's client ID
+          client_secret: credentials.clientsecret, // CAP app's client secret
+          redirect_uris: req.body.redirect_uris || [
+            `${req.protocol}://${req.get("host")}/oauth/callback`,
+          ], // Use client's redirect URIs
+        };
+
+        LOGGER.debug("[AUTH] Register POST response", enhancedResponse);
+
+        res.status(registrationResponse.status).json(enhancedResponse);
+      } catch (error) {
+        LOGGER.error("OAuth registration error:", error);
+        res.status(500).json({
+          error: "server_error",
+          error_description:
+            error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    },
+  );
+
   LOGGER.debug("OAuth endpoints registered for XSUAA integration");
+}
+
+/**
+ * Extracts CSRF token from XSUAA Set-Cookie header
+ * Looks for "X-Uaa-Csrf=<token>" pattern in the cookie string
+ */
+function extractCsrfFromCookie(setCookieHeader: string): string | null {
+  if (!setCookieHeader) return null;
+
+  // Match X-Uaa-Csrf=<token> pattern
+  const csrfMatch = setCookieHeader.match(/X-Uaa-Csrf=([^;,]+)/i);
+  return csrfMatch ? csrfMatch[1] : null;
 }
 
 /**
