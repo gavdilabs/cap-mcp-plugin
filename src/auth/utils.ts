@@ -1,10 +1,10 @@
 import { User } from "@sap/cds";
-import { Application } from "express";
+import { Application, Request, Response } from "express";
 import { authHandlerFactory, errorHandlerFactory } from "./handler";
 import { McpAuthType } from "../config/types";
-import { ProxyOAuthServerProvider } from "@modelcontextprotocol/sdk/server/auth/providers/proxyProvider.js";
-import { mcpAuthRouter } from "@modelcontextprotocol/sdk/server/auth/router.js";
 import { McpRestriction } from "../annotations/types";
+import { XSUAAService, XSUAACredentials } from "./xsuaa-service";
+import { LOGGER } from "../logger";
 
 /**
  * @fileoverview Authentication utilities for MCP-CAP integration.
@@ -29,6 +29,35 @@ import { McpRestriction } from "../annotations/types";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
+
+/**
+ * OAuth authorization request query parameters
+ */
+interface AuthorizeQuery {
+  state?: string;
+  redirect_uri?: string;
+}
+
+/**
+ * OAuth callback query parameters
+ */
+interface CallbackQuery {
+  code?: string;
+  state?: string;
+  error?: string;
+  error_description?: string;
+  redirect_uri?: string;
+}
+
+/**
+ * OAuth token request body
+ */
+interface TokenRequestBody {
+  grant_type: "authorization_code" | "refresh_token";
+  code?: string;
+  redirect_uri?: string;
+  refresh_token?: string;
+}
 
 /**
  * Union type representing all supported CAP authentication types.
@@ -198,11 +227,13 @@ export function registerAuthMiddleware(expressApp: Application): void {
 function configureOAuthProxy(expressApp: Application): void {
   const config = cds.env.requires.auth;
   const kind = config.kind as AuthTypes;
-  const credentials = config.credentials;
+  const credentials = config.credentials as XSUAACredentials;
 
-  // Safety guard - skip OAuth proxy for basic auth types
+  // PRESERVE existing logic - skip OAuth proxy for basic auth types
   if (kind === "dummy" || kind === "mocked" || kind === "basic") return;
-  else if (
+
+  // PRESERVE existing validation
+  if (
     !credentials ||
     !credentials.clientid ||
     !credentials.clientsecret ||
@@ -211,38 +242,181 @@ function configureOAuthProxy(expressApp: Application): void {
     throw new Error("Invalid security credentials");
   }
 
-  const proxyProvider = new ProxyOAuthServerProvider({
-    endpoints: {
-      authorizationUrl: `${credentials.url}/oauth/authorize`,
-      tokenUrl: `${credentials.url}/oauth/token`,
-      revocationUrl: `${credentials.url}/oauth/revoke`,
-    },
-    verifyAccessToken: async (token: string) => {
-      return {
-        token,
-        clientId: credentials.clientid as string,
-        scopes: ["uaa.resource"],
-      };
-    },
-    getClient: async (client_id: string) => {
-      return {
-        client_secret: credentials.clientsecret as string,
-        client_id,
-        redirect_uris: ["http://localhost:3000/callback"], // Temporary value for now
-      };
-    },
-  });
+  // REPLACE broken mcpAuthMetadataRouter with working OAuth endpoints
+  registerOAuthEndpoints(expressApp, credentials);
+}
 
-  expressApp.use(
-    mcpAuthRouter({
-      provider: proxyProvider,
-      issuerUrl: new URL(credentials.url),
-      //baseUrl: new URL(""), // I have left this out for the time being due to the defaulting to issuer
-      serviceDocumentationUrl: new URL(
-        "https://docs.cloudfoundry.org/api/uaa/version/77.34.0/index.html#authorization",
-      ),
-    }),
+/**
+ * Registers OAuth endpoints for XSUAA integration
+ * Only called for jwt/xsuaa/ias auth types with valid credentials
+ */
+function registerOAuthEndpoints(
+  expressApp: Application,
+  credentials: XSUAACredentials,
+): void {
+  const xsuaaService = new XSUAAService();
+
+  // OAuth Authorization endpoint - stateless redirect to XSUAA
+  expressApp.get(
+    "/oauth/authorize",
+    (req: Request<{}, {}, {}, AuthorizeQuery>, res: Response): void => {
+      const { state, redirect_uri } = req.query;
+      const redirectUri =
+        redirect_uri || `${req.protocol}://${req.get("host")}/oauth/callback`;
+
+      const authUrl = xsuaaService.getAuthorizationUrl(redirectUri, state);
+      res.redirect(authUrl);
+    },
   );
+
+  // OAuth Callback endpoint - stateless token exchange
+  expressApp.get(
+    "/oauth/callback",
+    async (
+      req: Request<{}, {}, {}, CallbackQuery>,
+      res: Response,
+    ): Promise<void> => {
+      const { code, state, error, error_description } = req.query;
+
+      if (error) {
+        res.status(400).json({
+          error: "authorization_failed",
+          error_description: error_description || error,
+        });
+        return;
+      }
+
+      if (!code) {
+        res.status(400).json({
+          error: "invalid_request",
+          error_description: "Missing authorization code",
+        });
+        return;
+      }
+
+      try {
+        const redirectUri =
+          req.query.redirect_uri ||
+          `${req.protocol}://${req.get("host")}/oauth/callback`;
+        const tokenData = await xsuaaService.exchangeCodeForToken(
+          code,
+          redirectUri,
+        );
+
+        const tokenDataJson = JSON.stringify(tokenData).replace(/"/g, "&quot;");
+        const stateValue = (state || "").replace(/"/g, "&quot;");
+
+        const html = `
+        <html>
+          <body>
+            <h1>Authorization Successful</h1>
+            <p>You can now close this window and return to your MCP client.</p>
+            <script>
+              if (window.opener) {
+                window.opener.postMessage({
+                  type: 'oauth_success',
+                  tokens: ${tokenDataJson},
+                  state: '${stateValue}'
+                }, '*');
+              }
+              window.close();
+            </script>
+          </body>
+        </html>
+      `;
+
+        res.setHeader("Content-Type", "text/html");
+        res.send(html);
+      } catch (error) {
+        LOGGER.error("OAuth callback error:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        res.status(400).json({
+          error: "token_exchange_failed",
+          error_description: errorMessage,
+        });
+      }
+    },
+  );
+
+  // OAuth Token endpoint - proxy to XSUAA
+  expressApp.post(
+    "/oauth/token",
+    async (
+      req: Request<{}, {}, TokenRequestBody>,
+      res: Response,
+    ): Promise<void> => {
+      const { grant_type, code, redirect_uri, refresh_token } = req.body;
+
+      try {
+        if (grant_type === "authorization_code") {
+          if (!code || !redirect_uri) {
+            res.status(400).json({
+              error: "invalid_request",
+              error_description: "Missing code or redirect_uri",
+            });
+            return;
+          }
+          const tokenData = await xsuaaService.exchangeCodeForToken(
+            code,
+            redirect_uri,
+          );
+          res.json(tokenData);
+        } else if (grant_type === "refresh_token") {
+          if (!refresh_token) {
+            res.status(400).json({
+              error: "invalid_request",
+              error_description: "Missing refresh_token",
+            });
+            return;
+          }
+          const tokenData =
+            await xsuaaService.refreshAccessToken(refresh_token);
+          res.json(tokenData);
+        } else {
+          res.status(400).json({
+            error: "unsupported_grant_type",
+            error_description:
+              "Only authorization_code and refresh_token are supported",
+          });
+        }
+      } catch (error) {
+        LOGGER.error("OAuth token error:", error);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        res.status(400).json({
+          error: "invalid_grant",
+          error_description: errorMessage,
+        });
+      }
+    },
+  );
+
+  // OAuth Discovery endpoint
+  expressApp.get(
+    "/.well-known/oauth-authorization-server",
+    (req: Request, res: Response): void => {
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+
+      res.json({
+        issuer: credentials.url,
+        authorization_endpoint: `${baseUrl}/oauth/authorize`,
+        token_endpoint: `${baseUrl}/oauth/token`,
+        registration_endpoint: `${baseUrl}/oauth/register`,
+        response_types_supported: ["code"],
+        grant_types_supported: ["authorization_code", "refresh_token"],
+        code_challenge_methods_supported: ["S256"],
+        scopes_supported: ["uaa.resource"],
+        token_endpoint_auth_methods_supported: [
+          "client_secret_basic",
+          "client_secret_post",
+        ],
+        registration_endpoint_auth_methods_supported: ["client_secret_basic"],
+      });
+    },
+  );
+
+  LOGGER.debug("OAuth endpoints registered for XSUAA integration");
 }
 
 /**

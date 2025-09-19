@@ -1,4 +1,5 @@
 const cds = require("@sap/cds");
+const logger = cds.log();
 
 class CatalogService extends cds.ApplicationService {
   init() {
@@ -7,6 +8,11 @@ class CatalogService extends cds.ApplicationService {
 
     this.on("getAuthor", async (req) => {
       return `Hello, I'm not the author but I could be. You searched for: ${req.data.id}`;
+    });
+
+    this.on("getAuthorDetails", async (req) => {
+      logger.info("Hello there, you have the following credentials", req.user);
+      return req.user.id;
     });
 
     this.on("getBooksByAuthor", async (req) => {

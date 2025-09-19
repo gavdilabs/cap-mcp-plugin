@@ -1,4 +1,5 @@
 import { RequestHandler, ErrorRequestHandler } from "express";
+import { XSUAAService } from "./xsuaa-service";
 
 /** JSON-RPC 2.0 error code for unauthorized requests */
 const RPC_UNAUTHORIZED = 10;
@@ -32,8 +33,9 @@ const cds = global.cds || require("@sap/cds"); // This is a work around for miss
  */
 export function authHandlerFactory(): RequestHandler {
   const authKind = cds.env.requires.auth.kind;
+  const xsuaaService = new XSUAAService();
 
-  return (req, res, next) => {
+  return async (req, res, next) => {
     if (!req.headers.authorization && authKind !== "dummy") {
       res.status(401).json({
         jsonrpc: "2.0",
@@ -46,6 +48,30 @@ export function authHandlerFactory(): RequestHandler {
       return;
     }
 
+    // For XSUAA/JWT auth types, use @sap/xssec for validation
+    if (
+      (authKind === "jwt" || authKind === "xsuaa") &&
+      xsuaaService.isConfigured()
+    ) {
+      const securityContext = await xsuaaService.createSecurityContext(req);
+
+      if (!securityContext) {
+        res.status(401).json({
+          jsonrpc: "2.0",
+          error: {
+            code: RPC_UNAUTHORIZED,
+            message: "Invalid or expired token",
+            id: null,
+          },
+        });
+        return;
+      }
+
+      // Add security context to request for later use
+      (req as any).securityContext = securityContext;
+    }
+
+    // Continue with existing CAP context validation
     const ctx = cds.context;
     if (!ctx) {
       res.status(500).json({
@@ -58,8 +84,8 @@ export function authHandlerFactory(): RequestHandler {
       });
       return;
     }
-    const user = ctx.user;
 
+    const user = ctx.user;
     if (!user || user === cds.User.anonymous) {
       res.status(401).json({
         jsonrpc: "2.0",
