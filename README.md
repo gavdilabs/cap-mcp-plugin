@@ -3,8 +3,6 @@
 > This implementation is based on the Model Context Protocol (MCP) put forward by Anthropic.
 > For more information on MCP, please have a look at their [official documentation.](https://modelcontextprotocol.io/introduction)
 
-> 🔧 **In active development - 1.0 release scheduled for September 2025**
-
 # CAP-MCP Plugin
 
 A CAP (Cloud Application Programming) plugin that automatically generates Model Context Protocol (MCP) servers from your CAP services using simple annotations.
@@ -20,13 +18,6 @@ By integrating MCP with your CAP applications, you unlock:
 - **Intelligent Automation**: Enable AI agents to perform complex business operations by combining multiple CAP service calls
 - **Developer Productivity**: Allow AI assistants to help developers understand, query, and work with your CAP data models
 - **Business Intelligence**: Transform your structured business data into AI-queryable resources for insights and analysis
-
-## ⚠️ Development Status
-
-**This plugin is currently in active development and approaching production readiness.**
-APIs and annotations may change in future releases. Authentication and security features are implemented and tested.
-
-Version 1.0 of the plugin is scheduled for release in Summer 2025 after final stability testing and documentation completion.
 
 ## 🚀 Quick Setup
 
@@ -379,9 +370,10 @@ Disables authentication completely:
 
 #### Authentication Flow
 1. MCP client connects to `/mcp` endpoint
-2. CAP authentication middleware validates credentials (if `auth: "inherit"`)
-3. MCP session established with authenticated user context
-4. All MCP operations (resources, tools, prompts) inherit the authenticated user's permissions
+2. If the authentication style used is OAuth, the OAuth flow will be executed
+3. CAP authentication middleware validates credentials (if `auth: "inherit"`)
+4. MCP session established with authenticated user context
+5. All MCP operations (resources, tools, prompts) inherit the authenticated user's permissions
 
 ### Automatic Features
 
