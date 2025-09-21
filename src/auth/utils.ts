@@ -53,16 +53,6 @@ interface CallbackQuery {
 }
 
 /**
- * OAuth token request body
- */
-interface TokenRequestBody {
-  grant_type: "authorization_code" | "refresh_token";
-  code?: string;
-  redirect_uri?: string;
-  refresh_token?: string;
-}
-
-/**
  * Union type representing all supported CAP authentication types.
  *
  * This type defines the complete set of authentication mechanisms supported
@@ -250,6 +240,25 @@ function configureOAuthProxy(expressApp: Application): void {
 }
 
 /**
+ * Determines the correct protocol (HTTP/HTTPS) for URL construction.
+ * Accounts for reverse proxy headers and production environment defaults.
+ *
+ * @param req - Express request object
+ * @returns Protocol string ('http' or 'https')
+ */
+function getProtocol(req: Request): string {
+  // Check for reverse proxy header first (most reliable)
+  if (req.headers["x-forwarded-proto"]) {
+    return req.headers["x-forwarded-proto"] as string;
+  }
+
+  // Default to HTTPS in production environments
+  const isProduction =
+    process.env.NODE_ENV === "production" || process.env.VCAP_APPLICATION;
+  return isProduction ? "https" : req.protocol;
+}
+
+/**
  * Registers OAuth endpoints for XSUAA integration
  * Only called for jwt/xsuaa/ias auth types with valid credentials
  */
@@ -264,30 +273,26 @@ function registerOAuthEndpoints(
   expressApp.use("/oauth", express.urlencoded({ extended: true }));
 
   // OAuth Authorization endpoint - stateless redirect to XSUAA
-  expressApp.get(
-    "/oauth/authorize",
-    (req: Request<{}, {}, {}, AuthorizeQuery>, res: Response): void => {
-      const { state, redirect_uri } = req.query;
+  expressApp.get("/oauth/authorize", (req: Request, res: Response): void => {
+    const { state, redirect_uri } = req.query as AuthorizeQuery;
 
-      // Client validation and redirect URI validation is handled by XSUAA
-      // We delegate all client management to XSUAA's built-in OAuth server
+    // Client validation and redirect URI validation is handled by XSUAA
+    // We delegate all client management to XSUAA's built-in OAuth server
 
-      const redirectUri =
-        redirect_uri || `${req.protocol}://${req.get("host")}/oauth/callback`;
+    const protocol = getProtocol(req);
+    const redirectUri =
+      redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
 
-      const authUrl = xsuaaService.getAuthorizationUrl(redirectUri, state);
-      res.redirect(authUrl);
-    },
-  );
+    const authUrl = xsuaaService.getAuthorizationUrl(redirectUri, state);
+    res.redirect(authUrl);
+  });
 
   // OAuth Callback endpoint - stateless token exchange
   expressApp.get(
     "/oauth/callback",
-    async (
-      req: Request<{}, {}, {}, CallbackQuery>,
-      res: Response,
-    ): Promise<void> => {
-      const { code, state, error, error_description } = req.query;
+    async (req: Request, res: Response): Promise<void> => {
+      const { code, state, error, error_description, redirect_uri } =
+        req.query as CallbackQuery;
       LOGGER.debug("[AUTH] Callback received", code, state);
 
       if (error) {
@@ -307,14 +312,11 @@ function registerOAuthEndpoints(
       }
 
       try {
-        const redirectUri =
-          req.query.redirect_uri ||
-          `${req.protocol}://${req.get("host")}/oauth/callback`;
+        const protocol = getProtocol(req);
+        const url =
+          redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
 
-        const tokenData = await xsuaaService.exchangeCodeForToken(
-          code,
-          redirectUri,
-        );
+        const tokenData = await xsuaaService.exchangeCodeForToken(code, url);
 
         res.json(tokenData);
       } catch (error) {
@@ -337,21 +339,12 @@ function registerOAuthEndpoints(
     },
   );
 
-  // OAuth Token endpoint - GET (workaround for MCP SDK OAuth bug)
-  // The MCP SDK incorrectly uses GET instead of POST for token requests in some environments
-  // This is a known limitation documented in GitHub issues and follows lemaiwo's successful pattern
-  expressApp.get(
-    "/oauth/token",
-    async (req: Request, res: Response): Promise<void> => {
-      await handleTokenRequest(req, res, xsuaaService);
-    },
-  );
-
   // OAuth Discovery endpoint
   expressApp.get(
     "/.well-known/oauth-authorization-server",
     (req: Request, res: Response): void => {
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const protocol = getProtocol(req);
+      const baseUrl = `${protocol}://${req.get("host")}`;
 
       res.json({
         issuer: credentials.url,
@@ -359,14 +352,10 @@ function registerOAuthEndpoints(
         token_endpoint: `${baseUrl}/oauth/token`,
         registration_endpoint: `${baseUrl}/oauth/register`,
         response_types_supported: ["code"],
-        // redirect_uris: [`${baseUrl}/oauth/callback`],
         grant_types_supported: ["authorization_code", "refresh_token"],
         code_challenge_methods_supported: ["S256"],
         // scopes_supported: ["uaa.resource"],
-        token_endpoint_auth_methods_supported: [
-          //"client_secret_basic",
-          "client_secret_post",
-        ],
+        token_endpoint_auth_methods_supported: ["client_secret_post"],
         registration_endpoint_auth_methods_supported: ["client_secret_basic"],
       });
     },
@@ -389,15 +378,12 @@ function registerOAuthEndpoints(
         const xsuaaData = await response.json();
 
         // Add missing required fields that MCP client expects
+        const protocol = getProtocol(req);
         const enhancedResponse = {
           ...xsuaaData, // Keep all XSUAA fields
           client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: [
-            `${req.protocol}://${req.get("host")}/oauth/callback`,
-          ], // Add our callback URL for discovery
+          redirect_uris: [`${protocol}://${req.get("host")}/oauth/callback`], // Add our callback URL for discovery
         };
-
-        LOGGER.debug("[AUTH] Register GET response", enhancedResponse);
 
         res.status(response.status).json(enhancedResponse);
       } catch (error) {
@@ -457,12 +443,13 @@ function registerOAuthEndpoints(
         const xsuaaData = await registrationResponse.json();
 
         // Add missing required fields that MCP client expects
+        const protocol = getProtocol(req);
         const enhancedResponse = {
           ...xsuaaData, // Keep all XSUAA fields
           client_id: credentials.clientid, // Add our CAP app's client ID
           client_secret: credentials.clientsecret, // CAP app's client secret
           redirect_uris: req.body.redirect_uris || [
-            `${req.protocol}://${req.get("host")}/oauth/callback`,
+            `${protocol}://${req.get("host")}/oauth/callback`,
           ], // Use client's redirect URIs
         };
 
