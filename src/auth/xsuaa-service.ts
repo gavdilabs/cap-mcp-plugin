@@ -1,5 +1,6 @@
 import { Request } from "express";
 import * as xssec from "@sap/xssec";
+import { LOGGER } from "../logger";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds");
@@ -172,9 +173,9 @@ export class XSUAAService {
     } catch (error) {
       // Log validation errors for debugging
       if (error instanceof xssec.errors.TokenValidationError) {
-        console.warn("Token validation failed:", error.message);
+        LOGGER.warn("Token validation failed:", error.message);
       } else if (error instanceof Error) {
-        console.warn("Token validation failed:", error.message);
+        LOGGER.warn("Token validation failed:", error.message);
       }
       return false;
     }
@@ -202,9 +203,9 @@ export class XSUAAService {
       return securityContext;
     } catch (error) {
       if (error instanceof xssec.errors.TokenValidationError) {
-        console.warn("Security context creation failed:", error.message);
+        LOGGER.warn("Security context creation failed:", error.message);
       } else if (error instanceof Error) {
-        console.warn("Security context creation failed:", error.message);
+        LOGGER.warn("Security context creation failed:", error.message);
       }
       return null;
     }
