@@ -160,7 +160,7 @@ export function registerAuthMiddleware(expressApp: Application): void {
   const middlewares = cds.middlewares.before as any[]; // No types exists for this part of the CDS library
 
   // Build array of auth middleware to apply
-  const authMiddleware: any[] = [];
+  const authMiddleware: any[] = []; // Required any as a workaround for untyped cds middleware
 
   // Add CAP middleware
   middlewares.forEach((mw) => {
@@ -235,7 +235,6 @@ function configureOAuthProxy(expressApp: Application): void {
     throw new Error("Invalid security credentials");
   }
 
-  // REPLACE broken mcpAuthMetadataRouter with working OAuth endpoints
   registerOAuthEndpoints(expressApp, credentials);
 }
 
