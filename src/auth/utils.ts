@@ -184,11 +184,11 @@ export function registerAuthMiddleware(expressApp: Application): void {
   authMiddleware.push(errorHandlerFactory());
   authMiddleware.push(authHandlerFactory());
 
+  // If we require OAuth then we should also apply for that
+  configureOAuthProxy(expressApp);
+
   // Apply auth middleware to all /mcp routes EXCEPT health
   expressApp?.use(/^\/mcp(?!\/health).*/, ...authMiddleware);
-
-  // Then finally we add the oauth proxy to the xsuaa instance
-  configureOAuthProxy(expressApp);
 }
 
 /**

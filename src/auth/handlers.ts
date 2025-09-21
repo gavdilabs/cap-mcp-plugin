@@ -23,6 +23,15 @@ export async function handleTokenRequest(
   xsuaaService: XSUAAService,
 ): Promise<void> {
   try {
+    // Debug: Log complete request details to identify where parameters are sent
+    LOGGER.debug("[AUTH] Complete request details:", {
+      method: req.method,
+      url: req.url,
+      query: req.query,
+      body: req.body,
+      headers: req.headers,
+    });
+
     // Extract parameters from both body (POST) and query (GET) to handle both methods
     const params: TokenRequestParams = { ...req.query, ...req.body };
     const { grant_type, code, redirect_uri, refresh_token } = params;
