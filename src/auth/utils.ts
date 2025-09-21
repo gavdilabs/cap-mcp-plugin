@@ -1,6 +1,7 @@
 import { User } from "@sap/cds";
 import { Application, Request, Response } from "express";
 import express from "express";
+import helmet from "helmet";
 import { authHandlerFactory, errorHandlerFactory } from "./factory";
 import { McpAuthType } from "../config/types";
 import { McpRestriction } from "../annotations/types";
@@ -270,6 +271,21 @@ function registerOAuthEndpoints(
   // Add JSON and URL-encoded body parsing for OAuth endpoints
   expressApp.use("/oauth", express.json());
   expressApp.use("/oauth", express.urlencoded({ extended: true }));
+
+  // Apply helmet security middleware only to OAuth routes
+  expressApp.use(
+    "/oauth",
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", "data:", "https:"],
+        },
+      },
+    }),
+  );
 
   // OAuth Authorization endpoint - stateless redirect to XSUAA
   expressApp.get("/oauth/authorize", (req: Request, res: Response): void => {

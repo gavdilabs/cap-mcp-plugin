@@ -45,7 +45,10 @@ export default class McpPlugin {
     LOGGER.debug("Event received for 'bootstrap'");
     this.expressApp = app;
     this.expressApp.use("/mcp", express.json());
+
+    // Apply helmet security middleware only to MCP routes
     this.expressApp.use(
+      "/mcp",
       helmet({
         contentSecurityPolicy: {
           directives: {
@@ -57,7 +60,6 @@ export default class McpPlugin {
         },
       }),
     );
-    // TODO: CORS
 
     if (this.config.auth === "inherit") {
       registerAuthMiddleware(this.expressApp);
