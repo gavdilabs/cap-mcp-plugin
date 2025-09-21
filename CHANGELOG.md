@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.0.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/0.10.1...1.0.0) (2025-09-21)
+
+### Features
+
+* OAuth integration ([#37](https://github.com/gavdilabs/cap-mcp-plugin/issues/37)) ([eff0de0](https://github.com/gavdilabs/cap-mcp-plugin/commit/eff0de095ab0b35c3feb32505d830509cb39cc9e))
+
+### Additional Changes
+
+* Update README.md ([b62e8ba](https://github.com/gavdilabs/cap-mcp-plugin/commit/b62e8ba1655e282b32ffbe634f23f68d21e9e11d))
+
 ## [0.10.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/0.10.0...0.10.1) (2025-09-11)
 
 ### Bug Fixes
