@@ -41,7 +41,7 @@ jest.mock("@sap/cds", () => ({
 const mockAuthHandler = jest.fn();
 const mockErrorHandler = jest.fn();
 
-jest.mock("../../../src/auth/handler", () => ({
+jest.mock("../../../src/auth/factory", () => ({
   authHandlerFactory: jest.fn(() => mockAuthHandler),
   errorHandlerFactory: jest.fn(() => mockErrorHandler),
 }));

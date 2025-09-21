@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import {
   authHandlerFactory,
   errorHandlerFactory,
-} from "../../../src/auth/handler";
+} from "../../../src/auth/factory";
 
 // Mock the CDS module
 jest.mock("@sap/cds", () => ({

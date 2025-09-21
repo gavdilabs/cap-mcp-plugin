@@ -1,7 +1,7 @@
 import { User } from "@sap/cds";
 import { Application, Request, Response } from "express";
 import express from "express";
-import { authHandlerFactory, errorHandlerFactory } from "./handler";
+import { authHandlerFactory, errorHandlerFactory } from "./factory";
 import { McpAuthType } from "../config/types";
 import { McpRestriction } from "../annotations/types";
 import { XSUAAService, XSUAACredentials } from "./xsuaa-service";
