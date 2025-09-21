@@ -8,6 +8,7 @@ import type { Config } from "jest";
 const config: Config = {
   preset: "ts-jest",
   globalSetup: "./test/setup.ts",
+  setupFilesAfterEnv: ["./test/jest-setup.ts"],
 
   // Automatically clear mock calls, instances, contexts and results before every test
   clearMocks: true,

@@ -104,8 +104,7 @@ service CatalogService {
   @mcp: {
     name       : 'book-recommendation',
     description: 'Get a random book recommendation',
-    tool       : true,
-    elicit     : ['confirm']
+    tool       : true
   }
   function getBookRecommendation()               returns String;
 

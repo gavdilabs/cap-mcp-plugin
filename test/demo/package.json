@@ -19,10 +19,13 @@
     "watch": "cds w  --port 4015"
   },
   "cds": {
+    "requires": {
+      "auth": "xsuaa"
+    },
     "mcp": {
       "name": "mock-service",
       "version": "0.0.1",
-      "auth": "none",
+      "auth": "inherit",
       "instructions": "Use this server to query books",
       "wrap_entities_to_actions": true,
       "wrap_entity_modes": [

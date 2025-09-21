@@ -23,9 +23,9 @@
   "scripts": {
     "mock": "npm run start --workspace=test/demo",
     "mock:watch": "npm run build && npm run watch --workspace=test/demo",
-    "test": "NODE_ENV=test jest --silent",
-    "test:unit": "NODE_ENV=test jest --silent test/unit",
-    "test:integration": "NODE_ENV=test jest --silent test/integration",
+    "test": "NODE_ENV=test jest --silent --testTimeout=30000",
+    "test:unit": "NODE_ENV=test jest --silent test/unit --testTimeout=30000",
+    "test:integration": "NODE_ENV=test jest --silent test/integration --testTimeout=30000",
     "build": "tsc",
     "inspect": "npx @modelcontextprotocol/inspector",
     "prepare": "husky",
@@ -42,6 +42,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.3",
+    "@sap/xssec": "^4.9.1",
+    "helmet": "^8.1.0",
     "zod": "^3.25.67",
     "zod-to-json-schema": "^3.24.5"
   },

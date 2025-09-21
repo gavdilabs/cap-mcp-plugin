@@ -1,0 +1,16 @@
+{
+  "requires": {
+    "[development]": {
+      "auth": {
+        "strategy": "mocked",
+        "users": {
+          "dummy": {
+            "password": "dummy",
+            "id": "dummy",
+            "roles": ["author-specialist"]
+          }
+        }
+      }
+    }
+  }
+}

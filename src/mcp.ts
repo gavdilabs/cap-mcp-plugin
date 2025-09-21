@@ -11,6 +11,7 @@ import { CAPConfiguration } from "./config/types";
 import { loadConfiguration } from "./config/loader";
 import { McpSessionManager } from "./mcp/session-manager";
 import { registerAuthMiddleware } from "./auth/utils";
+import helmet from "helmet";
 
 /* @ts-ignore */
 const cds = (global as any).cds; // Use hosting app's CDS instance exclusively
@@ -44,6 +45,21 @@ export default class McpPlugin {
     LOGGER.debug("Event received for 'bootstrap'");
     this.expressApp = app;
     this.expressApp.use("/mcp", express.json());
+
+    // Apply helmet security middleware only to MCP routes
+    this.expressApp.use(
+      "/mcp",
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+          },
+        },
+      }),
+    );
 
     if (this.config.auth === "inherit") {
       registerAuthMiddleware(this.expressApp);
