@@ -218,7 +218,7 @@ export function parseResourceElements(definition: csn.Definition): {
   const properties = new Map<string, string>();
   const resourceKeys = new Map<string, string>();
 
-  for (const [key, value] of Object.entries(definition.elements)) {
+  for (const [key, value] of Object.entries(definition.elements || {})) {
     if (!value.type) continue;
     const parsedType = value.type.replace("cds.", "");
     properties.set(key, parsedType);
