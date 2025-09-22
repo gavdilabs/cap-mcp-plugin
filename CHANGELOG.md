@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.0.0...1.0.1) (2025-09-22)
+
+### Bug Fixes
+
+* undefined definition elements ([#38](https://github.com/gavdilabs/cap-mcp-plugin/issues/38)) ([6c3d7bd](https://github.com/gavdilabs/cap-mcp-plugin/commit/6c3d7bd2cc80435787ada529e0257fd8332b9532))
+
 ## [1.0.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/0.10.1...1.0.0) (2025-09-21)
 
 ### Features
