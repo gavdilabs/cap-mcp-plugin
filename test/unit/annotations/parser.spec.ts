@@ -203,6 +203,40 @@ describe("Parser", () => {
       expect(annotation!.name).toBe("Bound Action");
     });
 
+    test("should parse bound operations with custom-typed parameter", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+            actions: {
+              boundAction: {
+                kind: "action",
+                "@mcp.name": "Bound Action",
+                "@mcp.description": "Bound action description",
+                "@mcp.tool": true,
+                params: {
+                  input: {
+                    "@mcp.cdsType": "cds.Double",
+                    type: { ref: ["myTypes.CustomDouble", "double1"] },
+                  },
+                },
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("boundAction");
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation!.name).toBe("Bound Action");
+    });
+
     test("should handle mixed valid and invalid definitions", () => {
       const model: csn.CSN = {
         definitions: {

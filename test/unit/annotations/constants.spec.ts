@@ -19,6 +19,7 @@ describe("Annotations - Constants", () => {
       expect(MCP_ANNOTATION_PROPS.MCP_RESOURCE).toBe("@mcp.resource");
       expect(MCP_ANNOTATION_PROPS.MCP_TOOL).toBe("@mcp.tool");
       expect(MCP_ANNOTATION_PROPS.MCP_PROMPT).toBe("@mcp.prompts");
+      expect(MCP_ANNOTATION_PROPS.MCP_CDSTYPE).toBe("@mcp.cdsType");
     });
   });
 

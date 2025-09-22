@@ -1,5 +1,9 @@
 import { csn } from "@sap/cds";
-import { DEFAULT_ALL_RESOURCE_OPTIONS, MCP_ANNOTATION_KEY } from "./constants";
+import {
+  DEFAULT_ALL_RESOURCE_OPTIONS,
+  MCP_ANNOTATION_KEY,
+  MCP_ANNOTATION_PROPS,
+} from "./constants";
 import {
   CdsRestriction,
   CdsRestrictionType,
@@ -244,13 +248,15 @@ export function parseOperationElements(annotations: McpAnnotationStructure): {
 } {
   let parameters: Map<string, string> | undefined;
 
-  const params: { [key: string]: { type: string } } = (
-    annotations.definition as any
-  )["params"];
+  const params: Record<string, any> = (annotations.definition as any)["params"];
   if (params && Object.entries(params).length > 0) {
     parameters = new Map<string, string>();
     for (const [k, v] of Object.entries(params)) {
-      parameters.set(k, v.type.replace("cds.", ""));
+      const cdsType: string =
+        typeof v.type == "string"
+          ? v.type
+          : v[MCP_ANNOTATION_PROPS.MCP_CDSTYPE];
+      parameters.set(k, cdsType.replace("cds.", ""));
     }
   }
 

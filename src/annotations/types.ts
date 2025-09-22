@@ -88,6 +88,7 @@ export type McpReferenceAnnotationStructure = {
   "@mcp.resource"?: boolean | Array<McpResourceOption>;
   "@mcp.tool"?: boolean;
   "@prompts"?: McpAnnotationPrompt[];
+  "@mcp.cdsType"?: string;
 };
 
 /**
@@ -118,6 +119,10 @@ export type McpAnnotationStructure = {
    * Elicited user input annotated element
    */
   elicit?: McpElicit[];
+  /**
+   * Fallback type for custom-typed properties
+   */
+  cdsType?: string;
 };
 
 /**

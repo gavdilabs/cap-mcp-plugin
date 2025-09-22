@@ -30,6 +30,8 @@ export const MCP_ANNOTATION_PROPS = {
   MCP_WRAP: "@mcp.wrap",
   /** Elicited user input annotation for tools in CAP services */
   MCP_ELICIT: "@mcp.elicit",
+  /** Fallback type for custom-typed properties */
+  MCP_CDSTYPE: "@mcp.cdsType",
 };
 
 /**

@@ -407,6 +407,31 @@ describe("Utils", () => {
       expect(result.parameters).toBeUndefined();
       expect(result.operationKind).toBe("action");
     });
+
+    test("should parse custom-typed operation elements correctly", () => {
+      const annotations: McpAnnotationStructure = {
+        definition: {
+          kind: "function",
+          params: {
+            param1: { type: "cds.String" },
+            param2: {
+              "@mcp.cdsType": "cds.Double",
+              type: { ref: ["myTypes.CustomDouble", "double1"] },
+            },
+          },
+        } as any,
+        name: "test",
+        description: "test",
+      };
+
+      const result = parseOperationElements(annotations);
+
+      expect(result.parameters).toBeDefined();
+      expect(result.parameters!.size).toBe(2);
+      expect(result.parameters!.get("param1")).toBe("String");
+      expect(result.parameters!.get("param2")).toBe("Double");
+      expect(result.operationKind).toBe("function");
+    });
   });
 
   describe("parseEntityKeys", () => {
