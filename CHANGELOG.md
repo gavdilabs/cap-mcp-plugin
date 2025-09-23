@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.0.1...1.0.2) (2025-09-23)
+
+### Bug Fixes
+
+* Reference model for complex types ([#40](https://github.com/gavdilabs/cap-mcp-plugin/issues/40)) ([a92560c](https://github.com/gavdilabs/cap-mcp-plugin/commit/a92560c6a6a2920e72f60785142b9715716b1c27))
+* Wrap annotations parsing ([#41](https://github.com/gavdilabs/cap-mcp-plugin/issues/41)) ([0528504](https://github.com/gavdilabs/cap-mcp-plugin/commit/0528504ec41814168121f7831fe82c0bd4783b21))
+
 ## [1.0.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.0.0...1.0.1) (2025-09-22)
 
 ### Bug Fixes
