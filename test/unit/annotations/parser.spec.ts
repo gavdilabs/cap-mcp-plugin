@@ -280,6 +280,52 @@ describe("Parser", () => {
       expect(toolAnnotation.parameters?.get("simpleParam")).toBe("Boolean");
     });
 
+    test("should parse function with nested complex-typed parameter", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "myTypes.ComplexType": {
+            kind: "type",
+            elements: {
+              stringField: {
+                type: { ref: ["myTypes.NestedComplexType", "complex"] },
+              },
+              numberField: { type: "cds.Integer" },
+            },
+          },
+          "myTypes.NestedComplexType": {
+            kind: "type",
+            elements: {
+              complex: { type: "cds.String" },
+            },
+          },
+          "TestService.TestFunction": {
+            kind: "function",
+            "@mcp.name": "Test Function",
+            "@mcp.description": "Test function description",
+            "@mcp.tool": true,
+            params: {
+              nestedComplexParam: {
+                type: { ref: ["myTypes.ComplexType", "stringField"] },
+              },
+              simpleParam: { type: "cds.Boolean" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestFunction");
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation!.name).toBe("Test Function");
+      const toolAnnotation = annotation as McpToolAnnotation;
+      expect(toolAnnotation.parameters?.get("nestedComplexParam")).toBe(
+        "String",
+      );
+      expect(toolAnnotation.parameters?.get("simpleParam")).toBe("Boolean");
+    });
+
     test("should parse action with multiple complex-typed parameters", () => {
       const model: csn.CSN = {
         definitions: {

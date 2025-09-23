@@ -20,6 +20,17 @@ entity MultiKeyExample {
       description : String;
 }
 
+type TValidQuantities {
+  positiveOnly : TMyNumbers:anInteger @assert.range: [
+    0,
+    _
+  ]
+};
+
+type TMyNumbers {
+  anInteger : Integer
+};
+
 type ComplexType {
   rangedNumber : Integer @assert.range: [
     0,

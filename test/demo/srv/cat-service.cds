@@ -115,6 +115,13 @@ service CatalogService {
     tool       : true
   }
   function checkAuthorName(value : my.ComplexType:rangedNumber) returns String;
+
+  @mcp: {
+    name       : 'not-real-tool',
+    description: 'Not real, just used for nested types. Do not use',
+    tool       : true
+  }
+  function getNotReal(value : my.TValidQuantities:positiveOnly) returns String;
 }
 
 annotate CatalogService with @mcp.prompts: [{

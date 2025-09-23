@@ -254,11 +254,14 @@ export function parseOperationElements(
     parameters = new Map<string, string>();
     for (const [k, v] of Object.entries(params)) {
       if (typeof v.type !== "string") {
-        const references = v.type.ref;
-        const typeReference =
-          model.definitions?.[references[0]].elements[references[1]];
+        // const references = v.type.ref;
+        // const typeReference =
+        //   model.definitions?.[references[0]].elements[references[1]];
+        // parameters.set(k, typeReference?.type?.replace("cds.", "") as string);
 
-        parameters.set(k, typeReference?.type?.replace("cds.", "") as string);
+        const referencedType = parseTypedReference(v.type, model);
+        parameters.set(k, referencedType);
+        LOGGER.debug("Typed reference found", referencedType);
         continue;
       }
       parameters.set(k, v.type.replace("cds.", ""));
@@ -269,6 +272,28 @@ export function parseOperationElements(
     parameters,
     operationKind: annotations.definition.kind,
   };
+}
+
+/**
+ * Recursively digs through the typed reference object of an operation parameter.
+ * @param param
+ * @param model
+ * @returns string|undefined
+ * @throws Error if nested type is not parseable
+ */
+function parseTypedReference(
+  param: { ref?: string[] } | undefined,
+  model: csn.CSN,
+): string {
+  if (!param || !param.ref) {
+    throw new Error("Failed to parse nested type reference");
+  }
+
+  const referenceType =
+    model.definitions?.[param.ref[0]].elements[param.ref[1]];
+  return typeof referenceType?.type === "string"
+    ? referenceType.type?.replace("cds.", "")
+    : parseTypedReference(referenceType?.type, model);
 }
 
 /**
