@@ -11,6 +11,7 @@ import {
   CdsRestriction,
   McpAnnotationPrompt,
   McpAnnotationStructure,
+  McpAnnotationWrap,
   ParsedAnnotations,
 } from "./types";
 import {
@@ -156,9 +157,26 @@ function parseAnnotations(
       case MCP_ANNOTATION_PROPS.MCP_PROMPT:
         annotations.prompts = v as any;
         continue;
-      case MCP_ANNOTATION_PROPS.MCP_WRAP:
-        // Wrapper container to expose resources as tools
-        annotations.wrap = v as any;
+      case MCP_ANNOTATION_PROPS.MCP_WRAP_TOOLS:
+        if (!annotations.wrap) {
+          annotations.wrap = {};
+        }
+
+        annotations.wrap.tools = v as boolean;
+        continue;
+      case MCP_ANNOTATION_PROPS.MCP_WRAP_HINT:
+        if (!annotations.wrap) {
+          annotations.wrap = {};
+        }
+
+        annotations.wrap.hint = v as string;
+        continue;
+      case MCP_ANNOTATION_PROPS.MCP_WRAP_MODES:
+        if (!annotations.wrap) {
+          annotations.wrap = {};
+        }
+
+        annotations.wrap.modes = v as any;
         continue;
       case MCP_ANNOTATION_PROPS.MCP_ELICIT:
         annotations.elicit = v as any;

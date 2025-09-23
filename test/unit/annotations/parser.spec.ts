@@ -541,5 +541,72 @@ describe("Parser", () => {
         "Invalid annotation 'TestService.testAction' - Incomplete elicited user input",
       );
     });
+
+    test("should parse entity with flattened @mcp.wrap annotations", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity with wrap annotations",
+            "@mcp.resource": true,
+            "@mcp.wrap.tools": true,
+            "@mcp.wrap.modes": ["query", "get", "create", "update"],
+            "@mcp.wrap.hint": "Use for demo operations",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation.name).toBe("Test Entity");
+
+      // Verify wrap properties are correctly parsed from flattened annotations
+      expect(annotation.wrap).toBeDefined();
+      expect(annotation.wrap?.tools).toBe(true);
+      expect(annotation.wrap?.modes).toEqual([
+        "query",
+        "get",
+        "create",
+        "update",
+      ]);
+      expect(annotation.wrap?.hint).toBe("Use for demo operations");
+    });
+
+    test("should parse entity with partial @mcp.wrap annotations", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity with partial wrap annotations",
+            "@mcp.resource": true,
+            "@mcp.wrap.modes": ["create", "delete"],
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify only modes are set, other wrap properties should be undefined
+      expect(annotation.wrap).toBeDefined();
+      expect(annotation.wrap?.tools).toBeUndefined();
+      expect(annotation.wrap?.modes).toEqual(["create", "delete"]);
+      expect(annotation.wrap?.hint).toBeUndefined();
+    });
   });
 });
