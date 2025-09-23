@@ -28,11 +28,7 @@ import {
   parseResourceElements,
   splitDefinitionName,
 } from "./utils";
-import {
-  CDS_AUTH_ANNOTATIONS,
-  MCP_ANNOTATION_KEY,
-  MCP_ANNOTATION_PROPS,
-} from "./constants";
+import { MCP_ANNOTATION_MAPPING } from "./constants";
 
 /**
  * Parses model definitions to extract MCP annotations and return them as a map of annotated entries
@@ -117,6 +113,48 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
   return result;
 }
 
+function mapToMcpAnnotationStructure(
+  obj: Record<string, any>,
+): Partial<McpAnnotationStructure> {
+  const result: Partial<McpAnnotationStructure> = {};
+
+  // Helper function to set nested properties
+  const setNestedValue = (target: any, path: string, value: any): void => {
+    const keys = path.split(".");
+    const lastKey = keys.pop()!;
+    const nestedTarget = keys.reduce((current, key) => {
+      if (!(key in current)) {
+        current[key] = {};
+      }
+      return current[key];
+    }, target);
+
+    // If the target already has a value and both are objects, merge them
+    if (
+      typeof nestedTarget[lastKey] === "object" &&
+      typeof value === "object" &&
+      nestedTarget[lastKey] !== null &&
+      value !== null &&
+      !Array.isArray(nestedTarget[lastKey]) &&
+      !Array.isArray(value)
+    ) {
+      nestedTarget[lastKey] = { ...nestedTarget[lastKey], ...value };
+    } else {
+      nestedTarget[lastKey] = value;
+    }
+  };
+
+  // Loop through object keys and map them
+  for (const key in obj) {
+    if (MCP_ANNOTATION_MAPPING.has(key)) {
+      const mappedPath = MCP_ANNOTATION_MAPPING.get(key)!;
+      setNestedValue(result, mappedPath, obj[key]);
+    }
+  }
+
+  return result;
+}
+
 /**
  * Parses MCP annotations from a definition object
  * @param definition - The definition object to parse annotations from
@@ -126,71 +164,11 @@ function parseAnnotations(
   definition: csn.Definition,
 ): Partial<McpAnnotationStructure> | undefined {
   if (!containsMcpAnnotation(definition)) return undefined;
+  const parsed = mapToMcpAnnotationStructure(definition);
   const annotations: Partial<McpAnnotationStructure> = {
     definition: definition,
+    ...parsed,
   };
-
-  for (const [k, v] of Object.entries(definition as any)) {
-    // Process MCP annotations and CDS auth annotations
-    if (
-      !k.includes(MCP_ANNOTATION_KEY) &&
-      !k.startsWith("@requires") &&
-      !k.startsWith("@restrict")
-    ) {
-      continue;
-    }
-
-    LOGGER.debug("Parsing: ", k, v);
-    switch (k) {
-      case MCP_ANNOTATION_PROPS.MCP_NAME:
-        annotations.name = v as string;
-        continue;
-      case MCP_ANNOTATION_PROPS.MCP_DESCRIPTION:
-        annotations.description = v as string;
-        continue;
-      case MCP_ANNOTATION_PROPS.MCP_RESOURCE:
-        annotations.resource = v as any;
-        continue;
-      case MCP_ANNOTATION_PROPS.MCP_TOOL:
-        annotations.tool = v as boolean;
-        continue;
-      case MCP_ANNOTATION_PROPS.MCP_PROMPT:
-        annotations.prompts = v as any;
-        continue;
-      case MCP_ANNOTATION_PROPS.MCP_WRAP_TOOLS:
-        if (!annotations.wrap) {
-          annotations.wrap = {};
-        }
-
-        annotations.wrap.tools = v as boolean;
-        continue;
-      case MCP_ANNOTATION_PROPS.MCP_WRAP_HINT:
-        if (!annotations.wrap) {
-          annotations.wrap = {};
-        }
-
-        annotations.wrap.hint = v as string;
-        continue;
-      case MCP_ANNOTATION_PROPS.MCP_WRAP_MODES:
-        if (!annotations.wrap) {
-          annotations.wrap = {};
-        }
-
-        annotations.wrap.modes = v as any;
-        continue;
-      case MCP_ANNOTATION_PROPS.MCP_ELICIT:
-        annotations.elicit = v as any;
-        continue;
-      case CDS_AUTH_ANNOTATIONS.REQUIRES:
-        annotations.requires = v as string;
-        continue;
-      case CDS_AUTH_ANNOTATIONS.RESTRICT:
-        annotations.restrict = v as CdsRestriction[];
-        continue;
-      default:
-        continue;
-    }
-  }
 
   return annotations;
 }

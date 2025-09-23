@@ -22,7 +22,8 @@ service CatalogService {
       'query',
       'get',
       'create',
-      'update'
+      'update',
+      'delete'
     ],
     hint : 'Use for read and write demo operations'
   };
@@ -43,6 +44,22 @@ service CatalogService {
     resource   : true
   }
   entity Authors          as projection on my.Authors;
+
+  annotate CatalogService.Authors with @mcp.wrap: {
+    tools: true,
+    modes: [
+      'query',
+      'get',
+      'create',
+      'update'
+    ],
+    hint : {
+      query : 'Retrieves lists of data based on the query parameters provided',
+      get   : 'Retrieves a singular entity',
+      create: 'Creates a new record of an Author',
+      update: 'Update properties of a given author'
+    }
+  };
 
   @restrict: [
     {
