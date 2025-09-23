@@ -71,7 +71,8 @@ export function createMcpServer(
       const enabled =
         localWrap === true || (localWrap === undefined && globalWrap);
       if (enabled) {
-        const modes = config.wrap_entity_modes ?? ["query", "get"];
+        const modes = entry.wrap?.modes ??
+          config.wrap_entity_modes ?? ["query", "get"];
         registerEntityWrappers(entry, server, authEnabled, modes, accesses);
       }
       continue;
