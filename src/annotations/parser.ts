@@ -53,7 +53,7 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
     const def = value as csn.Definition;
     const parsedAnnotations = parseAnnotations(def);
     const { serviceName, target } = splitDefinitionName(key);
-    parseBoundOperations(serviceName, target, def, result); // Mutates result map with bound operations
+    parseBoundOperations(model, serviceName, target, def, result); // Mutates result map with bound operations
 
     if (!parsedAnnotations || !containsRequiredAnnotations(parsedAnnotations)) {
       continue; // This check must occur here, since we do want the bound operations even if the parent is not annotated
@@ -82,6 +82,7 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
         continue;
       case "function":
         const functionAnnotation = constructToolAnnotation(
+          model,
           serviceName,
           target,
           verifiedAnnotations,
@@ -91,6 +92,7 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
         continue;
       case "action":
         const actionAnnotation = constructToolAnnotation(
+          model,
           serviceName,
           target,
           verifiedAnnotations,
@@ -221,6 +223,7 @@ function constructResourceAnnotation(
  * @returns Tool annotation or undefined if invalid
  */
 function constructToolAnnotation(
+  model: csn.CSN,
   serviceName: string,
   target: string,
   annotations: McpAnnotationStructure,
@@ -229,7 +232,10 @@ function constructToolAnnotation(
 ): McpToolAnnotation | undefined {
   if (!isValidToolAnnotation(annotations)) return undefined;
 
-  const { parameters, operationKind } = parseOperationElements(annotations);
+  const { parameters, operationKind } = parseOperationElements(
+    annotations,
+    model,
+  );
   const restrictions = parseCdsRestrictions(
     annotations.restrict,
     annotations.requires,
@@ -276,6 +282,7 @@ function constructPromptAnnotation(
  * @param resultRef - Map to store parsed annotations (mutated by this function)
  */
 function parseBoundOperations(
+  model: csn.CSN,
   serviceName: string,
   entityKey: string,
   definition: csn.Definition,
@@ -308,6 +315,7 @@ function parseBoundOperations(
 
     const verifiedAnnotations = parsedAnnotations as McpAnnotationStructure;
     const toolAnnotation = constructToolAnnotation(
+      model,
       serviceName,
       k,
       verifiedAnnotations,

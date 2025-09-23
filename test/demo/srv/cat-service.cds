@@ -78,7 +78,7 @@ service CatalogService {
     tool       : true,
     elicit     : ['input'] // Ask for the function import's input to be elicited
   }
-  function getAuthor(id : String)                returns String;
+  function getAuthor(id : String)                               returns String;
 
   @requires: 'author-specialist'
   @mcp     : {
@@ -86,7 +86,7 @@ service CatalogService {
     description: 'Gets the desired authors details',
     tool       : true
   }
-  function getAuthorDetails()                    returns String;
+  function getAuthorDetails()                                   returns String;
 
   annotate getAuthor with @requires: 'book-keeper';
 
@@ -99,16 +99,29 @@ service CatalogService {
       'confirm'
     ] // Ask for the function import's input to be elicited
   }
-  function getBooksByAuthor(authorName : String) returns array of String;
+  function getBooksByAuthor(authorName : String)                returns array of String;
 
   @mcp: {
     name       : 'book-recommendation',
     description: 'Get a random book recommendation',
     tool       : true
   }
-  function getBookRecommendation()               returns String;
+  function getBookRecommendation()                              returns String;
 
 
+  @mcp: {
+    name       : 'check-author-name',
+    description: 'Not implemented, just a test for parser',
+    tool       : true
+  }
+  function checkAuthorName(value : my.ComplexType:rangedNumber) returns String;
+
+  @mcp: {
+    name       : 'not-real-tool',
+    description: 'Not real, just used for nested types. Do not use',
+    tool       : true
+  }
+  function getNotReal(value : my.TValidQuantities:positiveOnly) returns String;
 }
 
 annotate CatalogService with @mcp.prompts: [{

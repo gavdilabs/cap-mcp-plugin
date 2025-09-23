@@ -203,6 +203,184 @@ describe("Parser", () => {
       expect(annotation!.name).toBe("Bound Action");
     });
 
+    test("should parse bound operations with custom-typed parameter", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "myTypes.CustomDouble": {
+            kind: "type",
+            elements: {
+              double1: { type: "cds.Double" },
+            },
+          },
+          "TestService.TestEntity": {
+            kind: "entity",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+            actions: {
+              boundAction: {
+                kind: "action",
+                "@mcp.name": "Bound Action",
+                "@mcp.description": "Bound action description",
+                "@mcp.tool": true,
+                params: {
+                  input: {
+                    type: { ref: ["myTypes.CustomDouble", "double1"] },
+                  },
+                },
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("boundAction");
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation!.name).toBe("Bound Action");
+      const toolAnnotation = annotation as McpToolAnnotation;
+      expect(toolAnnotation.parameters?.get("input")).toBe("Double");
+    });
+
+    test("should parse function with complex-typed parameter", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "myTypes.ComplexType": {
+            kind: "type",
+            elements: {
+              stringField: { type: "cds.String" },
+              numberField: { type: "cds.Integer" },
+            },
+          },
+          "TestService.TestFunction": {
+            kind: "function",
+            "@mcp.name": "Test Function",
+            "@mcp.description": "Test function description",
+            "@mcp.tool": true,
+            params: {
+              complexParam: {
+                type: { ref: ["myTypes.ComplexType", "stringField"] },
+              },
+              simpleParam: { type: "cds.Boolean" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestFunction");
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation!.name).toBe("Test Function");
+      const toolAnnotation = annotation as McpToolAnnotation;
+      expect(toolAnnotation.parameters?.get("complexParam")).toBe("String");
+      expect(toolAnnotation.parameters?.get("simpleParam")).toBe("Boolean");
+    });
+
+    test("should parse function with nested complex-typed parameter", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "myTypes.ComplexType": {
+            kind: "type",
+            elements: {
+              stringField: {
+                type: { ref: ["myTypes.NestedComplexType", "complex"] },
+              },
+              numberField: { type: "cds.Integer" },
+            },
+          },
+          "myTypes.NestedComplexType": {
+            kind: "type",
+            elements: {
+              complex: { type: "cds.String" },
+            },
+          },
+          "TestService.TestFunction": {
+            kind: "function",
+            "@mcp.name": "Test Function",
+            "@mcp.description": "Test function description",
+            "@mcp.tool": true,
+            params: {
+              nestedComplexParam: {
+                type: { ref: ["myTypes.ComplexType", "stringField"] },
+              },
+              simpleParam: { type: "cds.Boolean" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestFunction");
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation!.name).toBe("Test Function");
+      const toolAnnotation = annotation as McpToolAnnotation;
+      expect(toolAnnotation.parameters?.get("nestedComplexParam")).toBe(
+        "String",
+      );
+      expect(toolAnnotation.parameters?.get("simpleParam")).toBe("Boolean");
+    });
+
+    test("should parse action with multiple complex-typed parameters", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "myTypes.Address": {
+            kind: "type",
+            elements: {
+              street: { type: "cds.String" },
+              city: { type: "cds.String" },
+              zipCode: { type: "cds.Integer" },
+            },
+          },
+          "myTypes.Person": {
+            kind: "type",
+            elements: {
+              name: { type: "cds.String" },
+              age: { type: "cds.Integer" },
+              isActive: { type: "cds.Boolean" },
+            },
+          },
+          "TestService.TestAction": {
+            kind: "action",
+            "@mcp.name": "Test Action",
+            "@mcp.description": "Test action with multiple complex types",
+            "@mcp.tool": true,
+            params: {
+              personName: {
+                type: { ref: ["myTypes.Person", "name"] },
+              },
+              personAge: {
+                type: { ref: ["myTypes.Person", "age"] },
+              },
+              addressZip: {
+                type: { ref: ["myTypes.Address", "zipCode"] },
+              },
+              isPersonActive: {
+                type: { ref: ["myTypes.Person", "isActive"] },
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestAction");
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation!.name).toBe("Test Action");
+      const toolAnnotation = annotation as McpToolAnnotation;
+      expect(toolAnnotation.parameters?.get("personName")).toBe("String");
+      expect(toolAnnotation.parameters?.get("personAge")).toBe("Integer");
+      expect(toolAnnotation.parameters?.get("addressZip")).toBe("Integer");
+      expect(toolAnnotation.parameters?.get("isPersonActive")).toBe("Boolean");
+    });
+
     test("should handle mixed valid and invalid definitions", () => {
       const model: csn.CSN = {
         definitions: {

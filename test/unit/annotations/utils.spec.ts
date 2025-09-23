@@ -1,3 +1,4 @@
+import { csn } from "@sap/cds";
 import {
   splitDefinitionName,
   containsMcpAnnotation,
@@ -17,7 +18,6 @@ import {
   McpResourceOption,
   CdsRestriction,
 } from "../../../src/annotations/types";
-import { csn } from "@sap/cds";
 
 // Mock logger
 jest.mock("../../../src/logger", () => ({
@@ -384,7 +384,10 @@ describe("Utils", () => {
         description: "test",
       };
 
-      const result = parseOperationElements(annotations);
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+      const result = parseOperationElements(annotations, mockModel);
 
       expect(result.parameters).toBeDefined();
       expect(result.parameters!.size).toBe(2);
@@ -402,7 +405,10 @@ describe("Utils", () => {
         description: "test",
       };
 
-      const result = parseOperationElements(annotations);
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+      const result = parseOperationElements(annotations, mockModel);
 
       expect(result.parameters).toBeUndefined();
       expect(result.operationKind).toBe("action");

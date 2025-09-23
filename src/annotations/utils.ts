@@ -238,18 +238,32 @@ export function parseResourceElements(definition: csn.Definition): {
  * @param annotations - The annotation structure to parse
  * @returns Object containing parameters and operation kind
  */
-export function parseOperationElements(annotations: McpAnnotationStructure): {
+export function parseOperationElements(
+  annotations: McpAnnotationStructure,
+  model: csn.CSN,
+): {
   parameters?: Map<string, string>;
   operationKind?: string;
 } {
   let parameters: Map<string, string> | undefined;
 
-  const params: { [key: string]: { type: string } } = (
+  const params: { [key: string]: { type: string | { ref: string[] } } } = (
     annotations.definition as any
   )["params"];
   if (params && Object.entries(params).length > 0) {
     parameters = new Map<string, string>();
     for (const [k, v] of Object.entries(params)) {
+      if (typeof v.type !== "string") {
+        // const references = v.type.ref;
+        // const typeReference =
+        //   model.definitions?.[references[0]].elements[references[1]];
+        // parameters.set(k, typeReference?.type?.replace("cds.", "") as string);
+
+        const referencedType = parseTypedReference(v.type, model);
+        parameters.set(k, referencedType);
+        LOGGER.debug("Typed reference found", referencedType);
+        continue;
+      }
       parameters.set(k, v.type.replace("cds.", ""));
     }
   }
@@ -258,6 +272,28 @@ export function parseOperationElements(annotations: McpAnnotationStructure): {
     parameters,
     operationKind: annotations.definition.kind,
   };
+}
+
+/**
+ * Recursively digs through the typed reference object of an operation parameter.
+ * @param param
+ * @param model
+ * @returns string|undefined
+ * @throws Error if nested type is not parseable
+ */
+function parseTypedReference(
+  param: { ref?: string[] } | undefined,
+  model: csn.CSN,
+): string {
+  if (!param || !param.ref) {
+    throw new Error("Failed to parse nested type reference");
+  }
+
+  const referenceType =
+    model.definitions?.[param.ref[0]].elements[param.ref[1]];
+  return typeof referenceType?.type === "string"
+    ? referenceType.type?.replace("cds.", "")
+    : parseTypedReference(referenceType?.type, model);
 }
 
 /**
