@@ -330,9 +330,10 @@ function registerQueryTool(
     explain: inputZod.shape.explain,
   } as unknown as Record<string, z.ZodType>;
 
-  const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
+  const hint = constructHintMessage(resAnno, "query");
+
   const desc =
-    `${buildEnhancedQueryDescription(resAnno)} CRITICAL: Use foreign key fields (e.g., author_ID) for associations - association names (e.g., author) won't work in filters.` +
+    `Resource description: ${resAnno.description}. ${buildEnhancedQueryDescription(resAnno)} CRITICAL: Use foreign key fields (e.g., author_ID) for associations - association names (e.g., author) won't work in filters.` +
     hint;
 
   const queryHandler = async (rawArgs: Record<string, unknown>) => {
@@ -409,8 +410,8 @@ function registerGetTool(
   }
 
   const keyList = Array.from(resAnno.resourceKeys.keys()).join(", ");
-  const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
-  const desc = `Get one ${resAnno.target} by key(s): ${keyList}. For fields & examples call cap_describe_model.${hint}`;
+  const hint = constructHintMessage(resAnno, "get");
+  const desc = `Resource description: ${resAnno.description}. Get one ${resAnno.target} by key(s): ${keyList}. For fields & examples call cap_describe_model.${hint}`;
 
   const getHandler = async (args: Record<string, unknown>) => {
     const startTime = Date.now();
@@ -521,8 +522,8 @@ function registerCreateTool(
       .describe(`Field ${propName}`);
   }
 
-  const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
-  const desc = `Create a new ${resAnno.target}. Provide fields; service applies defaults.${hint}`;
+  const hint = constructHintMessage(resAnno, "create");
+  const desc = `Resource description: ${resAnno.description}. Create a new ${resAnno.target}. Provide fields; service applies defaults.${hint}`;
 
   const createHandler = async (args: Record<string, unknown>) => {
     const CDS = (global as any).cds;
@@ -628,8 +629,8 @@ function registerUpdateTool(
   }
 
   const keyList = Array.from(resAnno.resourceKeys.keys()).join(", ");
-  const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
-  const desc = `Update ${resAnno.target} by key(s): ${keyList}. Provide fields to update.${hint}`;
+  const hint = constructHintMessage(resAnno, "update");
+  const desc = `Resource description: ${resAnno.description}. Update ${resAnno.target} by key(s): ${keyList}. Provide fields to update.${hint}`;
 
   const updateHandler = async (args: Record<string, unknown>) => {
     const CDS = (global as any).cds;
@@ -737,8 +738,8 @@ function registerDeleteTool(
   }
 
   const keyList = Array.from(resAnno.resourceKeys.keys()).join(", ");
-  const hint = resAnno.wrap?.hint ? ` Hint: ${resAnno.wrap?.hint}` : "";
-  const desc = `Delete ${resAnno.target} by key(s): ${keyList}. This operation cannot be undone.${hint}`;
+  const hint = constructHintMessage(resAnno, "delete");
+  const desc = `Resource description: ${resAnno.description}. Delete ${resAnno.target} by key(s): ${keyList}. This operation cannot be undone.${hint}`;
 
   const deleteHandler = async (args: Record<string, unknown>) => {
     const CDS = (global as any).cds;
@@ -925,4 +926,21 @@ async function executeQuery(
     default:
       return svc.run(baseQuery);
   }
+}
+
+function constructHintMessage(
+  resAnno: McpResourceAnnotation,
+  wrapAction: "get" | "query" | "create" | "delete" | "update",
+): string {
+  if (!resAnno.wrap?.hint) {
+    return "";
+  } else if (typeof resAnno.wrap.hint === "string") {
+    return ` Hint: ${resAnno.wrap?.hint}`;
+  }
+
+  if (typeof resAnno.wrap.hint !== "object") {
+    throw new Error(`Unparseable hint provided for entity: ${resAnno.name}`);
+  }
+
+  return ` Hint: ${resAnno.wrap.hint[wrapAction] ?? ""}`;
 }

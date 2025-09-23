@@ -12,38 +12,27 @@ import { McpResourceOption } from "./types";
 export const MCP_ANNOTATION_KEY = "@mcp";
 
 /**
- * Complete set of supported MCP annotation property names
- * Maps logical names to their actual annotation keys used in CDS files
+ * Mapping of the custom annotations + CDS specific annotations and their correlated mapping for MCP usage
  */
-export const MCP_ANNOTATION_PROPS = {
-  /** Name identifier annotation - required for all MCP elements */
-  MCP_NAME: "@mcp.name",
-  /** Description annotation - required for all MCP elements */
-  MCP_DESCRIPTION: "@mcp.description",
-  /** Resource configuration annotation for CAP entities */
-  MCP_RESOURCE: "@mcp.resource",
-  /** Tool configuration annotation for CAP functions/actions */
-  MCP_TOOL: "@mcp.tool",
-  /** Prompt templates annotation for CAP services */
-  MCP_PROMPT: "@mcp.prompts",
-  /** Wrapper configuration for exposing entities as tools - tools prop*/
-  MCP_WRAP_TOOLS: "@mcp.wrap.tools",
-  /** Wrapper configuration for exposing entities as tools - modes prop*/
-  MCP_WRAP_MODES: "@mcp.wrap.modes",
-  /** Wrapper configuration for exposing entities as tools - hint prop*/
-  MCP_WRAP_HINT: "@mcp.wrap.hint",
-  /** Elicited user input annotation for tools in CAP services */
-  MCP_ELICIT: "@mcp.elicit",
-};
-
-/**
- * Set of annotations used for CDS auth annotations
- * Maps logical names to their actual annotation keys used in CDS files.
- */
-export const CDS_AUTH_ANNOTATIONS = {
-  REQUIRES: "@requires",
-  RESTRICT: "@restrict",
-};
+export const MCP_ANNOTATION_MAPPING = new Map<string, string>([
+  ["@mcp.name", "name"],
+  ["@mcp.description", "description"],
+  ["@mcp.resource", "resource"],
+  ["@mcp.tool", "tool"],
+  ["@mcp.prompts", "prompts"],
+  ["@mcp.wrap", "wrap"],
+  ["@mcp.wrap.tools", "wrap.tools"],
+  ["@mcp.wrap.modes", "wrap.modes"],
+  ["@mcp.wrap.hint", "wrap.hint"],
+  ["@mcp.wrap.hint.get", "wrap.hint.get"],
+  ["@mcp.wrap.hint.query", "wrap.hint.query"],
+  ["@mcp.wrap.hint.create", "wrap.hint.create"],
+  ["@mcp.wrap.hint.update", "wrap.hint.update"],
+  ["@mcp.wrap.hint.delete", "wrap.hint.delete"],
+  ["@mcp.elicit", "elicit"],
+  ["@requires", "requires"],
+  ["@restrict", "restrict"],
+]);
 
 /**
  * Default set of all available OData query options for MCP resources

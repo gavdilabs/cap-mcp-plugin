@@ -129,7 +129,18 @@ export type McpAnnotationWrap = {
   /** Tool modes to create; defaults are provided via configuration */
   modes?: EntityOperationMode[];
   /** Additional description hint appended to tool descriptions */
-  hint?: string;
+  hint?: string | McpDetailedHint;
+};
+
+/**
+ * Detailed hints object for the wrapper functionality
+ */
+export type McpDetailedHint = {
+  get?: string;
+  query?: string;
+  create?: string;
+  update?: string;
+  delete?: string;
 };
 
 /**

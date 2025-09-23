@@ -608,5 +608,353 @@ describe("Parser", () => {
       expect(annotation.wrap?.modes).toEqual(["create", "delete"]);
       expect(annotation.wrap?.hint).toBeUndefined();
     });
+
+    test("should parse entity with flattened detailed hint annotations", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity with flattened detailed hints",
+            "@mcp.resource": true,
+            "@mcp.wrap.tools": true,
+            "@mcp.wrap.modes": ["query", "get", "create", "update"],
+            "@mcp.wrap.hint.query":
+              "Query hint for retrieving multiple records",
+            "@mcp.wrap.hint.get": "Get hint for retrieving single record",
+            "@mcp.wrap.hint.create": "Create hint for adding new records",
+            "@mcp.wrap.hint.update": "Update hint for modifying records",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation.name).toBe("Test Entity");
+
+      // Verify detailed hints are correctly parsed from flattened annotations
+      expect(annotation.wrap).toBeDefined();
+      expect(annotation.wrap?.tools).toBe(true);
+      expect(annotation.wrap?.modes).toEqual([
+        "query",
+        "get",
+        "create",
+        "update",
+      ]);
+      expect(annotation.wrap?.hint).toEqual({
+        query: "Query hint for retrieving multiple records",
+        get: "Get hint for retrieving single record",
+        create: "Create hint for adding new records",
+        update: "Update hint for modifying records",
+      });
+    });
+
+    test("should parse entity with partial flattened detailed hint annotations", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity with partial detailed hints",
+            "@mcp.resource": true,
+            "@mcp.wrap.tools": true,
+            "@mcp.wrap.modes": ["query", "get", "delete"],
+            "@mcp.wrap.hint.query": "Custom query hint",
+            "@mcp.wrap.hint.delete": "Custom delete hint",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify only specified detailed hints are set
+      expect(annotation.wrap).toBeDefined();
+      expect(annotation.wrap?.hint).toEqual({
+        query: "Custom query hint",
+        delete: "Custom delete hint",
+      });
+    });
+
+    test("should parse entity with nested detailed hint object structure", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity with nested hint object",
+            "@mcp.resource": true,
+            "@mcp.wrap": {
+              tools: true,
+              modes: ["query", "get", "create", "update"],
+              hint: {
+                query: "Retrieves lists of data based on query parameters",
+                get: "Retrieves a singular entity",
+                create: "Creates a new record",
+                update: "Updates properties of existing record",
+              },
+            },
+            elements: {
+              id: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation.name).toBe("Test Entity");
+
+      // Verify nested detailed hint object is correctly parsed
+      expect(annotation.wrap).toBeDefined();
+      expect(annotation.wrap?.tools).toBe(true);
+      expect(annotation.wrap?.modes).toEqual([
+        "query",
+        "get",
+        "create",
+        "update",
+      ]);
+      expect(annotation.wrap?.hint).toEqual({
+        query: "Retrieves lists of data based on query parameters",
+        get: "Retrieves a singular entity",
+        create: "Creates a new record",
+        update: "Updates properties of existing record",
+      });
+    });
+
+    test("should parse entity with mixed hint types (string and detailed object)", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.EntityWithStringHint": {
+            kind: "entity",
+            "@mcp.name": "Entity With String Hint",
+            "@mcp.description": "Test entity with simple string hint",
+            "@mcp.resource": true,
+            "@mcp.wrap.tools": true,
+            "@mcp.wrap.modes": ["query", "get"],
+            "@mcp.wrap.hint": "Simple string hint for all operations",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+          },
+          "TestService.EntityWithDetailedHint": {
+            kind: "entity",
+            "@mcp.name": "Entity With Detailed Hint",
+            "@mcp.description": "Test entity with detailed hint object",
+            "@mcp.resource": true,
+            "@mcp.wrap.tools": true,
+            "@mcp.wrap.modes": ["create", "update"],
+            "@mcp.wrap.hint.create": "Detailed create hint",
+            "@mcp.wrap.hint.update": "Detailed update hint",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(2);
+
+      // Check entity with string hint
+      const stringHintAnnotation = result.get(
+        "EntityWithStringHint",
+      ) as McpResourceAnnotation;
+      expect(stringHintAnnotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(stringHintAnnotation.wrap?.hint).toBe(
+        "Simple string hint for all operations",
+      );
+
+      // Check entity with detailed hint object
+      const detailedHintAnnotation = result.get(
+        "EntityWithDetailedHint",
+      ) as McpResourceAnnotation;
+      expect(detailedHintAnnotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(detailedHintAnnotation.wrap?.hint).toEqual({
+        create: "Detailed create hint",
+        update: "Detailed update hint",
+      });
+    });
+
+    test("should parse entity with all detailed hint operations", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity with all detailed hint operations",
+            "@mcp.resource": true,
+            "@mcp.wrap.tools": true,
+            "@mcp.wrap.modes": ["query", "get", "create", "update", "delete"],
+            "@mcp.wrap.hint.query": "Query operation hint",
+            "@mcp.wrap.hint.get": "Get operation hint",
+            "@mcp.wrap.hint.create": "Create operation hint",
+            "@mcp.wrap.hint.update": "Update operation hint",
+            "@mcp.wrap.hint.delete": "Delete operation hint",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify all detailed hint operations are correctly parsed
+      expect(annotation.wrap?.hint).toEqual({
+        query: "Query operation hint",
+        get: "Get operation hint",
+        create: "Create operation hint",
+        update: "Update operation hint",
+        delete: "Delete operation hint",
+      });
+    });
+
+    test("should handle backward compatibility with simple string hints", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description":
+              "Test entity with backward compatible string hint",
+            "@mcp.resource": true,
+            "@mcp.wrap": {
+              tools: true,
+              modes: ["query", "get"],
+              hint: "Backward compatible string hint",
+            },
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify string hint is preserved for backward compatibility
+      expect(annotation.wrap?.hint).toBe("Backward compatible string hint");
+    });
+
+    test("should handle entity with no hint annotations", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity without any hints",
+            "@mcp.resource": true,
+            "@mcp.wrap.tools": true,
+            "@mcp.wrap.modes": ["query", "get"],
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify hint is undefined when no hint annotations are present
+      expect(annotation.wrap?.hint).toBeUndefined();
+    });
+
+    test("should combine flattened and nested wrap annotations correctly", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity with combined wrap annotations",
+            "@mcp.resource": true,
+            "@mcp.wrap.tools": true,
+            "@mcp.wrap": {
+              modes: ["query", "get", "create"],
+            },
+            "@mcp.wrap.hint.query": "Flattened query hint",
+            "@mcp.wrap.hint.create": "Flattened create hint",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify flattened and nested annotations are correctly combined
+      expect(annotation.wrap?.tools).toBe(true);
+      expect(annotation.wrap?.modes).toEqual(["query", "get", "create"]);
+      expect(annotation.wrap?.hint).toEqual({
+        query: "Flattened query hint",
+        create: "Flattened create hint",
+      });
+    });
+
+    test("should handle empty detailed hint object", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity",
+            "@mcp.description": "Test entity with empty hint object",
+            "@mcp.resource": true,
+            "@mcp.wrap": {
+              tools: true,
+              modes: ["query"],
+              hint: {},
+            },
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify empty hint object is handled correctly
+      expect(annotation.wrap?.hint).toEqual({});
+    });
   });
 });
