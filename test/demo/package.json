@@ -25,7 +25,7 @@
     "mcp": {
       "name": "mock-service",
       "version": "0.0.1",
-      "auth": "inherit",
+      "auth": "none",
       "instructions": "Use this server to query books",
       "wrap_entities_to_actions": true,
       "wrap_entity_modes": [

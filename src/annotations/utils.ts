@@ -238,18 +238,29 @@ export function parseResourceElements(definition: csn.Definition): {
  * @param annotations - The annotation structure to parse
  * @returns Object containing parameters and operation kind
  */
-export function parseOperationElements(annotations: McpAnnotationStructure): {
+export function parseOperationElements(
+  annotations: McpAnnotationStructure,
+  model: csn.CSN,
+): {
   parameters?: Map<string, string>;
   operationKind?: string;
 } {
   let parameters: Map<string, string> | undefined;
 
-  const params: { [key: string]: { type: string } } = (
+  const params: { [key: string]: { type: string | { ref: string[] } } } = (
     annotations.definition as any
   )["params"];
   if (params && Object.entries(params).length > 0) {
     parameters = new Map<string, string>();
     for (const [k, v] of Object.entries(params)) {
+      if (typeof v.type !== "string") {
+        const references = v.type.ref;
+        const typeReference =
+          model.definitions?.[references[0]].elements[references[1]];
+
+        parameters.set(k, typeReference?.type?.replace("cds.", "") as string);
+        continue;
+      }
       parameters.set(k, v.type.replace("cds.", ""));
     }
   }

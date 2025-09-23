@@ -19,3 +19,10 @@ entity MultiKeyExample {
   key ExternalKey : Integer;
       description : String;
 }
+
+type ComplexType {
+  rangedNumber : Integer @assert.range: [
+    0,
+    10
+  ];
+}
