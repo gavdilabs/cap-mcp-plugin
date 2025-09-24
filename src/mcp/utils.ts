@@ -1,4 +1,5 @@
 import { McpResourceAnnotation } from "../annotations/structures";
+import { LOGGER } from "../logger";
 import { MCP_SESSION_HEADER, NEW_LINE } from "./constants";
 import { McpSession } from "./types";
 import { Request, Response } from "express";
@@ -13,10 +14,76 @@ export function determineMcpParameterType(cdsType: string): unknown {
   switch (cdsType) {
     case "String":
       return z.string();
+    case "UUID":
+      return z.string();
+    case "Date":
+      return z.date();
+    case "Time":
+      return z.date();
+    case "DateTime":
+      return z.date();
+    case "Timestamp":
+      return z.number();
     case "Integer":
+      return z.number();
+    case "Int16":
+      return z.number();
+    case "Int32":
+      return z.number();
+    case "Int64":
+      return z.number();
+    case "UInt8":
+      return z.number();
+    case "Decimal":
+      return z.number();
+    case "Double":
       return z.number();
     case "Boolean":
       return z.boolean();
+    case "Binary":
+      return z.string();
+    case "LargeBinary":
+      return z.string();
+    case "LargeString":
+      return z.string();
+    case "Map":
+      return z.any();
+    case "StringArray":
+      return z.array(z.string());
+    case "DateArray":
+      return z.array(z.date());
+    case "TimeArray":
+      return z.array(z.date());
+    case "DateTimeArray":
+      return z.array(z.date());
+    case "TimestampArray":
+      return z.array(z.number());
+    case "UUIDArray":
+      return z.array(z.string());
+    case "IntegerArray":
+      return z.array(z.number());
+    case "Int16Array":
+      return z.array(z.number());
+    case "Int32Array":
+      return z.array(z.number());
+    case "Int64Array":
+      return z.array(z.number());
+    case "UInt8Array":
+      return z.array(z.number());
+    case "DecimalArray":
+      return z.array(z.number());
+    case "BooleanArray":
+      return z.array(z.boolean());
+    case "DoubleArray":
+      return z.array(z.number());
+    case "BinaryArray":
+      return z.array(z.string());
+    case "LargeBinaryArray":
+      return z.array(z.string());
+    case "LargeStringArray":
+      return z.array(z.string());
+    case "MapArray":
+      return z.array(z.any());
     default:
       return z.string();
   }

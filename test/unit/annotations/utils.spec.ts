@@ -396,6 +396,159 @@ describe("Utils", () => {
       expect(result.operationKind).toBe("function");
     });
 
+    test("should parse array parameters correctly", () => {
+      const annotations: McpAnnotationStructure = {
+        definition: {
+          kind: "function",
+          params: {
+            stringArray: {
+              items: { type: "cds.String" },
+            },
+            integerArray: {
+              items: { type: "cds.Integer" },
+            },
+            booleanArray: {
+              items: { type: "cds.Boolean" },
+            },
+            uuidArray: {
+              items: { type: "cds.UUID" },
+            },
+          },
+        } as any,
+        name: "test-array",
+        description: "test array parameters",
+      };
+
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+      const result = parseOperationElements(annotations, mockModel);
+
+      expect(result.parameters).toBeDefined();
+      expect(result.parameters!.size).toBe(4);
+      expect(result.parameters!.get("stringArray")).toBe("StringArray");
+      expect(result.parameters!.get("integerArray")).toBe("IntegerArray");
+      expect(result.parameters!.get("booleanArray")).toBe("BooleanArray");
+      expect(result.parameters!.get("uuidArray")).toBe("UUIDArray");
+      expect(result.operationKind).toBe("function");
+    });
+
+    test("should parse mixed array and non-array parameters", () => {
+      const annotations: McpAnnotationStructure = {
+        definition: {
+          kind: "action",
+          params: {
+            singleString: { type: "cds.String" },
+            stringArray: {
+              items: { type: "cds.String" },
+            },
+            singleInteger: { type: "cds.Integer" },
+            integerArray: {
+              items: { type: "cds.Integer" },
+            },
+          },
+        } as any,
+        name: "test-mixed",
+        description: "test mixed parameters",
+      };
+
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+      const result = parseOperationElements(annotations, mockModel);
+
+      expect(result.parameters).toBeDefined();
+      expect(result.parameters!.size).toBe(4);
+      expect(result.parameters!.get("singleString")).toBe("String");
+      expect(result.parameters!.get("stringArray")).toBe("StringArray");
+      expect(result.parameters!.get("singleInteger")).toBe("Integer");
+      expect(result.parameters!.get("integerArray")).toBe("IntegerArray");
+      expect(result.operationKind).toBe("action");
+    });
+
+    test("should parse array of complex types", () => {
+      const annotations: McpAnnotationStructure = {
+        definition: {
+          kind: "function",
+          params: {
+            complexArray: {
+              items: {
+                type: { ref: ["myTypes.Person", "name"] },
+              },
+            },
+          },
+        } as any,
+        name: "test-complex-array",
+        description: "test complex array parameters",
+      };
+
+      const mockModel: csn.CSN = {
+        definitions: {
+          "myTypes.Person": {
+            kind: "type",
+            elements: {
+              name: { type: "cds.String" } as any,
+            },
+          } as any,
+        },
+      };
+      const result = parseOperationElements(annotations, mockModel);
+
+      expect(result.parameters).toBeDefined();
+      expect(result.parameters!.size).toBe(1);
+      expect(result.parameters!.get("complexArray")).toBe("StringArray");
+    });
+
+    test("should handle all CDS array types correctly", () => {
+      const annotations: McpAnnotationStructure = {
+        definition: {
+          kind: "function",
+          params: {
+            dateArray: { items: { type: "cds.Date" } },
+            timeArray: { items: { type: "cds.Time" } },
+            datetimeArray: { items: { type: "cds.DateTime" } },
+            timestampArray: { items: { type: "cds.Timestamp" } },
+            decimalArray: { items: { type: "cds.Decimal" } },
+            doubleArray: { items: { type: "cds.Double" } },
+            int16Array: { items: { type: "cds.Int16" } },
+            int32Array: { items: { type: "cds.Int32" } },
+            int64Array: { items: { type: "cds.Int64" } },
+            uint8Array: { items: { type: "cds.UInt8" } },
+            binaryArray: { items: { type: "cds.Binary" } },
+            largeBinaryArray: { items: { type: "cds.LargeBinary" } },
+            largeStringArray: { items: { type: "cds.LargeString" } },
+          },
+        } as any,
+        name: "test-all-arrays",
+        description: "test all array types",
+      };
+
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+      const result = parseOperationElements(annotations, mockModel);
+
+      expect(result.parameters).toBeDefined();
+      expect(result.parameters!.size).toBe(13);
+      expect(result.parameters!.get("dateArray")).toBe("DateArray");
+      expect(result.parameters!.get("timeArray")).toBe("TimeArray");
+      expect(result.parameters!.get("datetimeArray")).toBe("DateTimeArray");
+      expect(result.parameters!.get("timestampArray")).toBe("TimestampArray");
+      expect(result.parameters!.get("decimalArray")).toBe("DecimalArray");
+      expect(result.parameters!.get("doubleArray")).toBe("DoubleArray");
+      expect(result.parameters!.get("int16Array")).toBe("Int16Array");
+      expect(result.parameters!.get("int32Array")).toBe("Int32Array");
+      expect(result.parameters!.get("int64Array")).toBe("Int64Array");
+      expect(result.parameters!.get("uint8Array")).toBe("UInt8Array");
+      expect(result.parameters!.get("binaryArray")).toBe("BinaryArray");
+      expect(result.parameters!.get("largeBinaryArray")).toBe(
+        "LargeBinaryArray",
+      );
+      expect(result.parameters!.get("largeStringArray")).toBe(
+        "LargeStringArray",
+      );
+    });
+
     test("should handle operation without parameters", () => {
       const annotations: McpAnnotationStructure = {
         definition: {

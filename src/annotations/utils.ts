@@ -234,6 +234,14 @@ export function parseResourceElements(definition: csn.Definition): {
 }
 
 /**
+ * Operation parameter type for CSN operations
+ */
+type OperationParameter = {
+  type?: string | { ref: string[] };
+  items?: { type: string | { ref: string[] } };
+};
+
+/**
  * Parses operation elements from annotation structure
  * @param annotations - The annotation structure to parse
  * @returns Object containing parameters and operation kind
@@ -246,25 +254,33 @@ export function parseOperationElements(
   operationKind?: string;
 } {
   let parameters: Map<string, string> | undefined;
+  const parseParam = (
+    k: string,
+    v: Omit<OperationParameter, "items">,
+    suffix?: string,
+  ) => {
+    if (typeof v.type !== "string") {
+      const referencedType = parseTypedReference(v.type, model);
+      parameters?.set(k, `${referencedType}${suffix ?? ""}`);
+      return;
+    }
 
-  const params: { [key: string]: { type: string | { ref: string[] } } } = (
+    parameters?.set(k, `${v.type.replace("cds.", "")}${suffix ?? ""}`);
+  };
+
+  const params: { [key: string]: OperationParameter } = (
     annotations.definition as any
   )["params"];
+
   if (params && Object.entries(params).length > 0) {
     parameters = new Map<string, string>();
     for (const [k, v] of Object.entries(params)) {
-      if (typeof v.type !== "string") {
-        // const references = v.type.ref;
-        // const typeReference =
-        //   model.definitions?.[references[0]].elements[references[1]];
-        // parameters.set(k, typeReference?.type?.replace("cds.", "") as string);
-
-        const referencedType = parseTypedReference(v.type, model);
-        parameters.set(k, referencedType);
-        LOGGER.debug("Typed reference found", referencedType);
+      if (v.items) {
+        parseParam(k, v.items, "Array");
         continue;
       }
-      parameters.set(k, v.type.replace("cds.", ""));
+
+      parseParam(k, v);
     }
   }
 
