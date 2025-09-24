@@ -52,7 +52,7 @@ export interface CAPConfiguration {
   /**
    * Instructions for the MCP server
    */
-  instructions?: string;
+  instructions?: string | { file?: string };
 }
 
 /**
