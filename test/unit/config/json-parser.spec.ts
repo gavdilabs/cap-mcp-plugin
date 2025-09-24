@@ -373,4 +373,146 @@ describe("JSON Parser Security", () => {
       expect(result).toEqual({ empty_obj: {}, empty_array: [] });
     });
   });
+
+  describe("CAPConfiguration Instructions Parsing", () => {
+    test("should parse configuration with string instructions", () => {
+      const config = {
+        name: "test-server",
+        version: "1.0.0",
+        auth: "none",
+        capabilities: {
+          tools: { listChanged: true },
+          resources: { listChanged: true, subscribe: false },
+          prompts: { listChanged: true },
+        },
+        instructions: "These are string instructions",
+      };
+
+      const result = safeJsonParse(JSON.stringify(config), z.any());
+      expect(result.instructions).toBe("These are string instructions");
+    });
+
+    test("should parse configuration with file-based instructions", () => {
+      const config = {
+        name: "test-server",
+        version: "1.0.0",
+        auth: "none",
+        capabilities: {
+          tools: { listChanged: true },
+          resources: { listChanged: true, subscribe: false },
+          prompts: { listChanged: true },
+        },
+        instructions: {
+          file: "./docs/instructions.md",
+        },
+      };
+
+      const result = safeJsonParse(JSON.stringify(config), z.any());
+      expect(result.instructions).toEqual({ file: "./docs/instructions.md" });
+    });
+
+    test("should parse configuration with empty instructions object", () => {
+      const config = {
+        name: "test-server",
+        version: "1.0.0",
+        auth: "none",
+        capabilities: {
+          tools: { listChanged: true },
+          resources: { listChanged: true, subscribe: false },
+          prompts: { listChanged: true },
+        },
+        instructions: {},
+      };
+
+      const result = safeJsonParse(JSON.stringify(config), z.any());
+      expect(result.instructions).toEqual({});
+    });
+
+    test("should parse configuration without instructions property", () => {
+      const config = {
+        name: "test-server",
+        version: "1.0.0",
+        auth: "none",
+        capabilities: {
+          tools: { listChanged: true },
+          resources: { listChanged: true, subscribe: false },
+          prompts: { listChanged: true },
+        },
+      };
+
+      const result = safeJsonParse(JSON.stringify(config), z.any());
+      expect(result.instructions).toBeUndefined();
+    });
+
+    test("should handle null instructions", () => {
+      const config = {
+        name: "test-server",
+        version: "1.0.0",
+        auth: "none",
+        capabilities: {
+          tools: { listChanged: true },
+          resources: { listChanged: true, subscribe: false },
+          prompts: { listChanged: true },
+        },
+        instructions: null,
+      };
+
+      const result = safeJsonParse(JSON.stringify(config), z.any());
+      expect(result.instructions).toBeNull();
+    });
+
+    test("should validate instructions type safety", () => {
+      // Test that both string and object formats are valid
+      const stringInstructions = '{"instructions": "text"}';
+      const objectInstructions = '{"instructions": {"file": "path.md"}}';
+
+      const stringResult = safeJsonParse(
+        stringInstructions,
+        z.object({
+          instructions: z
+            .union([z.string(), z.object({ file: z.string().optional() })])
+            .optional(),
+        }),
+      );
+
+      const objectResult = safeJsonParse(
+        objectInstructions,
+        z.object({
+          instructions: z
+            .union([z.string(), z.object({ file: z.string().optional() })])
+            .optional(),
+        }),
+      );
+
+      expect(stringResult?.instructions).toBe("text");
+      expect(objectResult?.instructions).toEqual({ file: "path.md" });
+    });
+
+    test("should reject invalid instructions formats", () => {
+      const invalidConfig = '{"instructions": 123}'; // Number instead of string/object
+
+      const result = safeJsonParse(
+        invalidConfig,
+        z.object({
+          instructions: z
+            .union([z.string(), z.object({ file: z.string().optional() })])
+            .optional(),
+        }),
+      );
+
+      expect(result).toBeNull();
+      expect(LOGGER.warn).toHaveBeenCalled();
+    });
+
+    test("should handle complex file path structures", () => {
+      const config = {
+        instructions: {
+          file: "../docs/detailed-instructions.md",
+        },
+      };
+
+      const result = safeJsonParse(JSON.stringify(config), z.any());
+      expect(result.instructions.file).toBe("../docs/detailed-instructions.md");
+    });
+  });
 });

@@ -20,6 +20,7 @@ import {
 // Use relative import without extension for ts-jest resolver compatibility
 import { registerEntityWrappers } from "./entity-tools";
 import { registerDescribeModelTool } from "./describe-model";
+import { getMcpInstructions } from "../config/instructions";
 
 /**
  * Creates and configures an MCP server instance with the given configuration and annotations
@@ -38,7 +39,7 @@ export function createMcpServer(
       version: config.version,
       capabilities: config.capabilities,
     },
-    { instructions: config.instructions },
+    { instructions: getMcpInstructions(config) },
   );
 
   if (!annotations) {

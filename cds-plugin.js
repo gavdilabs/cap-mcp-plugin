@@ -1,5 +1,9 @@
 const cds = global.cds; // enforce host app cds instance
 const McpPlugin = require("./lib/mcp").default;
+const McpBuild = require("./lib/config/build");
+
+// Build tasks
+McpBuild.registerBuildTask();
 
 const plugin = new McpPlugin();
 
