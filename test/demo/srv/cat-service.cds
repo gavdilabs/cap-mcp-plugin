@@ -125,6 +125,13 @@ service CatalogService {
   }
   function getBookRecommendation()                              returns String;
 
+  @mcp: {
+    name       : 'get-many-authors',
+    description: 'Gets many authors. Using for testing "many"',
+    tool       : true
+  }
+  function getManyAuthors(ids : array of String)                returns many String;
+
 
   @mcp: {
     name       : 'check-author-name',

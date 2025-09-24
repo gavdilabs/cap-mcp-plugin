@@ -927,6 +927,220 @@ describe("Parser", () => {
       });
     });
 
+    test("should parse function with array parameter types", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestFunction": {
+            kind: "function",
+            "@mcp.name": "Test Array Function",
+            "@mcp.description": "Test function with array parameters",
+            "@mcp.tool": true,
+            params: {
+              stringIds: {
+                items: { type: "cds.String" },
+              },
+              integerValues: {
+                items: { type: "cds.Integer" },
+              },
+              booleanFlags: {
+                items: { type: "cds.Boolean" },
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestFunction") as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation.name).toBe("Test Array Function");
+      expect(annotation.parameters?.get("stringIds")).toBe("StringArray");
+      expect(annotation.parameters?.get("integerValues")).toBe("IntegerArray");
+      expect(annotation.parameters?.get("booleanFlags")).toBe("BooleanArray");
+    });
+
+    test("should parse action with mixed array and non-array parameters", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestAction": {
+            kind: "action",
+            "@mcp.name": "Mixed Parameters Action",
+            "@mcp.description": "Action with mixed parameter types",
+            "@mcp.tool": true,
+            params: {
+              singleValue: { type: "cds.String" },
+              arrayValues: {
+                items: { type: "cds.String" },
+              },
+              numericValue: { type: "cds.Integer" },
+              numericArray: {
+                items: { type: "cds.Integer" },
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestAction") as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation.parameters?.get("singleValue")).toBe("String");
+      expect(annotation.parameters?.get("arrayValues")).toBe("StringArray");
+      expect(annotation.parameters?.get("numericValue")).toBe("Integer");
+      expect(annotation.parameters?.get("numericArray")).toBe("IntegerArray");
+    });
+
+    test("should parse function with array of complex types", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "myTypes.Person": {
+            kind: "type",
+            elements: {
+              name: { type: "cds.String" },
+              age: { type: "cds.Integer" },
+            },
+          },
+          "TestService.TestFunction": {
+            kind: "function",
+            "@mcp.name": "Complex Array Function",
+            "@mcp.description": "Function with array of complex types",
+            "@mcp.tool": true,
+            params: {
+              personNames: {
+                items: {
+                  type: { ref: ["myTypes.Person", "name"] },
+                },
+              },
+              personAges: {
+                items: {
+                  type: { ref: ["myTypes.Person", "age"] },
+                },
+              },
+              simpleArray: {
+                items: { type: "cds.UUID" },
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("TestFunction") as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation.parameters?.get("personNames")).toBe("StringArray");
+      expect(annotation.parameters?.get("personAges")).toBe("IntegerArray");
+      expect(annotation.parameters?.get("simpleArray")).toBe("UUIDArray");
+    });
+
+    test("should parse bound operation with array parameters", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+            actions: {
+              processItems: {
+                kind: "action",
+                "@mcp.name": "Process Items",
+                "@mcp.description": "Bound action with array parameters",
+                "@mcp.tool": true,
+                params: {
+                  itemIds: {
+                    items: { type: "cds.UUID" },
+                  },
+                  quantities: {
+                    items: { type: "cds.Integer" },
+                  },
+                  enabled: { type: "cds.Boolean" },
+                },
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("processItems") as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation.name).toBe("Process Items");
+      expect(annotation.parameters?.get("itemIds")).toBe("UUIDArray");
+      expect(annotation.parameters?.get("quantities")).toBe("IntegerArray");
+      expect(annotation.parameters?.get("enabled")).toBe("Boolean");
+    });
+
+    test("should handle all supported array types correctly", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.AllArrayTypesFunction": {
+            kind: "function",
+            "@mcp.name": "All Array Types",
+            "@mcp.description": "Function testing all array types",
+            "@mcp.tool": true,
+            params: {
+              uuids: { items: { type: "cds.UUID" } },
+              strings: { items: { type: "cds.String" } },
+              integers: { items: { type: "cds.Integer" } },
+              int16s: { items: { type: "cds.Int16" } },
+              int32s: { items: { type: "cds.Int32" } },
+              int64s: { items: { type: "cds.Int64" } },
+              uint8s: { items: { type: "cds.UInt8" } },
+              decimals: { items: { type: "cds.Decimal" } },
+              doubles: { items: { type: "cds.Double" } },
+              booleans: { items: { type: "cds.Boolean" } },
+              dates: { items: { type: "cds.Date" } },
+              times: { items: { type: "cds.Time" } },
+              datetimes: { items: { type: "cds.DateTime" } },
+              timestamps: { items: { type: "cds.Timestamp" } },
+              binaries: { items: { type: "cds.Binary" } },
+              largeBinaries: { items: { type: "cds.LargeBinary" } },
+              largeStrings: { items: { type: "cds.LargeString" } },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get(
+        "AllArrayTypesFunction",
+      ) as McpToolAnnotation;
+      expect(annotation).toBeInstanceOf(McpToolAnnotation);
+
+      // Verify all array types are properly mapped with "Array" suffix
+      expect(annotation.parameters?.get("uuids")).toBe("UUIDArray");
+      expect(annotation.parameters?.get("strings")).toBe("StringArray");
+      expect(annotation.parameters?.get("integers")).toBe("IntegerArray");
+      expect(annotation.parameters?.get("int16s")).toBe("Int16Array");
+      expect(annotation.parameters?.get("int32s")).toBe("Int32Array");
+      expect(annotation.parameters?.get("int64s")).toBe("Int64Array");
+      expect(annotation.parameters?.get("uint8s")).toBe("UInt8Array");
+      expect(annotation.parameters?.get("decimals")).toBe("DecimalArray");
+      expect(annotation.parameters?.get("doubles")).toBe("DoubleArray");
+      expect(annotation.parameters?.get("booleans")).toBe("BooleanArray");
+      expect(annotation.parameters?.get("dates")).toBe("DateArray");
+      expect(annotation.parameters?.get("times")).toBe("TimeArray");
+      expect(annotation.parameters?.get("datetimes")).toBe("DateTimeArray");
+      expect(annotation.parameters?.get("timestamps")).toBe("TimestampArray");
+      expect(annotation.parameters?.get("binaries")).toBe("BinaryArray");
+      expect(annotation.parameters?.get("largeBinaries")).toBe(
+        "LargeBinaryArray",
+      );
+      expect(annotation.parameters?.get("largeStrings")).toBe(
+        "LargeStringArray",
+      );
+    });
+
     test("should handle empty detailed hint object", () => {
       const model: csn.CSN = {
         definitions: {

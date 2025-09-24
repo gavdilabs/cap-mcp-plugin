@@ -14,6 +14,9 @@ jest.mock("zod", () => ({
     string: jest.fn(() => "string-type"),
     number: jest.fn(() => "number-type"),
     boolean: jest.fn(() => "boolean-type"),
+    date: jest.fn(() => "date-type"),
+    array: jest.fn((itemType: any) => `array-of-${itemType}`),
+    any: jest.fn(() => "any-type"),
   },
 }));
 
@@ -29,16 +32,99 @@ describe("Server Utils", () => {
       expect(result).toBe("string-type");
     });
 
-    test("should return number type for Integer CDS type", () => {
-      const result = determineMcpParameterType("Integer");
+    test("should return string type for UUID CDS type", () => {
+      const result = determineMcpParameterType("UUID");
+      expect(z.string).toHaveBeenCalled();
+      expect(result).toBe("string-type");
+    });
+
+    test("should return date type for Date CDS types", () => {
+      const dateTypes = ["Date", "Time", "DateTime"];
+
+      dateTypes.forEach((type) => {
+        const result = determineMcpParameterType(type);
+        expect(result).toBe("date-type");
+      });
+
+      expect(z.date).toHaveBeenCalledTimes(dateTypes.length);
+    });
+
+    test("should return number type for Timestamp CDS type", () => {
+      const result = determineMcpParameterType("Timestamp");
       expect(z.number).toHaveBeenCalled();
       expect(result).toBe("number-type");
+    });
+
+    test("should return number type for Integer CDS types", () => {
+      const numberTypes = [
+        "Integer",
+        "Int16",
+        "Int32",
+        "Int64",
+        "UInt8",
+        "Decimal",
+        "Double",
+      ];
+
+      numberTypes.forEach((type) => {
+        const result = determineMcpParameterType(type);
+        expect(result).toBe("number-type");
+      });
+
+      expect(z.number).toHaveBeenCalledTimes(numberTypes.length);
     });
 
     test("should return boolean type for Boolean CDS type", () => {
       const result = determineMcpParameterType("Boolean");
       expect(z.boolean).toHaveBeenCalled();
       expect(result).toBe("boolean-type");
+    });
+
+    test("should return string type for Binary CDS types", () => {
+      const binaryTypes = ["Binary", "LargeBinary", "LargeString"];
+
+      binaryTypes.forEach((type) => {
+        const result = determineMcpParameterType(type);
+        expect(result).toBe("string-type");
+      });
+
+      expect(z.string).toHaveBeenCalledTimes(binaryTypes.length);
+    });
+
+    test("should return any type for Map CDS type", () => {
+      const result = determineMcpParameterType("Map");
+      expect(z.any).toHaveBeenCalled();
+      expect(result).toBe("any-type");
+    });
+
+    test("should return array types for Array CDS types", () => {
+      const arrayTypes = [
+        "StringArray",
+        "DateArray",
+        "TimeArray",
+        "DateTimeArray",
+        "TimestampArray",
+        "UUIDArray",
+        "IntegerArray",
+        "Int16Array",
+        "Int32Array",
+        "Int64Array",
+        "UInt8Array",
+        "DecimalArray",
+        "BooleanArray",
+        "DoubleArray",
+        "BinaryArray",
+        "LargeBinaryArray",
+        "LargeStringArray",
+        "MapArray",
+      ];
+
+      arrayTypes.forEach((type) => {
+        const result = determineMcpParameterType(type);
+        expect(result).toMatch(/^array-of-/);
+      });
+
+      expect(z.array).toHaveBeenCalledTimes(arrayTypes.length);
     });
 
     test("should default to string type for unknown CDS type", () => {
@@ -72,15 +158,6 @@ describe("Server Utils", () => {
       expect(z.string).toHaveBeenCalledTimes(2);
       expect(resultLower).toBe("string-type");
       expect(resultUpper).toBe("string-type");
-    });
-
-    test("should handle special CDS types", () => {
-      const stringTypes = ["UUID", "DateTime", "Decimal", "Double"];
-
-      stringTypes.forEach((type) => {
-        const result = determineMcpParameterType(type);
-        expect(result).toBe("string-type");
-      });
     });
   });
 

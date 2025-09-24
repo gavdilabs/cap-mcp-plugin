@@ -8,10 +8,8 @@ import {
 } from "./structures";
 import {
   AnnotatedMcpEntry,
-  CdsRestriction,
   McpAnnotationPrompt,
   McpAnnotationStructure,
-  McpAnnotationWrap,
   ParsedAnnotations,
 } from "./types";
 import {
