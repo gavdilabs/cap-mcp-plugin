@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.0.2...1.1.0) (2025-09-25)
+
+### Features
+
+* enhanced wrap hints ([#43](https://github.com/gavdilabs/cap-mcp-plugin/issues/43)) ([18dceef](https://github.com/gavdilabs/cap-mcp-plugin/commit/18dceef10b0565a4fe2f9f92c10111cc9c649c89))
+* extended instructions through markdown files ([#45](https://github.com/gavdilabs/cap-mcp-plugin/issues/45)) ([0fc02e3](https://github.com/gavdilabs/cap-mcp-plugin/commit/0fc02e3d0cd8a3d17d04788be19fcbbce231aa0b))
+
+### Bug Fixes
+
+* Array types for tools ([#46](https://github.com/gavdilabs/cap-mcp-plugin/issues/46)) ([cb84f98](https://github.com/gavdilabs/cap-mcp-plugin/commit/cb84f98c934603320511fd2afdfaa5775a623a6d))
+
 ## [1.0.2](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.0.1...1.0.2) (2025-09-23)
 
 ### Bug Fixes
