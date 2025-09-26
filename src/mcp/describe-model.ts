@@ -36,18 +36,22 @@ export function registerDescribeModelTool(server: McpServer): void {
 
       const listServices = () => {
         const names = Object.values(CDS.services || {})
-          .map((s: any) => s?.definition?.name || s?.name)
+          .map((s: any) => s?.namespace || s?.definition?.name || s?.name)
           .filter(Boolean);
         return { services: [...new Set(names as string[])].sort() };
       };
 
       const listEntities = (service?: string) => {
-        const all = (Object.values(refl.entities || {}) as any[]) || [];
+        const all = (
+          Object.entries(refl.definitions || {}) as [string, { kind: string }][]
+        )
+          .filter((x) => x[1].kind == "entity" && !x[0].startsWith("cds.")) // ignore entities such as "cds.outbox.Messages"
+          .map((x) => x[0]);
         const filtered = service
-          ? all.filter((e) => String(e.name).startsWith(service + "."))
+          ? all.filter((e) => e.startsWith(service + "."))
           : all;
         return {
-          entities: filtered.map((e) => e.name).sort(),
+          entities: filtered.sort(),
         };
       };
 
@@ -55,7 +59,8 @@ export function registerDescribeModelTool(server: McpServer): void {
         if (!entity) return { error: "Please provide 'entity'." };
         const fqn =
           service && !entity.includes(".") ? `${service}.${entity}` : entity;
-        const ent = (refl.entities || {})[fqn] || (refl.entities || {})[entity];
+        const ent =
+          (refl.definitions || {})[fqn] || (refl.definitions || {})[entity];
         if (!ent)
           return {
             error: `Entity not found: ${entity}${service ? ` (service ${service})` : ""}`,
