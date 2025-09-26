@@ -37,7 +37,8 @@
             "section": "Additional Changes"
           }
         ]
-      }
+      },
+      "commitPartial": "* {{#if scope}}**{{scope}}:** {{/if}}{{subject}}{{#if hash}} ([{{hash}}]({{repository}}/commit/{{hash}})){{/if}}{{#if references~}}{{~#each references}}, closes [{{#if owner}}{{owner}}/{{repository}}{{else}}{{../repository}}{{/if}}#{{issue}}]({{../host}}/{{#if owner}}{{owner}}/{{repository}}{{else}}{{../owner}}/{{../repository}}{{/if}}/issues/{{issue}}){{/each}}{{/if}}{{#if author}} - by @{{author}}{{/if}}"
     }
   }
 }
