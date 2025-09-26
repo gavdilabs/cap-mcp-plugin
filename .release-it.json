@@ -8,7 +8,11 @@
     "publish": true
   },
   "github": {
-    "release": true
+    "release": true,
+    "releaseNotes": {
+      "commit": "* ${commit.subject} (${sha}){ - by @${author.login}!}",
+      "excludeMatches": ["webpro"]
+    }
   },
   "hooks": {
     "before:init": ["git pull", "npm run lint", "npm run test"],
@@ -37,11 +41,7 @@
             "section": "Additional Changes"
           }
         ]
-      },
-      "gitRawCommitsOpts": {
-        "format": "%B%n-hash-%n%H%n-gitTags-%n%d%n-committerDate-%n%ci%n-authorName-%n%an%n-authorEmail-%n%ae%n-authorDate-%n%ai%n-committerName-%n%cn%n-committerEmail-%n%ce"
-      },
-      "commitPartial": "* {{#if scope}}**{{scope}}:**{{/if}}{{subject}}{{#if hash}}([{{hash}}]({{repository}}/commit/{{hash}})){{/if}}{{#ifreferences~}}{{~#each references}}, closes [{{#if owner}}{{owner}}/{{repository}}{{else}}{{../repository}}{{/if}}#{{issue}}]({{../host}}/{{#ifowner}}{{owner}}/{{repository}}{{else}}{{../owner}}/{{../repository}}{{/if}}/issues/{{issue}}){{/each}}{{/if}}{{#if authorName}} - by@{{authorName}}{{/if}}"
+      }
     }
   }
 }
