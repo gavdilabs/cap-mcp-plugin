@@ -1,16 +1,23 @@
+import { csn } from "@sap/cds";
 import { McpResourceAnnotation } from "../annotations/structures";
-import { LOGGER } from "../logger";
 import { MCP_SESSION_HEADER, NEW_LINE } from "./constants";
 import { McpSession } from "./types";
 import { Request, Response } from "express";
 import { z } from "zod";
+
+/* @ts-ignore */
+const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
 
 /**
  * Converts a CDS type string to the corresponding Zod schema type
  * @param cdsType - The CDS type name (e.g., 'String', 'Integer')
  * @returns Zod schema instance for the given type
  */
-export function determineMcpParameterType(cdsType: string): unknown {
+export function determineMcpParameterType(
+  cdsType: string,
+  key?: string,
+  target?: string,
+): unknown {
   switch (cdsType) {
     case "String":
       return z.string();
@@ -47,7 +54,7 @@ export function determineMcpParameterType(cdsType: string): unknown {
     case "LargeString":
       return z.string();
     case "Map":
-      return z.any();
+      return z.object({});
     case "StringArray":
       return z.array(z.string());
     case "DateArray":
@@ -83,10 +90,52 @@ export function determineMcpParameterType(cdsType: string): unknown {
     case "LargeStringArray":
       return z.array(z.string());
     case "MapArray":
-      return z.array(z.any());
+      return z.array(z.object({}));
+    case "Composition":
+      return buildCompositionZodType(key, target);
     default:
       return z.string();
   }
+}
+
+/**
+ * Builds the complex ZodType for a CDS type of 'Composition'
+ * @param key
+ * @param target
+ * @returns ZodType
+ */
+function buildCompositionZodType(
+  key: string | undefined,
+  target: string | undefined,
+): z.ZodType {
+  const model = cds.model as csn.CSN;
+
+  if (!model.definitions || !target || !key) {
+    return z.object({}); // fallback, might have to reconsider type later
+  }
+
+  const targetDef = model.definitions[target];
+  const targetProp = targetDef.elements[key];
+  const comp = model.definitions[targetProp.target];
+  if (!comp) {
+    return z.object({});
+  }
+
+  const isArray = targetProp.cardinality !== undefined;
+  const compProperties: Map<string, z.ZodType> = new Map();
+  for (const [k, v] of Object.entries(comp.elements)) {
+    if (!v.type) continue;
+    const parsedType = v.type.replace("cds.", "");
+
+    if (parsedType === "Association" || parsedType === "Composition") continue; // We will not support nested compositions for now
+
+    const isOptional = !v.key && !v.notNull;
+    const paramType = determineMcpParameterType(parsedType) as z.ZodType;
+    compProperties.set(k, isOptional ? paramType.optional() : paramType);
+  }
+
+  const zodType = z.object(Object.fromEntries(compProperties));
+  return isArray ? z.array(zodType) : zodType;
 }
 
 /**

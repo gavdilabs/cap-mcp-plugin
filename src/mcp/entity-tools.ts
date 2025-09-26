@@ -517,7 +517,13 @@ function registerCreateTool(
         .optional();
       continue;
     }
-    inputSchema[propName] = (determineMcpParameterType(cdsType) as z.ZodType)
+    inputSchema[propName] = (
+      determineMcpParameterType(
+        cdsType,
+        propName,
+        `${resAnno.serviceName}.${resAnno.target}`,
+      ) as z.ZodType
+    )
       .optional()
       .describe(`Field ${propName}`);
   }
@@ -623,7 +629,13 @@ function registerUpdateTool(
         .optional();
       continue;
     }
-    inputSchema[propName] = (determineMcpParameterType(cdsType) as z.ZodType)
+    inputSchema[propName] = (
+      determineMcpParameterType(
+        cdsType,
+        propName,
+        `${resAnno.serviceName}.${resAnno.target}`,
+      ) as z.ZodType
+    )
       .optional()
       .describe(`Field ${propName}`);
   }
