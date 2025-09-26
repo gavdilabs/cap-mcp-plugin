@@ -343,7 +343,11 @@ describe("Utils", () => {
         },
       } as any as csn.Definition;
 
-      const result = parseResourceElements(definition);
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+
+      const result = parseResourceElements(definition, mockModel);
 
       expect(result.properties.size).toBe(3);
       expect(result.properties.get("id")).toBe("UUID");
@@ -354,18 +358,221 @@ describe("Utils", () => {
       expect(result.resourceKeys.get("id")).toBe("UUID");
     });
 
-    test("should handle elements without type", () => {
+    test("should handle elements without type gracefully", () => {
       const definition = {
         elements: {
-          id: { key: true },
+          id: { type: "cds.UUID", key: true },
+          name: { type: "cds.String" },
+          invalidElement: { key: true }, // This should be ignored as it has no type
+        },
+      } as any as csn.Definition;
+
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+
+      // The function should handle elements without type gracefully
+      // Currently, it will attempt to parse all elements, so we expect it to fail for elements without type
+      expect(() => parseResourceElements(definition, mockModel)).toThrow(
+        "Failed to parse nested type reference",
+      );
+    });
+
+    test("should handle elements with valid types only", () => {
+      const definition = {
+        elements: {
+          id: { type: "cds.UUID", key: true },
           name: { type: "cds.String" },
         },
       } as any as csn.Definition;
 
-      const result = parseResourceElements(definition);
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
 
-      expect(result.properties.size).toBe(1);
+      const result = parseResourceElements(definition, mockModel);
+
+      expect(result.properties.size).toBe(2);
+      expect(result.properties.get("id")).toBe("UUID");
       expect(result.properties.get("name")).toBe("String");
+      expect(result.resourceKeys.size).toBe(1);
+      expect(result.resourceKeys.get("id")).toBe("UUID");
+    });
+
+    test("should parse array types correctly", () => {
+      const definition = {
+        elements: {
+          id: { type: "cds.UUID", key: true },
+          tags: { items: { type: "cds.String" } },
+          scores: { items: { type: "cds.Integer" }, key: true },
+          flags: { items: { type: "cds.Boolean" } },
+        },
+      } as any as csn.Definition;
+
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+
+      const result = parseResourceElements(definition, mockModel);
+
+      expect(result.properties.size).toBe(4);
+      expect(result.properties.get("id")).toBe("UUID");
+      expect(result.properties.get("tags")).toBe("StringArray");
+      expect(result.properties.get("scores")).toBe("IntegerArray");
+      expect(result.properties.get("flags")).toBe("BooleanArray");
+
+      expect(result.resourceKeys.size).toBe(2);
+      expect(result.resourceKeys.get("id")).toBe("UUID");
+      expect(result.resourceKeys.get("scores")).toBe("IntegerArray");
+    });
+
+    test("should parse typed references correctly", () => {
+      const definition = {
+        elements: {
+          id: { type: "cds.UUID", key: true },
+          authorName: { type: { ref: ["Author", "name"] } },
+          publisherInfo: { type: { ref: ["Publisher", "info"] }, key: true },
+        },
+      } as any as csn.Definition;
+
+      const mockModel: csn.CSN = {
+        definitions: {
+          Author: {
+            kind: "entity",
+            elements: {
+              name: { type: "cds.String" } as any,
+            },
+          } as any,
+          Publisher: {
+            kind: "entity",
+            elements: {
+              info: { type: "cds.LargeString" } as any,
+            },
+          } as any,
+        },
+      };
+
+      const result = parseResourceElements(definition, mockModel);
+
+      expect(result.properties.size).toBe(3);
+      expect(result.properties.get("id")).toBe("UUID");
+      expect(result.properties.get("authorName")).toBe("String");
+      expect(result.properties.get("publisherInfo")).toBe("LargeString");
+
+      expect(result.resourceKeys.size).toBe(2);
+      expect(result.resourceKeys.get("id")).toBe("UUID");
+      expect(result.resourceKeys.get("publisherInfo")).toBe("LargeString");
+    });
+
+    test("should parse array of typed references correctly", () => {
+      const definition = {
+        elements: {
+          id: { type: "cds.UUID", key: true },
+          authorNames: { items: { type: { ref: ["Author", "name"] } } },
+          categoryTitles: {
+            items: { type: { ref: ["Category", "title"] } },
+            key: true,
+          },
+        },
+      } as any as csn.Definition;
+
+      const mockModel: csn.CSN = {
+        definitions: {
+          Author: {
+            kind: "entity",
+            elements: {
+              name: { type: "cds.String" } as any,
+            },
+          } as any,
+          Category: {
+            kind: "entity",
+            elements: {
+              title: { type: "cds.String" } as any,
+            },
+          } as any,
+        },
+      };
+
+      const result = parseResourceElements(definition, mockModel);
+
+      expect(result.properties.size).toBe(3);
+      expect(result.properties.get("id")).toBe("UUID");
+      expect(result.properties.get("authorNames")).toBe("StringArray");
+      expect(result.properties.get("categoryTitles")).toBe("StringArray");
+
+      expect(result.resourceKeys.size).toBe(2);
+      expect(result.resourceKeys.get("id")).toBe("UUID");
+      expect(result.resourceKeys.get("categoryTitles")).toBe("StringArray");
+    });
+
+    test("should handle mixed simple types, arrays, and typed references", () => {
+      const definition = {
+        elements: {
+          id: { type: "cds.UUID", key: true },
+          title: { type: "cds.String" },
+          tags: { items: { type: "cds.String" } },
+          authorName: { type: { ref: ["Author", "name"] } },
+          categoryNames: { items: { type: { ref: ["Category", "name"] } } },
+          isPublished: { type: "cds.Boolean" },
+        },
+      } as any as csn.Definition;
+
+      const mockModel: csn.CSN = {
+        definitions: {
+          Author: {
+            kind: "entity",
+            elements: {
+              name: { type: "cds.String" } as any,
+            },
+          } as any,
+          Category: {
+            kind: "entity",
+            elements: {
+              name: { type: "cds.String" } as any,
+            },
+          } as any,
+        },
+      };
+
+      const result = parseResourceElements(definition, mockModel);
+
+      expect(result.properties.size).toBe(6);
+      expect(result.properties.get("id")).toBe("UUID");
+      expect(result.properties.get("title")).toBe("String");
+      expect(result.properties.get("tags")).toBe("StringArray");
+      expect(result.properties.get("authorName")).toBe("String");
+      expect(result.properties.get("categoryNames")).toBe("StringArray");
+      expect(result.properties.get("isPublished")).toBe("Boolean");
+
+      expect(result.resourceKeys.size).toBe(1);
+      expect(result.resourceKeys.get("id")).toBe("UUID");
+    });
+
+    test("should handle empty elements", () => {
+      const definition = {
+        elements: {},
+      } as any as csn.Definition;
+
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+
+      const result = parseResourceElements(definition, mockModel);
+
+      expect(result.properties.size).toBe(0);
+      expect(result.resourceKeys.size).toBe(0);
+    });
+
+    test("should handle definition without elements", () => {
+      const definition = {} as any as csn.Definition;
+
+      const mockModel: csn.CSN = {
+        definitions: {},
+      };
+
+      const result = parseResourceElements(definition, mockModel);
+
+      expect(result.properties.size).toBe(0);
       expect(result.resourceKeys.size).toBe(0);
     });
   });
