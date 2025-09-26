@@ -1,2 +1,3 @@
 import cds from "@sap/cds/eslint.config.mjs";
-export default [...cds.recommended];
+import { globalIgnores } from "eslint/config";
+export default [...cds.recommended, globalIgnores(["lib/*", "test/demo"])];
