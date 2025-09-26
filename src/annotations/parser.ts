@@ -71,6 +71,7 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
           target,
           verifiedAnnotations,
           def,
+          model,
         );
         if (!resourceAnnotation) continue;
         result.set(resourceAnnotation.target, resourceAnnotation);
@@ -184,11 +185,12 @@ function constructResourceAnnotation(
   target: string,
   annotations: McpAnnotationStructure,
   definition: csn.Definition,
+  model: csn.CSN,
 ): McpResourceAnnotation | undefined {
   if (!isValidResourceAnnotation(annotations)) return undefined;
 
   const functionalities = determineResourceOptions(annotations);
-  const { properties, resourceKeys } = parseResourceElements(definition);
+  const { properties, resourceKeys } = parseResourceElements(definition, model);
   const restrictions = parseCdsRestrictions(
     annotations.restrict,
     annotations.requires,

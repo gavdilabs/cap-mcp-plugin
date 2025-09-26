@@ -45,6 +45,10 @@ service CatalogService {
   }
   entity Authors          as projection on my.Authors;
 
+  extend my.Authors with {
+    nominations : array of String;
+  };
+
   annotate CatalogService.Authors with @mcp.wrap: {
     tools: true,
     modes: [

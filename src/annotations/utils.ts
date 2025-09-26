@@ -211,21 +211,56 @@ export function determineResourceOptions(
  * @param definition - The definition to parse
  * @returns Object containing properties and resource keys maps
  */
-export function parseResourceElements(definition: csn.Definition): {
+export function parseResourceElements(
+  definition: csn.Definition,
+  model: csn.CSN,
+): {
   properties: Map<string, string>;
   resourceKeys: Map<string, string>;
 } {
   const properties = new Map<string, string>();
   const resourceKeys = new Map<string, string>();
+  const parseParam = (
+    k: string,
+    v: Omit<OperationParameter, "items">,
+    suffix?: string,
+  ) => {
+    let result: string = "";
 
-  for (const [key, value] of Object.entries(definition.elements || {})) {
-    if (!value.type) continue;
-    const parsedType = value.type.replace("cds.", "");
-    properties.set(key, parsedType);
+    if (typeof v.type !== "string") {
+      const referencedType = parseTypedReference(v.type, model);
+      result = `${referencedType}${suffix ?? ""}`;
+    } else {
+      result = `${v.type.replace("cds.", "")}${suffix ?? ""}`;
+    }
 
-    if (!value.key) continue;
-    resourceKeys.set(key, parsedType);
+    properties?.set(k, result);
+    return result;
+  };
+
+  for (const [k, v] of Object.entries(definition.elements || {})) {
+    if (v.items) {
+      const result = parseParam(k, v.items, "Array");
+
+      if (!v.key) continue;
+      resourceKeys.set(k, result);
+      continue;
+    }
+
+    const result = parseParam(k, v);
+
+    if (!v.key) continue;
+    resourceKeys.set(k, result);
   }
+
+  // for (const [key, value] of Object.entries(definition.elements || {})) {
+  //   if (!value.type) continue;
+  //   const parsedType = value.type.replace("cds.", "");
+  //   properties.set(key, parsedType);
+  //
+  //   if (!value.key) continue;
+  //   resourceKeys.set(key, parsedType);
+  // }
 
   return {
     properties,
