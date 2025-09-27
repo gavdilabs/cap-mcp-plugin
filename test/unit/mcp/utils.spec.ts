@@ -1,3 +1,29 @@
+// Set up global.cds BEFORE importing the module with a mutable model
+const mockModel: any = {
+  definitions: {},
+};
+
+(global as any).cds = {
+  get model() {
+    return mockModel;
+  },
+  set model(value) {
+    Object.assign(mockModel, value);
+  },
+  test: jest.fn().mockResolvedValue(undefined),
+  services: {},
+  connect: {
+    to: jest.fn(),
+  },
+  User: {
+    privileged: { id: "privileged", name: "Privileged User" },
+    anonymous: { id: "anonymous", _is_anonymous: true },
+  },
+  context: {
+    user: null,
+  },
+};
+
 import {
   determineMcpParameterType,
   handleMcpSessionRequest,
@@ -8,15 +34,46 @@ import { McpSession } from "../../../src/mcp/types";
 import { Request, Response } from "express";
 import { z } from "zod";
 
+// Mock the CDS require since it's used as fallback
+jest.mock(
+  "@sap/cds",
+  () => ({
+    model: {
+      definitions: {},
+    },
+    test: jest.fn().mockResolvedValue(undefined),
+    services: {},
+    connect: {
+      to: jest.fn(),
+    },
+    User: {
+      privileged: { id: "privileged", name: "Privileged User" },
+      anonymous: { id: "anonymous", _is_anonymous: true },
+    },
+    context: {
+      user: null,
+    },
+  }),
+  { virtual: true },
+);
+
 // Mock zod
+const mockOptional = jest.fn(() => "optional-type");
+const mockZodType = {
+  optional: mockOptional,
+};
+
 jest.mock("zod", () => ({
   z: {
-    string: jest.fn(() => "string-type"),
-    number: jest.fn(() => "number-type"),
-    boolean: jest.fn(() => "boolean-type"),
-    date: jest.fn(() => "date-type"),
-    array: jest.fn((itemType: any) => `array-of-${itemType}`),
+    string: jest.fn(() => ({ ...mockZodType, _type: "string-type" })),
+    number: jest.fn(() => ({ ...mockZodType, _type: "number-type" })),
+    boolean: jest.fn(() => ({ ...mockZodType, _type: "boolean-type" })),
+    date: jest.fn(() => ({ ...mockZodType, _type: "date-type" })),
+    array: jest.fn(
+      (itemType: any) => `array-of-${itemType?._type || itemType}`,
+    ),
     any: jest.fn(() => "any-type"),
+    object: jest.fn(() => "object-type"),
   },
 }));
 
@@ -29,13 +86,13 @@ describe("Server Utils", () => {
     test("should return string type for String CDS type", () => {
       const result = determineMcpParameterType("String");
       expect(z.string).toHaveBeenCalled();
-      expect(result).toBe("string-type");
+      expect(result).toMatchObject({ _type: "string-type" });
     });
 
     test("should return string type for UUID CDS type", () => {
       const result = determineMcpParameterType("UUID");
       expect(z.string).toHaveBeenCalled();
-      expect(result).toBe("string-type");
+      expect(result).toMatchObject({ _type: "string-type" });
     });
 
     test("should return date type for Date CDS types", () => {
@@ -43,7 +100,7 @@ describe("Server Utils", () => {
 
       dateTypes.forEach((type) => {
         const result = determineMcpParameterType(type);
-        expect(result).toBe("date-type");
+        expect(result).toMatchObject({ _type: "date-type" });
       });
 
       expect(z.date).toHaveBeenCalledTimes(dateTypes.length);
@@ -52,7 +109,7 @@ describe("Server Utils", () => {
     test("should return number type for Timestamp CDS type", () => {
       const result = determineMcpParameterType("Timestamp");
       expect(z.number).toHaveBeenCalled();
-      expect(result).toBe("number-type");
+      expect(result).toMatchObject({ _type: "number-type" });
     });
 
     test("should return number type for Integer CDS types", () => {
@@ -68,7 +125,7 @@ describe("Server Utils", () => {
 
       numberTypes.forEach((type) => {
         const result = determineMcpParameterType(type);
-        expect(result).toBe("number-type");
+        expect(result).toMatchObject({ _type: "number-type" });
       });
 
       expect(z.number).toHaveBeenCalledTimes(numberTypes.length);
@@ -77,7 +134,7 @@ describe("Server Utils", () => {
     test("should return boolean type for Boolean CDS type", () => {
       const result = determineMcpParameterType("Boolean");
       expect(z.boolean).toHaveBeenCalled();
-      expect(result).toBe("boolean-type");
+      expect(result).toMatchObject({ _type: "boolean-type" });
     });
 
     test("should return string type for Binary CDS types", () => {
@@ -85,7 +142,7 @@ describe("Server Utils", () => {
 
       binaryTypes.forEach((type) => {
         const result = determineMcpParameterType(type);
-        expect(result).toBe("string-type");
+        expect(result).toMatchObject({ _type: "string-type" });
       });
 
       expect(z.string).toHaveBeenCalledTimes(binaryTypes.length);
@@ -93,8 +150,8 @@ describe("Server Utils", () => {
 
     test("should return any type for Map CDS type", () => {
       const result = determineMcpParameterType("Map");
-      expect(z.any).toHaveBeenCalled();
-      expect(result).toBe("any-type");
+      expect(z.object).toHaveBeenCalled();
+      expect(result).toBe("object-type");
     });
 
     test("should return array types for Array CDS types", () => {
@@ -130,25 +187,25 @@ describe("Server Utils", () => {
     test("should default to string type for unknown CDS type", () => {
       const result = determineMcpParameterType("UnknownType");
       expect(z.string).toHaveBeenCalled();
-      expect(result).toBe("string-type");
+      expect(result).toMatchObject({ _type: "string-type" });
     });
 
     test("should handle empty string", () => {
       const result = determineMcpParameterType("");
       expect(z.string).toHaveBeenCalled();
-      expect(result).toBe("string-type");
+      expect(result).toMatchObject({ _type: "string-type" });
     });
 
     test("should handle null input", () => {
       const result = determineMcpParameterType(null as any);
       expect(z.string).toHaveBeenCalled();
-      expect(result).toBe("string-type");
+      expect(result).toMatchObject({ _type: "string-type" });
     });
 
     test("should handle undefined input", () => {
       const result = determineMcpParameterType(undefined as any);
       expect(z.string).toHaveBeenCalled();
-      expect(result).toBe("string-type");
+      expect(result).toMatchObject({ _type: "string-type" });
     });
 
     test("should handle case sensitivity", () => {
@@ -156,8 +213,368 @@ describe("Server Utils", () => {
       const resultUpper = determineMcpParameterType("STRING");
 
       expect(z.string).toHaveBeenCalledTimes(2);
-      expect(resultLower).toBe("string-type");
-      expect(resultUpper).toBe("string-type");
+      expect(resultLower).toMatchObject({ _type: "string-type" });
+      expect(resultUpper).toMatchObject({ _type: "string-type" });
+    });
+
+    describe("Composition type handling", () => {
+      // Store original cds reference
+      const originalCds = (global as any).cds;
+
+      beforeEach(() => {
+        jest.clearAllMocks();
+        // Reset the mockModel to default state
+        mockModel.definitions = {};
+      });
+
+      afterEach(() => {
+        // Restore original cds after each test
+        (global as any).cds = originalCds;
+      });
+
+      test("should return object type for Composition when model definitions are missing", () => {
+        // Mock cds.model without definitions by updating the mockModel
+        mockModel.definitions = null;
+
+        const result = determineMcpParameterType(
+          "Composition",
+          "address",
+          "Customer",
+        );
+        expect(z.object).toHaveBeenCalledWith({});
+        expect(result).toBe("object-type");
+      });
+
+      test("should return object type for Composition when target is missing", () => {
+        // Default mockModel has empty definitions, no target parameter
+        const result = determineMcpParameterType("Composition");
+        expect(z.object).toHaveBeenCalledWith({});
+        expect(result).toBe("object-type");
+      });
+
+      test("should return object type for Composition when key is missing", () => {
+        // Default mockModel has empty definitions, no key parameter
+        const result = determineMcpParameterType(
+          "Composition",
+          undefined,
+          "Customer",
+        );
+        expect(z.object).toHaveBeenCalledWith({});
+        expect(result).toBe("object-type");
+      });
+
+      test("should handle Composition with simple entity structure", () => {
+        // Mock a complete CDS model with composition
+        mockModel.definitions = {
+          Customer: {
+            elements: {
+              address: {
+                target: "Address",
+                cardinality: undefined, // Single composition
+              },
+            },
+          },
+          Address: {
+            elements: {
+              street: {
+                type: "String",
+                key: false,
+                notNull: false,
+              },
+              city: {
+                type: "String",
+                key: false,
+                notNull: true,
+              },
+              zipCode: {
+                type: "String",
+                key: true,
+                notNull: true,
+              },
+            },
+          },
+        };
+
+        const result = determineMcpParameterType(
+          "Composition",
+          "address",
+          "Customer",
+        );
+
+        // Verify that z.object was called to build the composition schema
+        expect(z.object).toHaveBeenCalled();
+        expect(result).toBe("object-type");
+      });
+
+      test("should handle Composition with array cardinality", () => {
+        // Mock CDS model with array composition
+        mockModel.definitions = {
+          Order: {
+            elements: {
+              items: {
+                target: "OrderItem",
+                cardinality: { max: "*" }, // Array composition
+              },
+            },
+          },
+          OrderItem: {
+            elements: {
+              product: {
+                type: "String",
+                key: false,
+                notNull: true,
+              },
+              quantity: {
+                type: "Integer",
+                key: false,
+                notNull: false,
+              },
+            },
+          },
+        };
+
+        const result = determineMcpParameterType(
+          "Composition",
+          "items",
+          "Order",
+        );
+
+        // Should call z.array for array compositions
+        expect(z.array).toHaveBeenCalled();
+        expect(z.object).toHaveBeenCalled();
+        expect(result).toMatch(/^array-of-/);
+      });
+
+      test("should handle Composition with various CDS types", () => {
+        // Mock CDS model with different field types
+        mockModel.definitions = {
+          Document: {
+            elements: {
+              metadata: {
+                target: "DocumentMetadata",
+                cardinality: undefined,
+              },
+            },
+          },
+          DocumentMetadata: {
+            elements: {
+              id: {
+                type: "cds.UUID",
+                key: true,
+                notNull: true,
+              },
+              title: {
+                type: "cds.String",
+                key: false,
+                notNull: true,
+              },
+              createdAt: {
+                type: "cds.DateTime",
+                key: false,
+                notNull: false,
+              },
+              isPublic: {
+                type: "cds.Boolean",
+                key: false,
+                notNull: false,
+              },
+              size: {
+                type: "cds.Integer",
+                key: false,
+                notNull: false,
+              },
+            },
+          },
+        };
+
+        const result = determineMcpParameterType(
+          "Composition",
+          "metadata",
+          "Document",
+        );
+
+        expect(z.object).toHaveBeenCalled();
+        expect(result).toBe("object-type");
+      });
+
+      test("should skip Association and nested Composition fields", () => {
+        // Mock CDS model with nested associations/compositions
+        mockModel.definitions = {
+          Complex: {
+            elements: {
+              nested: {
+                target: "NestedEntity",
+                cardinality: undefined,
+              },
+            },
+          },
+          NestedEntity: {
+            elements: {
+              simpleField: {
+                type: "String",
+                key: false,
+                notNull: false,
+              },
+              associationField: {
+                type: "Association",
+                target: "SomeOtherEntity",
+                key: false,
+                notNull: false,
+              },
+              compositionField: {
+                type: "Composition",
+                target: "AnotherEntity",
+                key: false,
+                notNull: false,
+              },
+            },
+          },
+        };
+
+        const result = determineMcpParameterType(
+          "Composition",
+          "nested",
+          "Complex",
+        );
+
+        // Should only process the simpleField, skip association and composition
+        expect(z.object).toHaveBeenCalled();
+        expect(result).toBe("object-type");
+      });
+
+      test("should handle missing target definition gracefully", () => {
+        // Mock CDS model with missing target entity
+        mockModel.definitions = {
+          Customer: {
+            elements: {
+              address: {
+                target: "NonExistentAddress",
+                cardinality: undefined,
+              },
+            },
+          },
+          // Note: NonExistentAddress is not defined
+        };
+
+        const result = determineMcpParameterType(
+          "Composition",
+          "address",
+          "Customer",
+        );
+
+        expect(z.object).toHaveBeenCalledWith({});
+        expect(result).toBe("object-type");
+      });
+
+      test("should handle fields without type property", () => {
+        // Mock CDS model with fields missing type
+        mockModel.definitions = {
+          Entity: {
+            elements: {
+              comp: {
+                target: "TargetEntity",
+                cardinality: undefined,
+              },
+            },
+          },
+          TargetEntity: {
+            elements: {
+              validField: {
+                type: "String",
+                key: false,
+                notNull: false,
+              },
+              fieldWithoutType: {
+                // Missing type property
+                key: false,
+                notNull: false,
+              },
+            },
+          },
+        };
+
+        const result = determineMcpParameterType(
+          "Composition",
+          "comp",
+          "Entity",
+        );
+
+        // Should process only the field with type
+        expect(z.object).toHaveBeenCalled();
+        expect(result).toBe("object-type");
+      });
+
+      test("should handle optional vs required fields correctly", () => {
+        // Mock CDS model with mix of optional/required fields
+        mockModel.definitions = {
+          Parent: {
+            elements: {
+              child: {
+                target: "Child",
+                cardinality: undefined,
+              },
+            },
+          },
+          Child: {
+            elements: {
+              keyField: {
+                type: "String",
+                key: true,
+                notNull: true,
+              },
+              requiredField: {
+                type: "String",
+                key: false,
+                notNull: true,
+              },
+              optionalField: {
+                type: "String",
+                key: false,
+                notNull: false,
+              },
+              defaultOptional: {
+                type: "String",
+                // key and notNull undefined - should be optional
+              },
+            },
+          },
+        };
+
+        const result = determineMcpParameterType(
+          "Composition",
+          "child",
+          "Parent",
+        );
+
+        expect(z.object).toHaveBeenCalled();
+        expect(result).toBe("object-type");
+      });
+
+      test("should handle composition with empty target entity", () => {
+        // Mock CDS model with empty target entity
+        mockModel.definitions = {
+          Parent: {
+            elements: {
+              empty: {
+                target: "EmptyEntity",
+                cardinality: undefined,
+              },
+            },
+          },
+          EmptyEntity: {
+            elements: {},
+          },
+        };
+
+        const result = determineMcpParameterType(
+          "Composition",
+          "empty",
+          "Parent",
+        );
+
+        expect(z.object).toHaveBeenCalledWith({});
+        expect(result).toBe("object-type");
+      });
     });
   });
 
