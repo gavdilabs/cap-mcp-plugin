@@ -1,5 +1,6 @@
 # CAP MCP Plugin - AI With Ease
-![NPM Version](https://img.shields.io/npm/v/%40gavdi%2Fcap-mcp) ![NPM License](https://img.shields.io/npm/l/%40gavdi%2Fcap-mcp)
+![NPM Version](https://img.shields.io/npm/v/%40gavdi%2Fcap-mcp) ![NPM License](https://img.shields.io/npm/l/%40gavdi%2Fcap-mcp) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/gavdilabs/cap-mcp-plugin/latest)
+
 
 
 > This implementation is based on the Model Context Protocol (MCP) put forward by Anthropic.
