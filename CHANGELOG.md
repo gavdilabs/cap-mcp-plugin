@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.1.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.0...1.1.1) (2025-09-29)
+
+### Features
+
+* add author attribution to changelog entries ([#52](https://github.com/gavdilabs/cap-mcp-plugin/issues/52)) ([e05eb12](https://github.com/gavdilabs/cap-mcp-plugin/commit/e05eb12a69c0c92f53995c6a950f3f9150b83785))
+
+### Bug Fixes
+
+* array elements on resources ([#50](https://github.com/gavdilabs/cap-mcp-plugin/issues/50)) ([b18f9f6](https://github.com/gavdilabs/cap-mcp-plugin/commit/b18f9f62aa7d753f5546edec8d288f1fb1401fee))
+* composition zod type ([#53](https://github.com/gavdilabs/cap-mcp-plugin/issues/53)) ([0a85d7a](https://github.com/gavdilabs/cap-mcp-plugin/commit/0a85d7a10976462741eee0bd7bbc15e7118caae3))
+* filters, limits and orders applied to count and aggregates ([#55](https://github.com/gavdilabs/cap-mcp-plugin/issues/55)) ([e862e54](https://github.com/gavdilabs/cap-mcp-plugin/commit/e862e5410887e80b92ae83a1e09e09c70874ac33))
+
+### Additional Changes
+
+* Add commit check badge ([#54](https://github.com/gavdilabs/cap-mcp-plugin/issues/54)) ([7dda2a3](https://github.com/gavdilabs/cap-mcp-plugin/commit/7dda2a3e5bc1d8dafbee512319f4c129a058e73f))
+* eslint config ignores ([36de805](https://github.com/gavdilabs/cap-mcp-plugin/commit/36de80597257049552089212414e67fdbc30d931))
+* Move author info changelog to github.releaseNotes ([b886ec9](https://github.com/gavdilabs/cap-mcp-plugin/commit/b886ec9e7554e8c0cefcfcbfb3af7f460cefad71))
+* README badges ([a10b61c](https://github.com/gavdilabs/cap-mcp-plugin/commit/a10b61c8a34142ff826accebb0311737e669ec17))
+
 ## [1.1.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.0.2...1.1.0) (2025-09-25)
 
 ### Features
