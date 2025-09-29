@@ -920,9 +920,14 @@ async function executeQuery(
   const { SELECT } = CDS.ql;
   switch (args.return) {
     case "count": {
-      const countQuery = SELECT.from(baseQuery.SELECT.from).columns(
-        "count(1) as count",
-      );
+      const countQuery = SELECT.from(baseQuery.SELECT.from)
+        .columns("count(1) as count")
+        .where(baseQuery.SELECT.where)
+        .limit(
+          baseQuery.SELECT.limit?.rows?.val,
+          baseQuery.SELECT.limit?.offset?.val,
+        )
+        .orderBy(baseQuery.SELECT.orderBy);
       const result = await svc.run(countQuery);
       const row = Array.isArray(result) ? result[0] : result;
       return { count: row?.count ?? 0 };
@@ -932,11 +937,18 @@ async function executeQuery(
       const cols = args.aggregate.map(
         (a: any) => `${a.fn}(${a.field}) as ${a.fn}_${a.field}`,
       );
-      const aggQuery = SELECT.from(baseQuery.SELECT.from).columns(...cols);
-      return svc.run(aggQuery);
+      const aggQuery = SELECT.from(baseQuery.SELECT.from)
+        .columns(...cols)
+        .where(baseQuery.SELECT.where)
+        .limit(
+          baseQuery.SELECT.limit?.rows?.val,
+          baseQuery.SELECT.limit?.offset?.val,
+        )
+        .orderBy(baseQuery.SELECT.orderBy);
+      return await svc.run(aggQuery);
     }
     default:
-      return svc.run(baseQuery);
+      return await svc.run(baseQuery);
   }
 }
 
