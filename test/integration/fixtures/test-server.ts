@@ -87,7 +87,7 @@ export class TestMcpServer {
   /**
    * Creates a test CSN model with MCP annotations
    */
-  private createTestModel(): csn.CSN {
+  protected createTestModel(): csn.CSN {
     return {
       definitions: {
         TestService: {

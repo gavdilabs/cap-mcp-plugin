@@ -12,8 +12,8 @@ cds.on("bootstrap", async (app) => {
   await plugin?.onBootstrap(app);
 });
 
-cds.on("loaded", async (model) => {
-  await plugin?.onLoaded(model);
+cds.on("serving", async () => {
+  await plugin?.onLoaded(cds.model);
 });
 
 cds.on("shutdown", async () => {
