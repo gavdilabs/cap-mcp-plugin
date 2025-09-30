@@ -78,6 +78,7 @@ describe("McpResourceAnnotation", () => {
       functionalities,
       properties,
       resourceKeys,
+      new Map(),
     );
   });
 
@@ -100,6 +101,7 @@ describe("McpResourceAnnotation", () => {
       new Set(),
       new Map(),
       new Map(),
+      new Map(),
     );
     expect(emptyAnnotation.functionalities.size).toBe(0);
     expect(emptyAnnotation.properties.size).toBe(0);
@@ -118,6 +120,7 @@ describe("McpResourceAnnotation", () => {
       new Set(["filter"]),
       new Map([["id", "UUID"]]),
       new Map([["id", "UUID"]]),
+      new Map(),
       undefined,
       restrictions,
     );

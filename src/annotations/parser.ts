@@ -190,6 +190,14 @@ function constructResourceAnnotation(
   if (!isValidResourceAnnotation(annotations)) return undefined;
 
   const functionalities = determineResourceOptions(annotations);
+  const foreignKeys = new Map<string, string>(
+    Object.entries(
+      model.definitions?.[`${serviceName}.${target}`].elements ?? {},
+    )
+      .filter(([_, v]) => (v as any)["@odata.foreignKey4"] !== undefined)
+      .map(([k, v]) => [k, (v as any)["@odata.foreignKey4"]]),
+  );
+
   const { properties, resourceKeys } = parseResourceElements(definition, model);
   const restrictions = parseCdsRestrictions(
     annotations.restrict,
@@ -204,6 +212,7 @@ function constructResourceAnnotation(
     functionalities,
     properties,
     resourceKeys,
+    foreignKeys,
     annotations.wrap,
     restrictions,
   );

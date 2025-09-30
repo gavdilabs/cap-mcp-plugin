@@ -1170,5 +1170,176 @@ describe("Parser", () => {
       // Verify empty hint object is handled correctly
       expect(annotation.wrap?.hint).toEqual({});
     });
+
+    test("should parse entity with foreign keys", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.Books": {
+            kind: "entity",
+            "@mcp.name": "Books",
+            "@mcp.description": "Book catalog with foreign key references",
+            "@mcp.resource": true,
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              title: { type: "cds.String" },
+              author_ID: {
+                type: "cds.UUID",
+                "@odata.foreignKey4": "Authors",
+              },
+              genre_ID: {
+                type: "cds.UUID",
+                "@odata.foreignKey4": "Genres",
+              },
+              publisher: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("Books") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation.name).toBe("Books");
+
+      // Verify foreign keys are correctly parsed
+      expect(annotation.foreignKeys.size).toBe(2);
+      expect(annotation.foreignKeys.get("author_ID")).toBe("Authors");
+      expect(annotation.foreignKeys.get("genre_ID")).toBe("Genres");
+
+      // Verify non-foreign key fields are not included
+      expect(annotation.foreignKeys.has("ID")).toBe(false);
+      expect(annotation.foreignKeys.has("title")).toBe(false);
+      expect(annotation.foreignKeys.has("publisher")).toBe(false);
+    });
+
+    test("should parse entity with no foreign keys", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.SimpleEntity": {
+            kind: "entity",
+            "@mcp.name": "Simple Entity",
+            "@mcp.description": "Entity without foreign key references",
+            "@mcp.resource": true,
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+              value: { type: "cds.Integer" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("SimpleEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify foreign keys map is empty
+      expect(annotation.foreignKeys.size).toBe(0);
+    });
+
+    test("should parse entity with single foreign key", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.Orders": {
+            kind: "entity",
+            "@mcp.name": "Orders",
+            "@mcp.description": "Order entity with customer reference",
+            "@mcp.resource": true,
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              orderDate: { type: "cds.Date" },
+              customer_ID: {
+                type: "cds.UUID",
+                "@odata.foreignKey4": "Customers",
+              },
+              total: { type: "cds.Decimal" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("Orders") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify single foreign key is correctly parsed
+      expect(annotation.foreignKeys.size).toBe(1);
+      expect(annotation.foreignKeys.get("customer_ID")).toBe("Customers");
+    });
+
+    test("should handle entity with foreign keys and restrictions", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.SecureEntity": {
+            kind: "entity",
+            "@mcp.name": "Secure Entity",
+            "@mcp.description":
+              "Entity with foreign keys and access restrictions",
+            "@mcp.resource": true,
+            "@restrict": [
+              {
+                grant: ["READ"],
+                to: ["viewer-role"],
+              },
+            ],
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+              category_ID: {
+                type: "cds.UUID",
+                "@odata.foreignKey4": "Categories",
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("SecureEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify foreign keys work with restrictions
+      expect(annotation.foreignKeys.size).toBe(1);
+      expect(annotation.foreignKeys.get("category_ID")).toBe("Categories");
+      expect(annotation.restrictions).toEqual([
+        { role: "viewer-role", operations: ["READ"] },
+      ]);
+    });
+
+    test("should handle entity definition not found in model definitions", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.MissingEntity": {
+            kind: "entity",
+            "@mcp.name": "Missing Entity",
+            "@mcp.description": "Entity that references missing definition",
+            "@mcp.resource": true,
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      // Simulate case where entity definition is not found in model.definitions
+      // This tests the defensive programming in lines 194-199 of parser.ts
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("MissingEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify foreign keys map is empty when elements can't be found
+      expect(annotation.foreignKeys.size).toBe(0);
+    });
   });
 });

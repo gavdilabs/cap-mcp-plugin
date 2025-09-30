@@ -146,6 +146,7 @@ describe("Factory", () => {
         new Set(["filter"]),
         new Map([["id", "UUID"]]),
         new Map([["id", "UUID"]]),
+        new Map(),
       );
 
       const annotations: ParsedAnnotations = new Map([
@@ -203,6 +204,7 @@ describe("Factory", () => {
         "target",
         "service",
         new Set(),
+        new Map(),
         new Map(),
         new Map(),
       );
@@ -282,6 +284,7 @@ describe("Factory", () => {
         "target1",
         "service2",
         new Set(["filter"]),
+        new Map(),
         new Map(),
         new Map(),
       );

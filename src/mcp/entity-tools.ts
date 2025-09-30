@@ -498,7 +498,11 @@ function registerCreateTool(
       ) as z.ZodType
     )
       .optional()
-      .describe(`Field ${propName}`);
+      .describe(
+        resAnno.foreignKeys.has(propName)
+          ? `Foreign key to ${resAnno.foreignKeys.get(propName)} on ${propName}`
+          : `Field ${propName}`,
+      );
   }
 
   const hint = constructHintMessage(resAnno, "create");
@@ -607,7 +611,11 @@ function registerUpdateTool(
       ) as z.ZodType
     )
       .optional()
-      .describe(`Field ${propName}`);
+      .describe(
+        resAnno.foreignKeys.has(propName)
+          ? `Foreign key to ${resAnno.foreignKeys.get(propName)} on ${propName}`
+          : `Field ${propName}`,
+      );
   }
 
   const keyList = Array.from(resAnno.resourceKeys.keys()).join(", ");

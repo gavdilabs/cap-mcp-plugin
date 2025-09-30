@@ -46,6 +46,7 @@ describe("Complex Key MCP Tools", () => {
           ["ID", "UUID"],
           ["random", "Integer"],
         ]),
+        new Map(),
         {
           tools: true,
           modes: ["query", "get", "create", "update", "delete"],
@@ -94,6 +95,7 @@ describe("Complex Key MCP Tools", () => {
           ["ID", "UUID"],
           ["other", "UUID"], // Association key in resourceKeys
         ]),
+        new Map(),
         {
           tools: true,
           modes: ["get", "update", "delete"],
@@ -150,6 +152,7 @@ describe("Complex Key MCP Tools", () => {
           ["random", "Integer"],
           ["other", "UUID"], // All three are keys
         ]),
+        new Map(),
         {
           tools: true,
           modes: ["query", "get", "create", "update"],
@@ -204,6 +207,7 @@ describe("Complex Key MCP Tools", () => {
           ["random", "Integer"],
           ["other", "UUID"],
         ]),
+        new Map(),
         {
           tools: true,
           modes: ["get", "delete"], // Only get and delete
@@ -254,6 +258,7 @@ describe("Complex Key MCP Tools", () => {
           ["name", "String"],
         ]),
         new Map([["ID", "UUID"]]),
+        new Map(),
         undefined, // No wrap configuration
       );
 
@@ -296,6 +301,7 @@ describe("Complex Key MCP Tools", () => {
           ["name", "String"],
         ]),
         new Map([["ID", "UUID"]]),
+        new Map(),
         {
           tools: false, // Note: registerEntityWrappers doesn't check this flag
           modes: ["query", "get"],
@@ -352,6 +358,7 @@ describe("Complex Key MCP Tools", () => {
           ["random", "Integer"],
           ["other", "UUID"],
         ]),
+        new Map(),
         {
           tools: true,
           modes: ["query", "get", "create", "update", "delete"],
@@ -409,6 +416,7 @@ describe("Complex Key MCP Tools", () => {
           ["random", "Integer"],
           ["other", "UUID"],
         ]),
+        new Map(),
         {
           tools: true,
           modes: ["query", "get", "create", "update"],
@@ -428,6 +436,7 @@ describe("Complex Key MCP Tools", () => {
           ["quantity", "Integer"],
         ]),
         new Map([["ID", "UUID"]]), // Simple key
+        new Map(),
         {
           tools: true,
           modes: ["query", "get", "create", "update"],
