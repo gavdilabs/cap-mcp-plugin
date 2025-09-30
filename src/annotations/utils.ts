@@ -249,18 +249,9 @@ export function parseResourceElements(
 
     const result = parseParam(k, v);
 
-    if (!v.key) continue;
+    if (!v.key || v.type === "cds.Association") continue;
     resourceKeys.set(k, result);
   }
-
-  // for (const [key, value] of Object.entries(definition.elements || {})) {
-  //   if (!value.type) continue;
-  //   const parsedType = value.type.replace("cds.", "");
-  //   properties.set(key, parsedType);
-  //
-  //   if (!value.key) continue;
-  //   resourceKeys.set(key, parsedType);
-  // }
 
   return {
     properties,

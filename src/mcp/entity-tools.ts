@@ -5,7 +5,8 @@ import { getAccessRights, WrapAccess } from "../auth/utils";
 import { LOGGER } from "../logger";
 import { determineMcpParameterType, toolError, asMcpResult } from "./utils";
 import { EntityOperationMode, EntityListQueryArgs } from "./types";
-import type { ql, Service } from "@sap/cds";
+import type { csn, ql, Service } from "@sap/cds";
+import cds from "@sap/cds";
 
 /**
  * Wraps a promise with a timeout to avoid indefinite hangs in MCP tool calls.
@@ -107,23 +108,6 @@ function buildEnhancedQueryDescription(resAnno: McpResourceAnnotation): string {
 }
 
 /**
- * Builds field documentation for schema descriptions
- */
-function buildFieldDocumentation(resAnno: McpResourceAnnotation): string {
-  const docs: string[] = [];
-  for (const [propName, cdsType] of resAnno.properties.entries()) {
-    const isAssociation = String(cdsType).toLowerCase().includes("association");
-    if (isAssociation) {
-      docs.push(`${propName}(association: compare by key value)`);
-      docs.push(`${propName}_ID(foreign key for ${propName})`);
-    } else {
-      docs.push(`${propName}(${String(cdsType).toLowerCase()})`);
-    }
-  }
-  return docs.join(", ");
-}
-
-/**
  * Registers CRUD-like MCP tools for an annotated entity (resource).
  * Modes can be controlled globally via configuration and per-entity via @mcp.wrap.
  *
@@ -210,14 +194,6 @@ function registerQueryTool(
       ([, cdsType]) => !String(cdsType).toLowerCase().includes("association"),
     )
     .map(([name]) => name);
-
-  // Add foreign key fields for associations to scalar keys for select/orderby
-  for (const [propName, cdsType] of resAnno.properties.entries()) {
-    const isAssociation = String(cdsType).toLowerCase().includes("association");
-    if (isAssociation) {
-      scalarKeys.push(`${propName}_ID`);
-    }
-  }
 
   // Build where field enum: use same fields as select (scalar + foreign keys)
   // This ensures consistency - what you can select, you can filter by
@@ -510,13 +486,10 @@ function registerCreateTool(
   for (const [propName, cdsType] of resAnno.properties.entries()) {
     const isAssociation = String(cdsType).toLowerCase().includes("association");
     if (isAssociation) {
-      // Prefer foreign key input for associations: <assoc>_ID
-      inputSchema[`${propName}_ID`] = z
-        .number()
-        .describe(`Foreign key for association ${propName}`)
-        .optional();
+      // Association keys are supplied directly from model loading as of v1.1.2
       continue;
     }
+
     inputSchema[propName] = (
       determineMcpParameterType(
         cdsType,
@@ -525,7 +498,11 @@ function registerCreateTool(
       ) as z.ZodType
     )
       .optional()
-      .describe(`Field ${propName}`);
+      .describe(
+        resAnno.foreignKeys.has(propName)
+          ? `Foreign key to ${resAnno.foreignKeys.get(propName)} on ${propName}`
+          : `Field ${propName}`,
+      );
   }
 
   const hint = constructHintMessage(resAnno, "create");
@@ -623,10 +600,7 @@ function registerUpdateTool(
     if (resAnno.resourceKeys.has(propName)) continue;
     const isAssociation = String(cdsType).toLowerCase().includes("association");
     if (isAssociation) {
-      inputSchema[`${propName}_ID`] = z
-        .number()
-        .describe(`Foreign key for association ${propName}`)
-        .optional();
+      // Association keys are supplied directly from model loading as of v1.1.2
       continue;
     }
     inputSchema[propName] = (
@@ -637,7 +611,11 @@ function registerUpdateTool(
       ) as z.ZodType
     )
       .optional()
-      .describe(`Field ${propName}`);
+      .describe(
+        resAnno.foreignKeys.has(propName)
+          ? `Foreign key to ${resAnno.foreignKeys.get(propName)} on ${propName}`
+          : `Field ${propName}`,
+      );
   }
 
   const keyList = Array.from(resAnno.resourceKeys.keys()).join(", ");

@@ -99,6 +99,8 @@ export class McpResourceAnnotation extends McpAnnotation {
   private readonly _resourceKeys: Map<string, string>;
   /** Optional wrapper configuration to expose this resource as tools */
   private readonly _wrap?: McpAnnotationWrap;
+  /** Map of foreign keys property -> associated entity */
+  private readonly _foreignKeys: Map<string, string>;
 
   /**
    * Creates a new MCP resource annotation
@@ -109,6 +111,8 @@ export class McpResourceAnnotation extends McpAnnotation {
    * @param functionalities - Set of enabled OData query options (filter, top, skip, etc.)
    * @param properties - Map of entity properties to their CDS types
    * @param resourceKeys - Map of key fields to their types
+   * @param foreignKeys - Map of foreign keys used by entity
+   * @param wrap - Wrap usage
    * @param restrictions - Optional restrictions based on CDS roles
    */
   constructor(
@@ -119,6 +123,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     functionalities: Set<McpResourceOption>,
     properties: Map<string, string>,
     resourceKeys: Map<string, string>,
+    foreignKeys: Map<string, string>,
     wrap?: McpAnnotationWrap,
     restrictions?: McpRestriction[],
   ) {
@@ -127,6 +132,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     this._properties = properties;
     this._resourceKeys = resourceKeys;
     this._wrap = wrap;
+    this._foreignKeys = foreignKeys;
   }
 
   /**
@@ -135,6 +141,14 @@ export class McpResourceAnnotation extends McpAnnotation {
    */
   get functionalities(): Set<McpResourceOption> {
     return this._functionalities;
+  }
+
+  /**
+   * Gets the map of foreign keys used withing the resource
+   * @returns Map of foreign keys - property name -> associated entity
+   */
+  get foreignKeys(): Map<string, string> {
+    return this._foreignKeys;
   }
 
   /**

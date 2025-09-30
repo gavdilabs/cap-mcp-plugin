@@ -26,6 +26,7 @@ describe("entity-tools - registration", () => {
         ["title", "String"],
       ]),
       new Map([["ID", "Integer"]]),
+      new Map(),
       { tools: true, modes: ["query", "get", "create", "update", "delete"] },
     );
 
@@ -69,6 +70,7 @@ describe("entity-tools - registration", () => {
         ["title", "String"],
       ]),
       new Map([["ID", "Integer"]]),
+      new Map(),
       { tools: true, modes: ["delete"] },
     );
 
@@ -99,6 +101,7 @@ describe("entity-tools - registration", () => {
         ["title", "String"],
       ]),
       new Map([]), // No keys - delete should not be registered
+      new Map(),
       { tools: true, modes: ["delete"] },
     );
 

@@ -116,6 +116,7 @@ describe("MCP Resources", () => {
           new Set(),
           new Map(),
           new Map(),
+          new Map(),
         );
 
         const mockService = {
@@ -165,6 +166,7 @@ describe("MCP Resources", () => {
           new Set(),
           new Map(),
           new Map(),
+          new Map(),
         );
 
         const mockService = {
@@ -192,6 +194,7 @@ describe("MCP Resources", () => {
           "TestEntity",
           "TestService",
           new Set(),
+          new Map(),
           new Map(),
           new Map(),
         );
@@ -224,6 +227,7 @@ describe("MCP Resources", () => {
           new Set(),
           new Map(),
           new Map(),
+          new Map(),
         );
 
         const mockService = {
@@ -254,6 +258,7 @@ describe("MCP Resources", () => {
           "TestEntity",
           "TestService",
           new Set(["filter", "select", "orderby"]),
+          new Map(),
           new Map(),
           new Map(),
         );
@@ -297,6 +302,7 @@ describe("MCP Resources", () => {
           "TestEntity",
           "TestService",
           new Set(["filter", "select", "orderby"]),
+          new Map(),
           new Map(),
           new Map(),
         );
@@ -345,6 +351,7 @@ describe("MCP Resources", () => {
           new Set(["filter"]),
           new Map(),
           new Map(),
+          new Map(),
         );
 
         // No service added to cds.services
@@ -366,6 +373,7 @@ describe("MCP Resources", () => {
           "TestEntity",
           "TestService",
           new Set(["filter"]),
+          new Map(),
           new Map(),
           new Map(),
         );
@@ -395,6 +403,7 @@ describe("MCP Resources", () => {
           "TestEntity",
           "TestService",
           new Set(["filter"]),
+          new Map(),
           new Map(),
           new Map(),
         );
@@ -429,6 +438,7 @@ describe("MCP Resources", () => {
           new Set(),
           new Map(),
           new Map(),
+          new Map(),
         );
 
         // Act
@@ -449,6 +459,7 @@ describe("MCP Resources", () => {
           "TestEntity",
           "TestService",
           new Set(["filter"]),
+          new Map(),
           new Map(),
           new Map(),
         );
@@ -482,6 +493,7 @@ describe("MCP Resources", () => {
           "TestEntity",
           "TestService",
           new Set(["select"]),
+          new Map(),
           new Map(),
           new Map(),
         );
@@ -521,6 +533,7 @@ describe("MCP Resources", () => {
           new Set(["filter"]),
           new Map(),
           new Map(),
+          new Map(),
         );
 
         const mockService = {
@@ -558,6 +571,7 @@ describe("MCP Resources", () => {
           "TestEntity",
           "TestService",
           new Set(),
+          new Map(),
           new Map(),
           new Map(),
         );

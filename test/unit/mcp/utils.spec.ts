@@ -730,6 +730,7 @@ describe("Server Utils", () => {
           ["count", "Integer"],
         ]),
         new Map([["id", "UUID"]]),
+        new Map(),
       );
 
       const result = writeODataDescriptionForResource(resourceAnnotation);
@@ -756,6 +757,7 @@ describe("Server Utils", () => {
         new Set(["filter", "top"]),
         new Map([["id", "UUID"]]),
         new Map(),
+        new Map(),
       );
 
       const result = writeODataDescriptionForResource(resourceAnnotation);
@@ -778,6 +780,7 @@ describe("Server Utils", () => {
         new Set(),
         new Map([["id", "UUID"]]),
         new Map(),
+        new Map(),
       );
 
       const result = writeODataDescriptionForResource(resourceAnnotation);
@@ -797,6 +800,7 @@ describe("Server Utils", () => {
         "NoPropsEntity",
         "TestService",
         new Set(["filter"]),
+        new Map(),
         new Map(),
         new Map(),
       );
@@ -820,6 +824,7 @@ describe("Server Utils", () => {
           ["field1", "String"],
           ["field2", "Integer"],
         ]),
+        new Map(),
         new Map(),
       );
 
@@ -849,6 +854,7 @@ describe("Server Utils", () => {
           ["boolean_field", "Boolean"],
         ]),
         new Map(),
+        new Map(),
       );
 
       const result = writeODataDescriptionForResource(resourceAnnotation);
@@ -868,6 +874,7 @@ describe("Server Utils", () => {
         new Set(["filter"]),
         new Map([["id", "UUID"]]),
         new Map(),
+        new Map(),
       );
 
       const result = writeODataDescriptionForResource(resourceAnnotation);
@@ -886,6 +893,7 @@ describe("Server Utils", () => {
         new Set(["top"]),
         new Map([["id", "String"]]),
         new Map(),
+        new Map(),
       );
 
       const result = writeODataDescriptionForResource(resourceAnnotation);
@@ -903,6 +911,7 @@ describe("Server Utils", () => {
         "TestService",
         new Set(["filter", "top", "skip", "select", "orderby"]),
         new Map([["test_field", "String"]]),
+        new Map(),
         new Map(),
       );
 
@@ -930,6 +939,7 @@ describe("Server Utils", () => {
           ],
           ["another_extremely_long_field_name", "AnotherCustomType"],
         ]),
+        new Map(),
         new Map(),
       );
 
