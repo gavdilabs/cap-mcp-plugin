@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.2](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.1...1.1.2) (2025-10-01)
+
+### Bug Fixes
+
+* Multi-key associations and related types ([#56](https://github.com/gavdilabs/cap-mcp-plugin/issues/56)) ([eb57b24](https://github.com/gavdilabs/cap-mcp-plugin/commit/eb57b24c963605ec4e290a855bf4ef1524226524))
+
 ## [1.1.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.0...1.1.1) (2025-09-29)
 
 ### Features
