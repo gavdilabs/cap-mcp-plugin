@@ -1,5 +1,5 @@
 # CAP MCP Plugin - AI With Ease
-![NPM Version](https://img.shields.io/npm/v/%40gavdi%2Fcap-mcp) ![NPM License](https://img.shields.io/npm/l/%40gavdi%2Fcap-mcp) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/gavdilabs/cap-mcp-plugin/latest)
+![NPM Version](https://img.shields.io/npm/v/%40gavdi%2Fcap-mcp) ![NPM License](https://img.shields.io/npm/l/%40gavdi%2Fcap-mcp) ![NPM Downloads](https://img.shields.io/npm/dm/%40gavdi%2Fcap-mcp) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/gavdilabs/cap-mcp-plugin/latest)
 
 
 
