@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.3](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.2...1.1.3) (2025-10-08)
+
+### Bug Fixes
+
+* inefficient regular expression vulnerability ([#63](https://github.com/gavdilabs/cap-mcp-plugin/issues/63)) ([8590c38](https://github.com/gavdilabs/cap-mcp-plugin/commit/8590c386a3f47130b74899390b4267c53ee3360a))
+* permissions for GITHUB_TOKEN in actions ([#64](https://github.com/gavdilabs/cap-mcp-plugin/issues/64)) ([0057753](https://github.com/gavdilabs/cap-mcp-plugin/commit/00577531479661824846599123245019e4f522cf))
+
+### Additional Changes
+
+* Add download bagde to README ([613b46d](https://github.com/gavdilabs/cap-mcp-plugin/commit/613b46de0baade5ef09c4eeddc383a927d63343e))
+* code coverage reports ([#62](https://github.com/gavdilabs/cap-mcp-plugin/issues/62)) ([b8cc916](https://github.com/gavdilabs/cap-mcp-plugin/commit/b8cc916354dbabfda74af2b4de3d5911cf19a983))
+* upgraded sdk for mcp ([#61](https://github.com/gavdilabs/cap-mcp-plugin/issues/61)) ([b4116d8](https://github.com/gavdilabs/cap-mcp-plugin/commit/b4116d84f7409f36348704892f9b0673a9fde9ae))
+
 ## [1.1.2](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.1...1.1.2) (2025-10-01)
 
 ### Bug Fixes
