@@ -66,7 +66,7 @@ export const ODataQueryValidationSchemas = {
     .min(1)
     .max(200)
     .regex(
-      /^[a-zA-Z_][a-zA-Z0-9_\s]+(asc|desc)?(,\s*[a-zA-Z_][a-zA-Z0-9_\s]+(asc|desc)?)*$/i,
+      /^[a-zA-Z_][a-zA-Z0-9_]*(?:\s+(asc|desc))?(?:\s*,\s*[a-zA-Z_][a-zA-Z0-9_]*(?:\s+(asc|desc))?)*$/i,
     ),
   filter: z.string().min(1).max(1000),
 };

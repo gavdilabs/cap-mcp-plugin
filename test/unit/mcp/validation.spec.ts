@@ -96,6 +96,23 @@ describe("ODataQueryValidator", () => {
         validator.validateOrderBy("title'; DROP TABLE books; --"),
       ).toThrow();
     });
+
+    it("should prevent ReDoS attacks with malicious orderby patterns", () => {
+      // Test patterns that would cause exponential backtracking with the old regex
+      const maliciousPatterns = [
+        "field" + " ".repeat(100) + "asc," + "_".repeat(50),
+        "a" + " ".repeat(200) + "asc," + " ".repeat(100),
+        "_".repeat(50) + " ".repeat(100) + "desc," + "_".repeat(50),
+      ];
+
+      maliciousPatterns.forEach((pattern) => {
+        const startTime = Date.now();
+        expect(() => validator.validateOrderBy(pattern)).toThrow();
+        const endTime = Date.now();
+        // Validation should complete quickly (under 100ms) even for malicious input
+        expect(endTime - startTime).toBeLessThan(100);
+      });
+    });
   });
 
   describe("validateFilter", () => {
