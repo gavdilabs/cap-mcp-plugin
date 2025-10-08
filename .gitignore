@@ -1,6 +1,7 @@
 
 node_modules/
 lib/
+coverage/
 .env
 default-env.json
 .npmrc
