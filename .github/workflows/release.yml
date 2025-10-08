@@ -12,6 +12,11 @@ on:
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      deployments: write
+      attestations: write
+      id-token: write
     steps:
       - name: Checkout with SSH key
         uses: actions/checkout@v4
