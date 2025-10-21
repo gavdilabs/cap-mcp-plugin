@@ -1,5 +1,6 @@
 import { RequestHandler, ErrorRequestHandler } from "express";
-import { XSUAAService } from "./xsuaa-service";
+import { AuthService } from "./xsuaa-service";
+import { AuthTypes } from "./utils";
 
 /** JSON-RPC 2.0 error code for unauthorized requests */
 const RPC_UNAUTHORIZED = 10;
@@ -32,8 +33,8 @@ const cds = global.cds || require("@sap/cds"); // This is a work around for miss
  * @throws {500} When CAP context is not properly loaded
  */
 export function authHandlerFactory(): RequestHandler {
-  const authKind = cds.env.requires.auth.kind;
-  const xsuaaService = new XSUAAService();
+  const authKind = cds.env.requires.auth.kind as AuthTypes;
+  const authService = new AuthService(authKind);
 
   return async (req, res, next) => {
     if (!req.headers.authorization && authKind !== "dummy") {
@@ -50,10 +51,10 @@ export function authHandlerFactory(): RequestHandler {
 
     // For XSUAA/JWT auth types, use @sap/xssec for validation
     if (
-      (authKind === "jwt" || authKind === "xsuaa") &&
-      xsuaaService.isConfigured()
+      (authKind === "jwt" || authKind === "xsuaa" || authKind === "ias") &&
+      authService.isConfigured()
     ) {
-      const securityContext = await xsuaaService.createSecurityContext(req);
+      const securityContext = await authService.createSecurityContext(req);
 
       if (!securityContext) {
         res.status(401).json({

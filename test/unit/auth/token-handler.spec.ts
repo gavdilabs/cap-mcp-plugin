@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { handleTokenRequest } from "../../../src/auth/handlers";
-import { XSUAAService } from "../../../src/auth/xsuaa-service";
+import { AuthService } from "../../../src/auth/xsuaa-service";
 
 // Mock the logger
 jest.mock("../../../src/logger", () => ({
@@ -12,7 +12,7 @@ jest.mock("../../../src/logger", () => ({
 
 // Mock XSUAAService - extending the global mock with specific methods for this test
 jest.mock("../../../src/auth/xsuaa-service", () => ({
-  XSUAAService: jest.fn().mockImplementation(() => ({
+  AuthService: jest.fn().mockImplementation(() => ({
     exchangeCodeForToken: jest.fn(),
     refreshAccessToken: jest.fn(),
     isConfigured: jest.fn().mockReturnValue(true),
@@ -22,7 +22,7 @@ jest.mock("../../../src/auth/xsuaa-service", () => ({
 describe("OAuth Token Handler", () => {
   let mockReq: Partial<Request>;
   let mockRes: Partial<Response>;
-  let mockXsuaaService: jest.Mocked<XSUAAService>;
+  let mockXsuaaService: jest.Mocked<AuthService>;
 
   beforeEach(() => {
     mockReq = {
@@ -38,7 +38,7 @@ describe("OAuth Token Handler", () => {
       status: jest.fn().mockReturnThis(),
     };
 
-    mockXsuaaService = new XSUAAService() as any;
+    mockXsuaaService = new AuthService() as any;
     mockXsuaaService.exchangeCodeForToken = jest.fn();
     mockXsuaaService.refreshAccessToken = jest.fn();
   });
@@ -70,6 +70,7 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "auth-code-123",
         "http://localhost:62723/callback",
+        undefined, // code_verifier
       );
 
       expect(mockRes.json).toHaveBeenCalledWith(mockTokenData);
@@ -101,6 +102,7 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "auth-code-456",
         "https://myapp.example.com/callback",
+        undefined, // code_verifier
       );
 
       expect(mockRes.json).toHaveBeenCalledWith(mockTokenData);
@@ -131,6 +133,7 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "auth-code-789",
         "http://localhost:4004/callback",
+        undefined, // code_verifier
       );
 
       expect(mockRes.json).toHaveBeenCalledWith(mockTokenData);
@@ -332,6 +335,7 @@ describe("OAuth Token Handler", () => {
         grant_type: "authorization_code", // This should take precedence
         code: "body-code",
         redirect_uri: "http://localhost:62723/callback",
+        undefined, // code_verifier
       };
 
       const mockTokenData = {
@@ -352,6 +356,7 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "body-code",
         "http://localhost:62723/callback",
+        undefined, // code_verifier
       );
     });
 
@@ -379,6 +384,7 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "mixed-code",
         "http://localhost:62723/callback",
+        undefined, // code_verifier
       );
     });
   });

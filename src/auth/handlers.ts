@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { XSUAAService } from "./xsuaa-service";
+import { AuthService } from "./xsuaa-service";
 import { LOGGER } from "../logger";
 
 /**
@@ -10,6 +10,7 @@ interface TokenRequestParams {
   code?: string;
   redirect_uri?: string;
   refresh_token?: string;
+  code_verifier: string;
 }
 
 /**
@@ -20,11 +21,12 @@ interface TokenRequestParams {
 export async function handleTokenRequest(
   req: Request,
   res: Response,
-  xsuaaService: XSUAAService,
+  authService: AuthService,
 ): Promise<void> {
   try {
     const params: TokenRequestParams = { ...req.query, ...req.body };
-    const { grant_type, code, redirect_uri, refresh_token } = params;
+    const { grant_type, code, redirect_uri, refresh_token, code_verifier } =
+      params;
 
     if (grant_type === "authorization_code") {
       if (!code || !redirect_uri) {
@@ -35,9 +37,10 @@ export async function handleTokenRequest(
         return;
       }
 
-      const tokenData = await xsuaaService.exchangeCodeForToken(
+      const tokenData = await authService.exchangeCodeForToken(
         code,
         redirect_uri,
+        code_verifier,
       );
       LOGGER.debug("[AUTH] Token exchange successful");
       res.json(tokenData);
@@ -50,7 +53,7 @@ export async function handleTokenRequest(
         return;
       }
 
-      const tokenData = await xsuaaService.refreshAccessToken(refresh_token);
+      const tokenData = await authService.refreshAccessToken(refresh_token);
       LOGGER.debug("[AUTH] Token refresh successful");
       res.json(tokenData);
     } else {

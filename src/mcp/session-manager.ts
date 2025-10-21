@@ -85,7 +85,7 @@ export class McpSessionManager {
       sessionIdGenerator: () => randomUUID(),
       enableJsonResponse: enableJson,
       onsessioninitialized: (sid) => {
-        LOGGER.debug("Session initialized with ID: ", sid);
+        LOGGER.info("Session initialized with ID: ", sid);
         LOGGER.debug("Transport mode", { enableJsonResponse: enableJson });
         this.sessions.set(sid, {
           server: server,

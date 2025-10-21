@@ -1,14 +1,24 @@
 import { Request } from "express";
 import * as xssec from "@sap/xssec";
 import { LOGGER } from "../logger";
+import { AuthTypes } from "./utils";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds");
 
 /**
+ * OAuth endpoints
+ */
+interface OAuthEndpoints {
+  discovery_url: string;
+  authorization_endpoint: string;
+  token_endpoint: string;
+}
+
+/**
  * XSUAA credentials interface (from @sap/xssec)
  */
-export interface XSUAACredentials {
+export interface AuthCredentials {
   clientid: string;
   clientsecret: string;
   url: string;
@@ -43,15 +53,29 @@ export interface OAuthErrorResponse {
  * XSUAA service using official @sap/xssec library
  * Leverages SAP's official authentication and validation mechanisms
  */
-export class XSUAAService {
-  private readonly credentials: XSUAACredentials;
-  private readonly xsuaaService: xssec.XsuaaService;
+export class AuthService {
+  private readonly credentials: AuthCredentials;
+  private readonly authService: xssec.XsuaaService | xssec.IdentityService;
+  private readonly kind: AuthTypes;
+  private endpoints: OAuthEndpoints;
 
-  constructor() {
-    this.credentials = cds.env.requires.auth.credentials as XSUAACredentials;
+  constructor(kind: AuthTypes = "xsuaa") {
+    this.credentials = cds.env.requires.auth.credentials as AuthCredentials;
+    this.kind = kind;
 
-    // Initialize XSUAA service from @sap/xssec
-    this.xsuaaService = new xssec.XsuaaService(this.credentials);
+    // Set default endpoints in case OIDC discovery call fails
+    this.endpoints = {
+      discovery_url: `${this.credentials?.url}/.well-known/openid-configuration`,
+      authorization_endpoint: `${this.credentials?.url}/oauth/authorize`,
+      token_endpoint: `${this.credentials?.url}/oauth/token`,
+    };
+
+    // Initialize XSUAA/IAS service from @sap/xssec
+    if (this.kind === "ias") {
+      this.authService = new xssec.IdentityService(this.credentials);
+    } else {
+      this.authService = new xssec.XsuaaService(this.credentials);
+    }
   }
 
   isConfigured(): boolean {
@@ -63,21 +87,63 @@ export class XSUAAService {
   }
 
   /**
+   * Fetch oauth endpoints from the OIDC discovery endpoint.
+   * If none found than the default will be used.
+   */
+  async discoverOAuthEndpoints(): Promise<void> {
+    try {
+      const response = await fetch(this.endpoints.discovery_url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        LOGGER.warn(
+          `OAuth endpoints fetch failed: ${response.status} ${errorData.error_description || errorData.error}. Continuing with default configuration.`,
+        );
+      } else {
+        const oidcConfig = await response.json();
+        this.endpoints.authorization_endpoint =
+          oidcConfig.authorization_endpoint;
+        this.endpoints.token_endpoint = oidcConfig.token_endpoint;
+        LOGGER.debug(`OAuth endpoints set to:`, this.endpoints);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`OAuth endpoints fetch failed: ${String(error)}`);
+    }
+  }
+
+  /**
    * Generates authorization URL using @sap/xssec
    */
-  getAuthorizationUrl(redirectUri: string, state?: string): string {
+  async getAuthorizationUrl(
+    redirectUri: string,
+    client_id: string,
+    state?: string,
+    code_challenge?: string,
+    code_challenge_method?: string,
+    scope?: string,
+  ): Promise<string> {
     const params = new URLSearchParams({
       response_type: "code",
-      client_id: this.credentials.clientid,
       redirect_uri: redirectUri,
       // scope: "uaa.resource",
+      client_id,
+      ...(!!code_challenge ? { code_challenge } : {}),
+      ...(!!code_challenge_method ? { code_challenge_method } : {}),
+      ...(!!scope ? { scope } : {}),
     });
 
     if (state) {
       params.append("state", state);
     }
 
-    return `${this.credentials.url}/oauth/authorize?${params.toString()}`;
+    return `${this.endpoints.authorization_endpoint}?${params.toString()}`;
   }
 
   /**
@@ -86,16 +152,18 @@ export class XSUAAService {
   async exchangeCodeForToken(
     code: string,
     redirectUri: string,
+    code_verifier?: string,
   ): Promise<TokenResponse> {
     try {
       const tokenOptions = {
         grant_type: "authorization_code",
         code,
         redirect_uri: redirectUri,
+        ...(!!code_verifier ? { code_verifier } : {}),
       };
 
-      // Use direct XSUAA token endpoint for authorization code exchange
-      const response = await fetch(`${this.credentials.url}/oauth/token`, {
+      // Use direct XSUAA/IAS token endpoint for authorization code exchange
+      const response = await fetch(this.endpoints.token_endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -125,7 +193,7 @@ export class XSUAAService {
    */
   async refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
     try {
-      const response = await fetch(`${this.credentials.url}/oauth/token`, {
+      const response = await fetch(this.endpoints.token_endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -161,7 +229,7 @@ export class XSUAAService {
     try {
       // Create security context using @sap/xssec
       const securityContext = await xssec.createSecurityContext(
-        this.xsuaaService,
+        this.authService,
         {
           req: req || { headers: { authorization: `Bearer ${accessToken}` } },
           token: accessToken as any,
@@ -196,7 +264,7 @@ export class XSUAAService {
 
       const token = authHeader.substring(7);
       const securityContext = await xssec.createSecurityContext(
-        this.xsuaaService,
+        this.authService,
         { req, token: token as any },
       );
 
@@ -212,9 +280,9 @@ export class XSUAAService {
   }
 
   /**
-   * Get XSUAA service instance for advanced operations
+   * Get XSUAA/IAS service instance for advanced operations
    */
-  getXsuaaService(): xssec.XsuaaService {
-    return this.xsuaaService;
+  getAuthService(): xssec.XsuaaService | xssec.IdentityService {
+    return this.authService;
   }
 }
