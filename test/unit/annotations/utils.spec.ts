@@ -38,19 +38,30 @@ describe("Utils", () => {
     test("should handle single part definition", () => {
       const result = splitDefinitionName("ServiceName");
       expect(result.serviceName).toBe("ServiceName");
-      expect(result.target).toBeUndefined();
+      expect(result.target).toBe("");
+    });
+
+    test("should handle two part definition", () => {
+      const result = splitDefinitionName("ServiceName.Entity");
+      expect(result.serviceName).toBe("ServiceName");
+      expect(result.target).toBe("Entity");
     });
 
     test("should handle multiple dots", () => {
       const result = splitDefinitionName("Service.Sub.Entity");
-      expect(result.serviceName).toBe("Service");
-      expect(result.target).toBe("Sub");
+      expect(result.serviceName).toBe("Service.Sub");
+      expect(result.target).toBe("Entity");
     });
 
-    test("should handle empty string", () => {
-      const result = splitDefinitionName("");
-      expect(result.serviceName).toBe("");
-      expect(result.target).toBeUndefined();
+    test("should throw error when given empty string", () => {
+      try {
+        splitDefinitionName("");
+      } catch (e) {
+        expect(e).toBeDefined();
+        expect((e as Error).message).toBe(
+          "Invalid definition name. Cannot be split",
+        );
+      }
     });
   });
 

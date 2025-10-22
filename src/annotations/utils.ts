@@ -19,10 +19,23 @@ export function splitDefinitionName(definition: string): {
   serviceName: string;
   target: string;
 } {
+  if (definition?.length <= 0) {
+    throw new Error("Invalid definition name. Cannot be split");
+  }
+
   const splitted = definition.split(".");
+  if (splitted.length <= 1) {
+    return {
+      serviceName: splitted[0],
+      target: "",
+    };
+  }
+
+  const target = splitted.pop();
+  const serviceName = splitted.join(".");
   return {
-    serviceName: splitted[0],
-    target: splitted[1],
+    serviceName: serviceName,
+    target: target ?? "",
   };
 }
 
