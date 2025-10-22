@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.1.4](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.3...1.1.4) (2025-10-22)
+
+### Bug Fixes
+
+* namespaces handled in parsing step for custom service namespaces ([#68](https://github.com/gavdilabs/cap-mcp-plugin/issues/68)) ([48abe62](https://github.com/gavdilabs/cap-mcp-plugin/commit/48abe62e0cdf2915badafe8d859d756a8410b32d)), closes [#69](https://github.com/gavdilabs/cap-mcp-plugin/issues/69)
+
+### Additional Changes
+
+* upgrade cds version from 9.3.1 to 9.4.3 ([#69](https://github.com/gavdilabs/cap-mcp-plugin/issues/69)) ([a9ea022](https://github.com/gavdilabs/cap-mcp-plugin/commit/a9ea022a0459ea61b2aeeefdf1fa8ba56b1135a5))
+
 ## [1.1.3](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.2...1.1.3) (2025-10-08)
 
 ### Bug Fixes
