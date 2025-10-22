@@ -296,36 +296,33 @@ function registerOAuthEndpoints(
   );
 
   // OAuth Authorization endpoint - stateless redirect to XSUAA
-  expressApp.get(
-    "/oauth/authorize",
-    async (req: Request, res: Response): Promise<void> => {
-      const {
-        state,
-        redirect_uri,
-        client_id,
-        code_challenge,
-        code_challenge_method,
-        scope,
-      } = req.query as AuthorizeQuery;
+  expressApp.get("/oauth/authorize", (req: Request, res: Response): void => {
+    const {
+      state,
+      redirect_uri,
+      client_id,
+      code_challenge,
+      code_challenge_method,
+      scope,
+    } = req.query as AuthorizeQuery;
 
-      // Client validation and redirect URI validation is handled by XSUAA
-      // We delegate all client management to XSUAA's built-in OAuth server
+    // Client validation and redirect URI validation is handled by XSUAA
+    // We delegate all client management to XSUAA's built-in OAuth server
 
-      const protocol = getProtocol(req);
-      const redirectUri =
-        redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
+    const protocol = getProtocol(req);
+    const redirectUri =
+      redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
 
-      const authUrl = await xsuaaService.getAuthorizationUrl(
-        redirectUri,
-        client_id ?? "",
-        state,
-        code_challenge,
-        code_challenge_method,
-        scope,
-      );
-      res.redirect(authUrl);
-    },
-  );
+    const authUrl = xsuaaService.getAuthorizationUrl(
+      redirectUri,
+      client_id ?? "",
+      state,
+      code_challenge,
+      code_challenge_method,
+      scope,
+    );
+    res.redirect(authUrl);
+  });
 
   // OAuth Callback endpoint - stateless token exchange
   expressApp.get(

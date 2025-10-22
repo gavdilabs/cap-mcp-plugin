@@ -141,14 +141,14 @@ export class XSUAAService {
   /**
    * Generates authorization URL using @sap/xssec
    */
-  async getAuthorizationUrl(
+  getAuthorizationUrl(
     redirectUri: string,
     client_id: string,
     state?: string,
     code_challenge?: string,
     code_challenge_method?: string,
     scope?: string,
-  ): Promise<string> {
+  ): string {
     const params = new URLSearchParams({
       response_type: "code",
       redirect_uri: redirectUri,

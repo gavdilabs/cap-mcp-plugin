@@ -47,7 +47,10 @@ export default class McpPlugin {
     this.expressApp = app;
     this.expressApp.use("/mcp", express.json());
     // Only needed to use MCP Inspector in local browser:
-    this.expressApp.use(cors({ origin: "http://localhost:6274" }));
+    this.expressApp.use(
+      ["/oauth", "/.well-known"],
+      cors({ origin: "http://localhost:6274" }),
+    );
 
     // Apply helmet security middleware only to MCP routes
     this.expressApp.use(
