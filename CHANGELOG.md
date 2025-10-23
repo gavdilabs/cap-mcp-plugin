@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.5](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.4...1.1.5) (2025-10-23)
+
+### Bug Fixes
+
+* Fixed CDS version for relaxed major ([#72](https://github.com/gavdilabs/cap-mcp-plugin/issues/72)) ([d711cba](https://github.com/gavdilabs/cap-mcp-plugin/commit/d711cba025ae2eb02f7691654cae23194a2e0025))
+
 ## [1.1.4](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.3...1.1.4) (2025-10-22)
 
 ### Bug Fixes
