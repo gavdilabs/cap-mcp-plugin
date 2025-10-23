@@ -41,7 +41,7 @@
     "release": "release-it"
   },
   "peerDependencies": {
-    "@sap/cds": "^9.4.3",
+    "@sap/cds": "^9",
     "express": "^4"
   },
   "dependencies": {
