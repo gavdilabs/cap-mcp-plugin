@@ -10,6 +10,7 @@ interface TokenRequestParams {
   code?: string;
   redirect_uri?: string;
   refresh_token?: string;
+  code_verifier: string;
 }
 
 /**
@@ -24,7 +25,8 @@ export async function handleTokenRequest(
 ): Promise<void> {
   try {
     const params: TokenRequestParams = { ...req.query, ...req.body };
-    const { grant_type, code, redirect_uri, refresh_token } = params;
+    const { grant_type, code, redirect_uri, refresh_token, code_verifier } =
+      params;
 
     if (grant_type === "authorization_code") {
       if (!code || !redirect_uri) {
@@ -38,9 +40,12 @@ export async function handleTokenRequest(
       const tokenData = await xsuaaService.exchangeCodeForToken(
         code,
         redirect_uri,
+        code_verifier,
       );
+      const scopedToken = await xsuaaService.getApplicationScopes(tokenData);
+      LOGGER.debug("Scopes in token:", scopedToken.scope);
       LOGGER.debug("[AUTH] Token exchange successful");
-      res.json(tokenData);
+      res.json(scopedToken);
     } else if (grant_type === "refresh_token") {
       if (!refresh_token) {
         res.status(400).json({

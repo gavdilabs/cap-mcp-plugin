@@ -12,6 +12,7 @@ import { loadConfiguration } from "./config/loader";
 import { McpSessionManager } from "./mcp/session-manager";
 import { registerAuthMiddleware } from "./auth/utils";
 import helmet from "helmet";
+import cors from "cors";
 
 /* @ts-ignore */
 const cds = (global as any).cds; // Use hosting app's CDS instance exclusively
@@ -45,6 +46,11 @@ export default class McpPlugin {
     LOGGER.debug("Event received for 'bootstrap'");
     this.expressApp = app;
     this.expressApp.use("/mcp", express.json());
+    // Only needed to use MCP Inspector in local browser:
+    this.expressApp.use(
+      ["/oauth", "/.well-known"],
+      cors({ origin: "http://localhost:6274" }),
+    );
 
     // Apply helmet security middleware only to MCP routes
     this.expressApp.use(

@@ -40,6 +40,7 @@ describe("OAuth Token Handler", () => {
 
     mockXsuaaService = new XSUAAService() as any;
     mockXsuaaService.exchangeCodeForToken = jest.fn();
+    mockXsuaaService.getApplicationScopes = jest.fn();
     mockXsuaaService.refreshAccessToken = jest.fn();
   });
 
@@ -58,8 +59,16 @@ describe("OAuth Token Handler", () => {
         expires_in: 3600,
         refresh_token: "refresh-token-123",
       };
-
       mockXsuaaService.exchangeCodeForToken.mockResolvedValue(mockTokenData);
+
+      const mockScopeData = {
+        access_token: "access-token-123",
+        token_type: "bearer",
+        expires_in: 3600,
+        refresh_token: "refresh-token-123",
+        scope: "my-scope",
+      };
+      mockXsuaaService.getApplicationScopes.mockResolvedValue(mockScopeData);
 
       await handleTokenRequest(
         mockReq as Request,
@@ -70,9 +79,10 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "auth-code-123",
         "http://localhost:62723/callback",
+        undefined, // code_verifier
       );
 
-      expect(mockRes.json).toHaveBeenCalledWith(mockTokenData);
+      expect(mockRes.json).toHaveBeenCalledWith(mockScopeData);
       expect(mockRes.status).not.toHaveBeenCalled();
     });
 
@@ -89,8 +99,16 @@ describe("OAuth Token Handler", () => {
         token_type: "bearer",
         expires_in: 3600,
       };
-
       mockXsuaaService.exchangeCodeForToken.mockResolvedValue(mockTokenData);
+
+      const mockScopeData = {
+        access_token: "access-token-123",
+        token_type: "bearer",
+        expires_in: 3600,
+        refresh_token: "refresh-token-123",
+        scope: "my-scope",
+      };
+      mockXsuaaService.getApplicationScopes.mockResolvedValue(mockScopeData);
 
       await handleTokenRequest(
         mockReq as Request,
@@ -101,9 +119,10 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "auth-code-456",
         "https://myapp.example.com/callback",
+        undefined, // code_verifier
       );
 
-      expect(mockRes.json).toHaveBeenCalledWith(mockTokenData);
+      expect(mockRes.json).toHaveBeenCalledWith(mockScopeData);
     });
 
     it("should merge parameters from both query and body", async () => {
@@ -119,8 +138,15 @@ describe("OAuth Token Handler", () => {
         token_type: "bearer",
         expires_in: 3600,
       };
-
       mockXsuaaService.exchangeCodeForToken.mockResolvedValue(mockTokenData);
+
+      const mockScopeData = {
+        access_token: "access-token-789",
+        token_type: "bearer",
+        expires_in: 3600,
+        scope: "my-scope",
+      };
+      mockXsuaaService.getApplicationScopes.mockResolvedValue(mockScopeData);
 
       await handleTokenRequest(
         mockReq as Request,
@@ -131,9 +157,10 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "auth-code-789",
         "http://localhost:4004/callback",
+        undefined, // code_verifier
       );
 
-      expect(mockRes.json).toHaveBeenCalledWith(mockTokenData);
+      expect(mockRes.json).toHaveBeenCalledWith(mockScopeData);
     });
 
     it("should return 400 when code is missing", async () => {
@@ -352,6 +379,7 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "body-code",
         "http://localhost:62723/callback",
+        undefined, // code_verifier
       );
     });
 
@@ -379,6 +407,7 @@ describe("OAuth Token Handler", () => {
       expect(mockXsuaaService.exchangeCodeForToken).toHaveBeenCalledWith(
         "mixed-code",
         "http://localhost:62723/callback",
+        undefined, // code_verifier
       );
     });
   });

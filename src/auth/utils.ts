@@ -5,7 +5,7 @@ import helmet from "helmet";
 import { authHandlerFactory, errorHandlerFactory } from "./factory";
 import { McpAuthType } from "../config/types";
 import { McpRestriction } from "../annotations/types";
-import { XSUAAService, XSUAACredentials } from "./xsuaa-service";
+import { XSUAAService, AuthCredentials } from "./xsuaa-service";
 import { handleTokenRequest } from "./handlers";
 import { LOGGER } from "../logger";
 
@@ -40,6 +40,9 @@ interface AuthorizeQuery {
   client_id?: string;
   state?: string;
   redirect_uri?: string;
+  code_challenge?: string;
+  code_challenge_method?: string;
+  scope?: string;
 }
 
 /**
@@ -51,6 +54,7 @@ interface CallbackQuery {
   error?: string;
   error_description?: string;
   redirect_uri?: string;
+  code_verifier?: string;
 }
 
 /**
@@ -221,7 +225,7 @@ export function registerAuthMiddleware(expressApp: Application): void {
 function configureOAuthProxy(expressApp: Application): void {
   const config = cds.env.requires.auth;
   const kind = config.kind as AuthTypes;
-  const credentials = config.credentials as XSUAACredentials;
+  const credentials = config.credentials as AuthCredentials;
 
   // PRESERVE existing logic - skip OAuth proxy for basic auth types
   if (kind === "dummy" || kind === "mocked" || kind === "basic") return;
@@ -236,7 +240,7 @@ function configureOAuthProxy(expressApp: Application): void {
     throw new Error("Invalid security credentials");
   }
 
-  registerOAuthEndpoints(expressApp, credentials);
+  registerOAuthEndpoints(expressApp, credentials, kind);
 }
 
 /**
@@ -264,9 +268,13 @@ function getProtocol(req: Request): string {
  */
 function registerOAuthEndpoints(
   expressApp: Application,
-  credentials: XSUAACredentials,
+  credentials: AuthCredentials,
+  kind: AuthTypes,
 ): void {
   const xsuaaService = new XSUAAService();
+
+  // Fetch endpoints from OIDC configuration
+  xsuaaService.discoverOAuthEndpoints();
 
   // Add JSON and URL-encoded body parsing for OAuth endpoints
   expressApp.use("/oauth", express.json());
@@ -289,7 +297,14 @@ function registerOAuthEndpoints(
 
   // OAuth Authorization endpoint - stateless redirect to XSUAA
   expressApp.get("/oauth/authorize", (req: Request, res: Response): void => {
-    const { state, redirect_uri } = req.query as AuthorizeQuery;
+    const {
+      state,
+      redirect_uri,
+      client_id,
+      code_challenge,
+      code_challenge_method,
+      scope,
+    } = req.query as AuthorizeQuery;
 
     // Client validation and redirect URI validation is handled by XSUAA
     // We delegate all client management to XSUAA's built-in OAuth server
@@ -298,7 +313,14 @@ function registerOAuthEndpoints(
     const redirectUri =
       redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
 
-    const authUrl = xsuaaService.getAuthorizationUrl(redirectUri, state);
+    const authUrl = xsuaaService.getAuthorizationUrl(
+      redirectUri,
+      client_id ?? "",
+      state,
+      code_challenge,
+      code_challenge_method,
+      scope,
+    );
     res.redirect(authUrl);
   });
 
@@ -306,8 +328,14 @@ function registerOAuthEndpoints(
   expressApp.get(
     "/oauth/callback",
     async (req: Request, res: Response): Promise<void> => {
-      const { code, state, error, error_description, redirect_uri } =
-        req.query as CallbackQuery;
+      const {
+        code,
+        state,
+        error,
+        error_description,
+        redirect_uri,
+        code_verifier,
+      } = req.query as CallbackQuery;
       LOGGER.debug("[AUTH] Callback received", code, state);
 
       if (error) {
@@ -331,9 +359,14 @@ function registerOAuthEndpoints(
         const url =
           redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
 
-        const tokenData = await xsuaaService.exchangeCodeForToken(code, url);
-
-        res.json(tokenData);
+        const tokenData = await xsuaaService.exchangeCodeForToken(
+          code,
+          url,
+          code_verifier,
+        );
+        const scopedToken = await xsuaaService.getApplicationScopes(tokenData);
+        LOGGER.debug("Scopes in token:", scopedToken.scope);
+        res.json(scopedToken);
       } catch (error) {
         LOGGER.error("OAuth callback error:", error);
         const errorMessage =
@@ -369,7 +402,7 @@ function registerOAuthEndpoints(
         response_types_supported: ["code"],
         grant_types_supported: ["authorization_code", "refresh_token"],
         code_challenge_methods_supported: ["S256"],
-        // scopes_supported: ["uaa.resource"],
+        scopes_supported: ["openid"],
         token_endpoint_auth_methods_supported: ["client_secret_post"],
         registration_endpoint_auth_methods_supported: ["client_secret_basic"],
       });
@@ -380,6 +413,23 @@ function registerOAuthEndpoints(
   expressApp.get(
     "/oauth/register",
     async (req: Request, res: Response): Promise<void> => {
+      // IAS does not support DCR so we will respond with the pre-configured client_id
+      if (kind === "ias") {
+        const protocol = getProtocol(req);
+        const enhancedResponse = {
+          client_id: credentials.clientid, // Add our CAP app's client ID
+          redirect_uris: req.body.redirect_uris || [
+            `${protocol}://${req.get("host")}/oauth/callback`,
+          ],
+        };
+        LOGGER.debug(
+          "Provided static client_id during DCR registration process",
+        );
+        res.json(enhancedResponse);
+        return;
+      }
+
+      // Keep original implementation for XSUAA
       try {
         // Simple proxy for discovery - no CSRF needed
         const response = await fetch(`${credentials.url}/oauth/register`, {
@@ -416,6 +466,23 @@ function registerOAuthEndpoints(
   expressApp.post(
     "/oauth/register",
     async (req: Request, res: Response): Promise<void> => {
+      // IAS does not support DCR so we will respond with the pre-configured client_id
+      if (kind === "ias") {
+        const protocol = getProtocol(req);
+        const enhancedResponse = {
+          client_id: credentials.clientid, // Add our CAP app's client ID
+          redirect_uris: req.body.redirect_uris || [
+            `${protocol}://${req.get("host")}/oauth/callback`,
+          ],
+        };
+        LOGGER.debug(
+          "Provided static client_id during DCR registration process",
+        );
+        res.json(enhancedResponse);
+        return;
+      }
+
+      // Keep original implementation for XSUAA
       try {
         // Step 1: Fetch CSRF token from XSUAA
         const csrfResponse = await fetch(`${credentials.url}/oauth/register`, {
@@ -462,7 +529,7 @@ function registerOAuthEndpoints(
         const enhancedResponse = {
           ...xsuaaData, // Keep all XSUAA fields
           client_id: credentials.clientid, // Add our CAP app's client ID
-          client_secret: credentials.clientsecret, // CAP app's client secret
+          // client_secret: credentials.clientsecret, // CAP app's client secret
           redirect_uris: req.body.redirect_uris || [
             `${protocol}://${req.get("host")}/oauth/callback`,
           ], // Use client's redirect URIs
