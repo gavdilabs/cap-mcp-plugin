@@ -1341,5 +1341,579 @@ describe("Parser", () => {
       // Verify foreign keys map is empty when elements can't be found
       expect(annotation.foreignKeys.size).toBe(0);
     });
+
+    // Comprehensive restriction tests for GitHub issue #73
+    describe("Restrictions: Grant/To combinations", () => {
+      test("Resource: Grant as a String, No 'to'", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedEntity": {
+              kind: "entity",
+              "@mcp.name": "Restricted Entity",
+              "@mcp.description": "Entity with string grant, no to",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: "READ",
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedEntity",
+        ) as McpResourceAnnotation;
+        expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+        expect(annotation.restrictions).toEqual([
+          { role: "authenticated-user", operations: ["READ"] },
+        ]);
+      });
+
+      test("Resource: Grant as an Array, No 'to'", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedEntity": {
+              kind: "entity",
+              "@mcp.name": "Restricted Entity",
+              "@mcp.description": "Entity with array grant, no to",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: ["READ", "UPDATE"],
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedEntity",
+        ) as McpResourceAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "authenticated-user", operations: ["READ", "UPDATE"] },
+        ]);
+      });
+
+      test("Resource: Grant as a String, 'to' as an Array", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedEntity": {
+              kind: "entity",
+              "@mcp.name": "Restricted Entity",
+              "@mcp.description": "Entity with string grant, array to",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: "READ",
+                  to: ["viewer", "editor"],
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedEntity",
+        ) as McpResourceAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "viewer", operations: ["READ"] },
+          { role: "editor", operations: ["READ"] },
+        ]);
+      });
+
+      test("Resource: Grant as a String, 'to' as a String", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedEntity": {
+              kind: "entity",
+              "@mcp.name": "Restricted Entity",
+              "@mcp.description": "Entity with string grant, string to",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: "READ",
+                  to: "viewer",
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedEntity",
+        ) as McpResourceAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "viewer", operations: ["READ"] },
+        ]);
+      });
+
+      test("Resource: Grant as an Array, 'to' as an Array", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedEntity": {
+              kind: "entity",
+              "@mcp.name": "Restricted Entity",
+              "@mcp.description": "Entity with array grant, array to",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: ["READ", "UPDATE"],
+                  to: ["maintainer", "admin"],
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedEntity",
+        ) as McpResourceAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "maintainer", operations: ["READ", "UPDATE"] },
+          { role: "admin", operations: ["READ", "UPDATE"] },
+        ]);
+      });
+
+      test("Resource: Grant as an Array, 'to' as a String", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedEntity": {
+              kind: "entity",
+              "@mcp.name": "Restricted Entity",
+              "@mcp.description": "Entity with array grant, string to",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: ["READ", "UPDATE"],
+                  to: "maintainer",
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedEntity",
+        ) as McpResourceAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "maintainer", operations: ["READ", "UPDATE"] },
+        ]);
+      });
+
+      test("Resource: WRITE operation maps to all CRUD (string grant)", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedEntity": {
+              kind: "entity",
+              "@mcp.name": "Restricted Entity",
+              "@mcp.description": "Entity with WRITE grant",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: "WRITE",
+                  to: "admin",
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedEntity",
+        ) as McpResourceAnnotation;
+        expect(annotation.restrictions).toEqual([
+          {
+            role: "admin",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+        ]);
+      });
+
+      test("Resource: CHANGE operation maps to UPDATE", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedEntity": {
+              kind: "entity",
+              "@mcp.name": "Restricted Entity",
+              "@mcp.description": "Entity with CHANGE grant",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: "CHANGE",
+                  to: "editor",
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedEntity",
+        ) as McpResourceAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "editor", operations: ["UPDATE"] },
+        ]);
+      });
+
+      test("Tool: Grant as a String, No 'to'", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedFunction": {
+              kind: "function",
+              "@mcp.name": "Restricted Function",
+              "@mcp.description": "Function with string grant, no to",
+              "@mcp.tool": true,
+              "@restrict": [
+                {
+                  grant: "READ",
+                },
+              ],
+              params: {
+                input: { type: "cds.String" },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedFunction",
+        ) as McpToolAnnotation;
+        expect(annotation).toBeInstanceOf(McpToolAnnotation);
+        expect(annotation.restrictions).toEqual([
+          { role: "authenticated-user", operations: ["READ"] },
+        ]);
+      });
+
+      test("Tool: Grant as a String, 'to' as a String", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedAction": {
+              kind: "action",
+              "@mcp.name": "Restricted Action",
+              "@mcp.description": "Action with string grant, string to",
+              "@mcp.tool": true,
+              "@restrict": [
+                {
+                  grant: "UPDATE",
+                  to: "editor",
+                },
+              ],
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("RestrictedAction") as McpToolAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "editor", operations: ["UPDATE"] },
+        ]);
+      });
+
+      test("Tool: Grant as an Array, 'to' as an Array", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedFunction": {
+              kind: "function",
+              "@mcp.name": "Restricted Function",
+              "@mcp.description": "Function with array grant, array to",
+              "@mcp.tool": true,
+              "@restrict": [
+                {
+                  grant: ["READ", "UPDATE"],
+                  to: ["maintainer", "admin"],
+                },
+              ],
+              params: {
+                input: { type: "cds.String" },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedFunction",
+        ) as McpToolAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "maintainer", operations: ["READ", "UPDATE"] },
+          { role: "admin", operations: ["READ", "UPDATE"] },
+        ]);
+      });
+
+      test("Tool: WRITE operation with string 'to'", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedAction": {
+              kind: "action",
+              "@mcp.name": "Restricted Action",
+              "@mcp.description": "Action with WRITE grant",
+              "@mcp.tool": true,
+              "@restrict": [
+                {
+                  grant: "WRITE",
+                  to: "admin",
+                },
+              ],
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("RestrictedAction") as McpToolAnnotation;
+        expect(annotation.restrictions).toEqual([
+          {
+            role: "admin",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+        ]);
+      });
+
+      test("Tool: Wildcard with array 'to'", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.RestrictedFunction": {
+              kind: "function",
+              "@mcp.name": "Restricted Function",
+              "@mcp.description": "Function with wildcard grant",
+              "@mcp.tool": true,
+              "@restrict": [
+                {
+                  grant: "*",
+                  to: ["admin", "superuser"],
+                },
+              ],
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "RestrictedFunction",
+        ) as McpToolAnnotation;
+        expect(annotation.restrictions).toEqual([
+          {
+            role: "admin",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+          {
+            role: "superuser",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+        ]);
+      });
+
+      test("Bound Tool: Grant as a String, 'to' as an Array", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.TestEntity": {
+              kind: "entity",
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+              actions: {
+                restrictedBoundAction: {
+                  kind: "action",
+                  "@mcp.name": "Restricted Bound Action",
+                  "@mcp.description": "Bound action with restrictions",
+                  "@mcp.tool": true,
+                  "@restrict": [
+                    {
+                      grant: "UPDATE",
+                      to: ["editor", "maintainer"],
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get(
+          "restrictedBoundAction",
+        ) as McpToolAnnotation;
+        expect(annotation).toBeInstanceOf(McpToolAnnotation);
+        expect(annotation.restrictions).toEqual([
+          { role: "editor", operations: ["UPDATE"] },
+          { role: "maintainer", operations: ["UPDATE"] },
+        ]);
+      });
+
+      test("Complex: Multiple restrictions with mixed grant/to types", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.ComplexEntity": {
+              kind: "entity",
+              "@mcp.name": "Complex Entity",
+              "@mcp.description": "Entity with complex restrictions",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: "READ",
+                  to: "viewer",
+                },
+                {
+                  grant: ["CREATE", "UPDATE"],
+                  to: ["editor", "maintainer"],
+                },
+                {
+                  grant: "DELETE",
+                },
+                {
+                  grant: "WRITE",
+                  to: "admin",
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("ComplexEntity") as McpResourceAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "viewer", operations: ["READ"] },
+          { role: "editor", operations: ["CREATE", "UPDATE"] },
+          { role: "maintainer", operations: ["CREATE", "UPDATE"] },
+          { role: "authenticated-user", operations: ["DELETE"] },
+          {
+            role: "admin",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+        ]);
+      });
+
+      test("Resource: Combines @requires with @restrict", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.SecureEntity": {
+              kind: "entity",
+              "@mcp.name": "Secure Entity",
+              "@mcp.description": "Entity with both requires and restrict",
+              "@mcp.resource": true,
+              "@requires": "authenticated",
+              "@restrict": [
+                {
+                  grant: "READ",
+                  to: "read-role",
+                },
+                {
+                  grant: ["UPDATE", "DELETE"],
+                  to: "write-role",
+                },
+              ],
+              elements: {
+                id: { type: "cds.UUID", key: true },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("SecureEntity") as McpResourceAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "authenticated" },
+          { role: "read-role", operations: ["READ"] },
+          { role: "write-role", operations: ["UPDATE", "DELETE"] },
+        ]);
+      });
+
+      test("Tool: Combines @requires with @restrict", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.SecureFunction": {
+              kind: "function",
+              "@mcp.name": "Secure Function",
+              "@mcp.description": "Function with both requires and restrict",
+              "@mcp.tool": true,
+              "@requires": "authenticated",
+              "@restrict": [
+                {
+                  grant: ["READ", "UPDATE"],
+                  to: "power-user",
+                },
+              ],
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("SecureFunction") as McpToolAnnotation;
+        expect(annotation.restrictions).toEqual([
+          { role: "authenticated" },
+          { role: "power-user", operations: ["READ", "UPDATE"] },
+        ]);
+      });
+    });
   });
 });
