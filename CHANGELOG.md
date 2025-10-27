@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.2.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.5...1.2.0) (2025-10-27)
+
+### Features
+
+* Support for PKCE and IAS ([#70](https://github.com/gavdilabs/cap-mcp-plugin/issues/70)) ([663ed91](https://github.com/gavdilabs/cap-mcp-plugin/commit/663ed91e0196fb008e7ee5866ada5866295448d7))
+
+### Bug Fixes
+
+* Grant string, grant role and WRITE supported for access ([#75](https://github.com/gavdilabs/cap-mcp-plugin/issues/75)) ([769c6fc](https://github.com/gavdilabs/cap-mcp-plugin/commit/769c6fc7625c53f661f9259a029b456e2fe3cc18))
+
 ## [1.1.5](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.4...1.1.5) (2025-10-23)
 
 ### Bug Fixes
