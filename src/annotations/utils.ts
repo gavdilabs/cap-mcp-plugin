@@ -403,10 +403,12 @@ export function parseCdsRestrictions(
       continue;
     }
 
-    const mapped: McpRestriction[] = el.to.map((to) => ({
-      role: to,
-      operations: ops,
-    }));
+    const mapped: McpRestriction[] = Array.isArray(el.to)
+      ? el.to.map((to) => ({
+          role: to,
+          operations: ops,
+        }))
+      : [{ role: el.to, operations: ops }];
 
     result.push(...mapped);
   }
@@ -417,34 +419,37 @@ export function parseCdsRestrictions(
  * Maps the "grant" property from CdsRestriction to McpRestriction
  */
 function mapOperationRestriction(
-  cdsRestrictions: CdsRestrictionType[],
+  cdsRestrictions: CdsRestrictionType[] | CdsRestrictionType,
 ): McpRestrictionType[] {
-  const result: McpRestrictionType[] = [];
-
   if (!cdsRestrictions || cdsRestrictions.length <= 0) {
-    result.push("CREATE");
-    result.push("READ");
-    result.push("UPDATE");
-    result.push("DELETE");
-    return result;
+    return ["CREATE", "READ", "UPDATE", "DELETE"];
   }
 
+  if (!Array.isArray(cdsRestrictions)) {
+    return translateOperationRestriction(cdsRestrictions);
+  }
+
+  const result: McpRestrictionType[] = [];
   for (const el of cdsRestrictions) {
-    switch (el) {
-      case "CHANGE":
-        result.push("UPDATE");
-        continue;
-      case "*":
-        result.push("CREATE");
-        result.push("READ");
-        result.push("UPDATE");
-        result.push("DELETE");
-        continue;
-      default:
-        result.push(el as McpRestrictionType);
-        continue;
-    }
+    const translated = translateOperationRestriction(el);
+    if (!translated || translated.length <= 0) continue;
+    result.push(...translated);
   }
 
   return result;
+}
+
+function translateOperationRestriction(
+  restrictionType: CdsRestrictionType,
+): McpRestrictionType[] {
+  switch (restrictionType) {
+    case "CHANGE":
+      return ["UPDATE"];
+    case "WRITE":
+      return ["CREATE", "READ", "UPDATE", "DELETE"];
+    case "*":
+      return ["CREATE", "READ", "UPDATE", "DELETE"];
+    default:
+      return [restrictionType as McpRestrictionType];
+  }
 }

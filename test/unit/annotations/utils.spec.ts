@@ -947,6 +947,228 @@ describe("Utils", () => {
         { role: "admin", operations: ["CREATE", "READ", "UPDATE", "DELETE"] },
       ]);
     });
+
+    // Regression tests for GitHub issue #73
+    describe("Issue #73: Grant/To combinations", () => {
+      test("Scenario 1: Grant as a String, No 'to'", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: "READ",
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          { role: "authenticated-user", operations: ["READ"] },
+        ]);
+      });
+
+      test("Scenario 2: Grant as an Array, No 'to'", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: ["READ", "UPDATE"],
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          { role: "authenticated-user", operations: ["READ", "UPDATE"] },
+        ]);
+      });
+
+      test("Scenario 3: Grant as a String, 'to' as an Array", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: "READ",
+            to: ["viewer", "editor"],
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          { role: "viewer", operations: ["READ"] },
+          { role: "editor", operations: ["READ"] },
+        ]);
+      });
+
+      test("Scenario 4: Grant as a String, 'to' as a String", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: "READ",
+            to: "viewer",
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([{ role: "viewer", operations: ["READ"] }]);
+      });
+
+      test("Scenario 5: Grant as an Array, 'to' as an Array", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: ["READ", "UPDATE"],
+            to: ["maintainer", "admin"],
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          { role: "maintainer", operations: ["READ", "UPDATE"] },
+          { role: "admin", operations: ["READ", "UPDATE"] },
+        ]);
+      });
+
+      test("Scenario 6: Grant as an Array, 'to' as a String", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: ["READ", "UPDATE"],
+            to: "maintainer",
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          { role: "maintainer", operations: ["READ", "UPDATE"] },
+        ]);
+      });
+
+      test("should map WRITE to all CRUD operations (string grant)", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: "WRITE",
+            to: "admin",
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          {
+            role: "admin",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+        ]);
+      });
+
+      test("should map WRITE to all CRUD operations (array grant)", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: ["WRITE"],
+            to: ["admin", "superuser"],
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          {
+            role: "admin",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+          {
+            role: "superuser",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+        ]);
+      });
+
+      test("should handle mixed WRITE and specific operations", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: ["READ", "WRITE"],
+            to: "poweruser",
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          {
+            role: "poweruser",
+            operations: ["READ", "CREATE", "READ", "UPDATE", "DELETE"],
+          },
+        ]);
+      });
+
+      test("should handle wildcard with string 'to'", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: "*",
+            to: "admin",
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          {
+            role: "admin",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+        ]);
+      });
+
+      test("should handle CHANGE with string 'to'", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: "CHANGE",
+            to: "editor",
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([{ role: "editor", operations: ["UPDATE"] }]);
+      });
+
+      test("should handle multiple string grants with array 'to'", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: "READ",
+            to: ["role1", "role2"],
+          },
+          {
+            grant: "UPDATE",
+            to: ["role3", "role4"],
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          { role: "role1", operations: ["READ"] },
+          { role: "role2", operations: ["READ"] },
+          { role: "role3", operations: ["UPDATE"] },
+          { role: "role4", operations: ["UPDATE"] },
+        ]);
+      });
+
+      test("should handle complex mixed scenario", () => {
+        const restrictions: CdsRestriction[] = [
+          {
+            grant: "READ",
+            to: "viewer",
+          },
+          {
+            grant: ["CREATE", "UPDATE"],
+            to: ["editor", "maintainer"],
+          },
+          {
+            grant: "DELETE",
+          },
+          {
+            grant: "WRITE",
+            to: "admin",
+          },
+        ];
+
+        const result = parseCdsRestrictions(restrictions, undefined);
+        expect(result).toEqual([
+          { role: "viewer", operations: ["READ"] },
+          { role: "editor", operations: ["CREATE", "UPDATE"] },
+          { role: "maintainer", operations: ["CREATE", "UPDATE"] },
+          { role: "authenticated-user", operations: ["DELETE"] },
+          {
+            role: "admin",
+            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+          },
+        ]);
+      });
+    });
   });
 
   describe("containsRequiredElicitedParams", () => {

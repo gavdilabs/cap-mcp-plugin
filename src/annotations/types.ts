@@ -21,6 +21,7 @@ export type CdsRestrictionType =
   | "UPDATE"
   | "CREATE"
   | "DELETE"
+  | "WRITE"
   | "*"
   | "CHANGE";
 
@@ -28,8 +29,8 @@ export type CdsRestrictionType =
  * Object type for the standard @restriction annotation for CDS
  */
 export interface CdsRestriction {
-  grant: CdsRestrictionType[];
-  to?: string[];
+  grant: CdsRestrictionType[] | CdsRestrictionType;
+  to?: string[] | string;
   where?: string;
 }
 
