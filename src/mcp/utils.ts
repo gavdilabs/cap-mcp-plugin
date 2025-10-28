@@ -266,3 +266,25 @@ export function asMcpResult(payload: unknown): {
     ],
   };
 }
+
+/**
+ * Applies the omit rules for the resulting object based on the annotations.
+ * Creates a copy of the input object to avoid unwanted mutations.
+ * @param res
+ * @param annotations
+ * @returns object|undefined
+ */
+export function applyOmissionFilter(
+  res: object | undefined,
+  annotations: McpResourceAnnotation,
+): object | undefined {
+  if (!res)
+    return res; // We do not want to parse something that does not exist
+  else if (!annotations.omittedFields || annotations.omittedFields.size < 0) {
+    return { ...res };
+  }
+
+  return Object.fromEntries(
+    Object.entries(res).filter(([k, _]) => !annotations.omittedFields?.has(k)),
+  );
+}

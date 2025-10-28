@@ -26,7 +26,7 @@ import {
   parseResourceElements,
   splitDefinitionName,
 } from "./utils";
-import { MCP_ANNOTATION_MAPPING } from "./constants";
+import { MCP_ANNOTATION_MAPPING, MCP_OMIT_PROP_KEY } from "./constants";
 
 /**
  * Parses model definitions to extract MCP annotations and return them as a map of annotated entries
@@ -203,6 +203,12 @@ function constructResourceAnnotation(
       .map(([k, _]) => k),
   );
 
+  const omittedFields = new Set<string>(
+    Object.entries(model.definitions?.[entityTarget].elements ?? {})
+      .filter(([_, v]) => (v as any)[MCP_OMIT_PROP_KEY])
+      .map(([k, _]) => k),
+  );
+
   const { properties, resourceKeys } = parseResourceElements(definition, model);
   const restrictions = parseCdsRestrictions(
     annotations.restrict,
@@ -221,6 +227,7 @@ function constructResourceAnnotation(
     annotations.wrap,
     restrictions,
     computedFields,
+    omittedFields,
   );
 }
 
