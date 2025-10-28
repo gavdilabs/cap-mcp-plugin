@@ -570,7 +570,9 @@ function registerCreateTool(
       try {
         await tx.commit();
       } catch {}
-      return asMcpResult(response ?? {});
+
+      const result = applyOmissionFilter(response, resAnno);
+      return asMcpResult(result ?? {});
     } catch (error: any) {
       try {
         await tx.rollback();
@@ -702,7 +704,8 @@ function registerUpdateTool(
         await tx.commit();
       } catch {}
 
-      return asMcpResult(response ?? {});
+      const result = applyOmissionFilter(response, resAnno);
+      return asMcpResult(result ?? {});
     } catch (error: any) {
       try {
         await tx.rollback();
