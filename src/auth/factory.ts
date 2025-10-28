@@ -1,6 +1,7 @@
 import { RequestHandler, ErrorRequestHandler } from "express";
 import { XSUAAService } from "./xsuaa-service";
-import { AuthTypes } from "./utils";
+import { AuthTypes, useMockAuth } from "./utils";
+import { LOGGER } from "../logger";
 
 /** JSON-RPC 2.0 error code for unauthorized requests */
 const RPC_UNAUTHORIZED = 10;
@@ -34,7 +35,9 @@ const cds = global.cds || require("@sap/cds"); // This is a work around for miss
  */
 export function authHandlerFactory(): RequestHandler {
   const authKind = cds.env.requires.auth.kind as AuthTypes;
-  const xsuaaService = new XSUAAService();
+  const xsuaaService = !useMockAuth(authKind) ? new XSUAAService() : undefined;
+
+  LOGGER.debug("Authentication kind", authKind);
 
   return async (req, res, next) => {
     if (!req.headers.authorization && authKind !== "dummy") {
@@ -52,7 +55,7 @@ export function authHandlerFactory(): RequestHandler {
     // For XSUAA/JWT auth types, use @sap/xssec for validation
     if (
       (authKind === "jwt" || authKind === "xsuaa" || authKind === "ias") &&
-      xsuaaService.isConfigured()
+      xsuaaService?.isConfigured()
     ) {
       const securityContext = await xsuaaService.createSecurityContext(req);
 
