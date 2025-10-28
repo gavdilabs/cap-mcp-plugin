@@ -1342,6 +1342,200 @@ describe("Parser", () => {
       expect(annotation.foreignKeys.size).toBe(0);
     });
 
+    test("should parse entity with @Core.Computed annotation (uppercase)", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.ComputedEntity": {
+            kind: "entity",
+            "@mcp.name": "Computed Entity",
+            "@mcp.description": "Entity with uppercase Core.Computed fields",
+            "@mcp.resource": true,
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+              computedField: {
+                type: "cds.String",
+                "@Core.Computed": true,
+              },
+              normalField: { type: "cds.Integer" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get("ComputedEntity") as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation.name).toBe("Computed Entity");
+
+      // Verify computed fields are correctly identified
+      expect(annotation.computedFields).toBeDefined();
+      expect(annotation.computedFields!.size).toBe(1);
+      expect(annotation.computedFields!.has("computedField")).toBe(true);
+      expect(annotation.computedFields!.has("normalField")).toBe(false);
+      expect(annotation.computedFields!.has("ID")).toBe(false);
+      expect(annotation.computedFields!.has("name")).toBe(false);
+    });
+
+    test("should parse entity with @core.computed annotation (lowercase)", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.LowercaseComputedEntity": {
+            kind: "entity",
+            "@mcp.name": "Lowercase Computed Entity",
+            "@mcp.description": "Entity with lowercase core.computed fields",
+            "@mcp.resource": true,
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              title: { type: "cds.String" },
+              calculatedValue: {
+                type: "cds.Decimal",
+                "@core.computed": true,
+              },
+              regularValue: { type: "cds.Decimal" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get(
+        "LowercaseComputedEntity",
+      ) as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation.name).toBe("Lowercase Computed Entity");
+
+      // Verify computed fields are correctly identified with lowercase annotation
+      expect(annotation.computedFields).toBeDefined();
+      expect(annotation.computedFields!.size).toBe(1);
+      expect(annotation.computedFields!.has("calculatedValue")).toBe(true);
+      expect(annotation.computedFields!.has("regularValue")).toBe(false);
+      expect(annotation.computedFields!.has("ID")).toBe(false);
+      expect(annotation.computedFields!.has("title")).toBe(false);
+    });
+
+    test("should parse entity with mixed case @Core.Computed and @core.computed annotations", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.MixedCaseComputedEntity": {
+            kind: "entity",
+            "@mcp.name": "Mixed Case Computed Entity",
+            "@mcp.description": "Entity with mixed case computed annotations",
+            "@mcp.resource": true,
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              field1: { type: "cds.String" },
+              uppercaseComputed: {
+                type: "cds.String",
+                "@Core.Computed": true,
+              },
+              lowercaseComputed: {
+                type: "cds.Integer",
+                "@core.computed": true,
+              },
+              mixedCaseComputed: {
+                type: "cds.Boolean",
+                "@CORE.COMPUTED": true,
+              },
+              regularField: { type: "cds.Date" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get(
+        "MixedCaseComputedEntity",
+      ) as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation.name).toBe("Mixed Case Computed Entity");
+
+      // Verify all case variations of computed are correctly identified
+      expect(annotation.computedFields).toBeDefined();
+      expect(annotation.computedFields!.size).toBe(3);
+      expect(annotation.computedFields!.has("uppercaseComputed")).toBe(true);
+      expect(annotation.computedFields!.has("lowercaseComputed")).toBe(true);
+      expect(annotation.computedFields!.has("mixedCaseComputed")).toBe(true);
+      expect(annotation.computedFields!.has("regularField")).toBe(false);
+      expect(annotation.computedFields!.has("ID")).toBe(false);
+      expect(annotation.computedFields!.has("field1")).toBe(false);
+    });
+
+    test("should parse entity with no computed fields", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.NoComputedEntity": {
+            kind: "entity",
+            "@mcp.name": "No Computed Entity",
+            "@mcp.description": "Entity without any computed fields",
+            "@mcp.resource": true,
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+              value: { type: "cds.Integer" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get(
+        "NoComputedEntity",
+      ) as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Verify computed fields set is empty
+      expect(annotation.computedFields).toBeDefined();
+      expect(annotation.computedFields!.size).toBe(0);
+    });
+
+    test("should parse entity with computed fields set to false", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.FalseComputedEntity": {
+            kind: "entity",
+            "@mcp.name": "False Computed Entity",
+            "@mcp.description": "Entity with computed annotation set to false",
+            "@mcp.resource": true,
+            elements: {
+              ID: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+              notComputed: {
+                type: "cds.String",
+                "@Core.Computed": false,
+              },
+              actuallyComputed: {
+                type: "cds.Integer",
+                "@core.computed": true,
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(1);
+      const annotation = result.get(
+        "FalseComputedEntity",
+      ) as McpResourceAnnotation;
+      expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+      // Only fields with computed=true should be in the set
+      expect(annotation.computedFields).toBeDefined();
+      expect(annotation.computedFields!.size).toBe(1);
+      expect(annotation.computedFields!.has("actuallyComputed")).toBe(true);
+      expect(annotation.computedFields!.has("notComputed")).toBe(false);
+    });
+
     // Comprehensive restriction tests for GitHub issue #73
     describe("Restrictions: Grant/To combinations", () => {
       test("Resource: Grant as a String, No 'to'", () => {
