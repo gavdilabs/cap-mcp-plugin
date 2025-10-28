@@ -199,7 +199,11 @@ function constructResourceAnnotation(
 
   const computedFields = new Set<string>(
     Object.entries(model.definitions?.[entityTarget].elements ?? {})
-      .filter(([k, v]) => k.toLowerCase() === "@core.computed" && (v as any)[k])
+      .filter(([_, v]) =>
+        new Map(
+          Object.entries(v).map(([key, value]) => [key.toLowerCase(), value]),
+        ).get("@core.computed"),
+      )
       .map(([k, _]) => k),
   );
 
