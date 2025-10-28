@@ -189,13 +189,18 @@ function constructResourceAnnotation(
 ): McpResourceAnnotation | undefined {
   if (!isValidResourceAnnotation(annotations)) return undefined;
 
+  const entityTarget = `${serviceName}.${target}`;
   const functionalities = determineResourceOptions(annotations);
   const foreignKeys = new Map<string, string>(
-    Object.entries(
-      model.definitions?.[`${serviceName}.${target}`].elements ?? {},
-    )
+    Object.entries(model.definitions?.[entityTarget].elements ?? {})
       .filter(([_, v]) => (v as any)["@odata.foreignKey4"] !== undefined)
       .map(([k, v]) => [k, (v as any)["@odata.foreignKey4"]]),
+  );
+
+  const computedFields = new Set<string>(
+    Object.entries(model.definitions?.[entityTarget].elements ?? {})
+      .filter(([k, v]) => k.toLowerCase() === "@core.computed" && (v as any)[k])
+      .map(([k, _]) => k),
   );
 
   const { properties, resourceKeys } = parseResourceElements(definition, model);
@@ -215,6 +220,7 @@ function constructResourceAnnotation(
     foreignKeys,
     annotations.wrap,
     restrictions,
+    computedFields,
   );
 }
 

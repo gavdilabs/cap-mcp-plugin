@@ -485,7 +485,8 @@ function registerCreateTool(
   const inputSchema: Record<string, z.ZodType> = {};
   for (const [propName, cdsType] of resAnno.properties.entries()) {
     const isAssociation = String(cdsType).toLowerCase().includes("association");
-    if (isAssociation) {
+    const isComputed = resAnno.computedFields?.has(propName);
+    if (isAssociation || isComputed) {
       // Association keys are supplied directly from model loading as of v1.1.2
       continue;
     }
@@ -598,8 +599,9 @@ function registerUpdateTool(
   // Other fields optional
   for (const [propName, cdsType] of resAnno.properties.entries()) {
     if (resAnno.resourceKeys.has(propName)) continue;
+    const isComputed = resAnno.computedFields?.has(propName);
     const isAssociation = String(cdsType).toLowerCase().includes("association");
-    if (isAssociation) {
+    if (isAssociation || isComputed) {
       // Association keys are supplied directly from model loading as of v1.1.2
       continue;
     }
