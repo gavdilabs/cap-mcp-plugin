@@ -101,6 +101,8 @@ export class McpResourceAnnotation extends McpAnnotation {
   private readonly _wrap?: McpAnnotationWrap;
   /** Map of foreign keys property -> associated entity */
   private readonly _foreignKeys: Map<string, string>;
+  /** Set of computed field names */
+  private readonly _computedFields?: Set<string>;
 
   /**
    * Creates a new MCP resource annotation
@@ -114,6 +116,7 @@ export class McpResourceAnnotation extends McpAnnotation {
    * @param foreignKeys - Map of foreign keys used by entity
    * @param wrap - Wrap usage
    * @param restrictions - Optional restrictions based on CDS roles
+   * @param computedFields - Optional set of fields that are computed and should be ignored in create scenarios
    */
   constructor(
     name: string,
@@ -126,6 +129,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     foreignKeys: Map<string, string>,
     wrap?: McpAnnotationWrap,
     restrictions?: McpRestriction[],
+    computedFields?: Set<string>,
   ) {
     super(name, description, target, serviceName, restrictions ?? []);
     this._functionalities = functionalities;
@@ -133,6 +137,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     this._resourceKeys = resourceKeys;
     this._wrap = wrap;
     this._foreignKeys = foreignKeys;
+    this._computedFields = computedFields;
   }
 
   /**
@@ -172,6 +177,13 @@ export class McpResourceAnnotation extends McpAnnotation {
    */
   get wrap(): McpAnnotationWrap | undefined {
     return this._wrap;
+  }
+
+  /**
+   * Gets the computed fields if any are available
+   */
+  get computedFields(): Set<string> | undefined {
+    return this._computedFields;
   }
 }
 

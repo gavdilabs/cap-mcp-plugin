@@ -112,6 +112,361 @@ describe("entity-tools - registration", () => {
   });
 });
 
+describe("entity-tools - Core.Computed field handling", () => {
+  describe("create tool with computed fields", () => {
+    it("excludes computed fields from create input schema", () => {
+      const server = new McpServer({ name: "t", version: "1" });
+      let capturedInputSchema: Record<string, any> = {};
+
+      // @ts-ignore override registerTool to capture input schema
+      server.registerTool = (name: string, config: any, handler: any): any => {
+        capturedInputSchema = config.inputSchema;
+        return undefined as any;
+      };
+
+      const computedFields = new Set(["computedValue", "autoGenField"]);
+      const res = new McpResourceAnnotation(
+        "products",
+        "Products",
+        "Products",
+        "CatalogService",
+        new Set(["filter", "orderby", "select", "top", "skip"]),
+        new Map([
+          ["ID", "Integer"],
+          ["name", "String"],
+          ["price", "Decimal"],
+          ["computedValue", "Integer"], // Should be excluded
+          ["autoGenField", "String"], // Should be excluded
+        ]),
+        new Map([["ID", "Integer"]]),
+        new Map(),
+        { tools: true, modes: ["create"] },
+        undefined,
+        computedFields,
+      );
+
+      const accesses: WrapAccess = { canCreate: true };
+      registerEntityWrappers(res, server, false, ["create"], accesses);
+
+      // Verify computed fields are NOT in the input schema
+      expect(capturedInputSchema).toHaveProperty("name");
+      expect(capturedInputSchema).toHaveProperty("price");
+      expect(capturedInputSchema).not.toHaveProperty("computedValue");
+      expect(capturedInputSchema).not.toHaveProperty("autoGenField");
+    });
+
+    it("handles entities without computed fields correctly", () => {
+      const server = new McpServer({ name: "t", version: "1" });
+      let capturedInputSchema: Record<string, any> = {};
+
+      // @ts-ignore override registerTool to capture input schema
+      server.registerTool = (name: string, config: any, handler: any): any => {
+        capturedInputSchema = config.inputSchema;
+        return undefined as any;
+      };
+
+      const res = new McpResourceAnnotation(
+        "products",
+        "Products",
+        "Products",
+        "CatalogService",
+        new Set(["filter", "orderby", "select", "top", "skip"]),
+        new Map([
+          ["ID", "Integer"],
+          ["name", "String"],
+          ["price", "Decimal"],
+        ]),
+        new Map([["ID", "Integer"]]),
+        new Map(),
+        { tools: true, modes: ["create"] },
+        undefined,
+        undefined, // No computed fields
+      );
+
+      const accesses: WrapAccess = { canCreate: true };
+      registerEntityWrappers(res, server, false, ["create"], accesses);
+
+      // All fields should be in the input schema (except keys which are optional)
+      expect(capturedInputSchema).toHaveProperty("name");
+      expect(capturedInputSchema).toHaveProperty("price");
+    });
+
+    it("handles entities with only computed fields", () => {
+      const server = new McpServer({ name: "t", version: "1" });
+      let capturedInputSchema: Record<string, any> = {};
+
+      // @ts-ignore override registerTool to capture input schema
+      server.registerTool = (name: string, config: any, handler: any): any => {
+        capturedInputSchema = config.inputSchema;
+        return undefined as any;
+      };
+
+      const computedFields = new Set(["computedValue"]);
+      const res = new McpResourceAnnotation(
+        "computed",
+        "ComputedEntity",
+        "ComputedEntity",
+        "CatalogService",
+        new Set(["filter", "orderby", "select", "top", "skip"]),
+        new Map([
+          ["ID", "Integer"],
+          ["computedValue", "Integer"], // Only non-key field is computed
+        ]),
+        new Map([["ID", "Integer"]]),
+        new Map(),
+        { tools: true, modes: ["create"] },
+        undefined,
+        computedFields,
+      );
+
+      const accesses: WrapAccess = { canCreate: true };
+      registerEntityWrappers(res, server, false, ["create"], accesses);
+
+      // Computed field should not be in schema
+      expect(capturedInputSchema).not.toHaveProperty("computedValue");
+      // Key field is included in create schema (as optional)
+      expect(capturedInputSchema).toHaveProperty("ID");
+      // Only the key field should be present (no other non-computed fields)
+      const nonSystemKeys = Object.keys(capturedInputSchema).filter(
+        (k) => !k.startsWith("_"),
+      );
+      expect(nonSystemKeys).toEqual(["ID"]);
+    });
+  });
+
+  describe("update tool with computed fields", () => {
+    it("excludes computed fields from update input schema", () => {
+      const server = new McpServer({ name: "t", version: "1" });
+      let capturedInputSchema: Record<string, any> = {};
+
+      // @ts-ignore override registerTool to capture input schema
+      server.registerTool = (name: string, config: any, handler: any): any => {
+        capturedInputSchema = config.inputSchema;
+        return undefined as any;
+      };
+
+      const computedFields = new Set(["computedValue", "autoGenField"]);
+      const res = new McpResourceAnnotation(
+        "products",
+        "Products",
+        "Products",
+        "CatalogService",
+        new Set(["filter", "orderby", "select", "top", "skip"]),
+        new Map([
+          ["ID", "Integer"],
+          ["name", "String"],
+          ["price", "Decimal"],
+          ["computedValue", "Integer"], // Should be excluded
+          ["autoGenField", "String"], // Should be excluded
+        ]),
+        new Map([["ID", "Integer"]]),
+        new Map(),
+        { tools: true, modes: ["update"] },
+        undefined,
+        computedFields,
+      );
+
+      const accesses: WrapAccess = { canUpdate: true };
+      registerEntityWrappers(res, server, false, ["update"], accesses);
+
+      // Verify key field IS in schema (required for update)
+      expect(capturedInputSchema).toHaveProperty("ID");
+      // Verify non-computed fields are in schema
+      expect(capturedInputSchema).toHaveProperty("name");
+      expect(capturedInputSchema).toHaveProperty("price");
+      // Verify computed fields are NOT in the input schema
+      expect(capturedInputSchema).not.toHaveProperty("computedValue");
+      expect(capturedInputSchema).not.toHaveProperty("autoGenField");
+    });
+
+    it("allows updating non-computed fields when computed fields exist", () => {
+      const server = new McpServer({ name: "t", version: "1" });
+      let capturedInputSchema: Record<string, any> = {};
+
+      // @ts-ignore override registerTool to capture input schema
+      server.registerTool = (name: string, config: any, handler: any): any => {
+        capturedInputSchema = config.inputSchema;
+        return undefined as any;
+      };
+
+      const computedFields = new Set(["lastModified", "fullName"]);
+      const res = new McpResourceAnnotation(
+        "users",
+        "Users",
+        "Users",
+        "UserService",
+        new Set(["filter", "orderby", "select", "top", "skip"]),
+        new Map([
+          ["ID", "Integer"],
+          ["firstName", "String"],
+          ["lastName", "String"],
+          ["email", "String"],
+          ["fullName", "String"], // Computed (e.g., firstName + lastName)
+          ["lastModified", "DateTime"], // Computed timestamp
+        ]),
+        new Map([["ID", "Integer"]]),
+        new Map(),
+        { tools: true, modes: ["update"] },
+        undefined,
+        computedFields,
+      );
+
+      const accesses: WrapAccess = { canUpdate: true };
+      registerEntityWrappers(res, server, false, ["update"], accesses);
+
+      // Key should be present
+      expect(capturedInputSchema).toHaveProperty("ID");
+      // Updateable fields should be present
+      expect(capturedInputSchema).toHaveProperty("firstName");
+      expect(capturedInputSchema).toHaveProperty("lastName");
+      expect(capturedInputSchema).toHaveProperty("email");
+      // Computed fields should NOT be present
+      expect(capturedInputSchema).not.toHaveProperty("fullName");
+      expect(capturedInputSchema).not.toHaveProperty("lastModified");
+    });
+
+    it("handles entities without computed fields in update correctly", () => {
+      const server = new McpServer({ name: "t", version: "1" });
+      let capturedInputSchema: Record<string, any> = {};
+
+      // @ts-ignore override registerTool to capture input schema
+      server.registerTool = (name: string, config: any, handler: any): any => {
+        capturedInputSchema = config.inputSchema;
+        return undefined as any;
+      };
+
+      const res = new McpResourceAnnotation(
+        "products",
+        "Products",
+        "Products",
+        "CatalogService",
+        new Set(["filter", "orderby", "select", "top", "skip"]),
+        new Map([
+          ["ID", "Integer"],
+          ["name", "String"],
+          ["price", "Decimal"],
+        ]),
+        new Map([["ID", "Integer"]]),
+        new Map(),
+        { tools: true, modes: ["update"] },
+        undefined,
+        undefined, // No computed fields
+      );
+
+      const accesses: WrapAccess = { canUpdate: true };
+      registerEntityWrappers(res, server, false, ["update"], accesses);
+
+      // All fields should be in the input schema
+      expect(capturedInputSchema).toHaveProperty("ID");
+      expect(capturedInputSchema).toHaveProperty("name");
+      expect(capturedInputSchema).toHaveProperty("price");
+    });
+  });
+
+  describe("computed fields with associations", () => {
+    it("excludes both computed fields and associations from create schema", () => {
+      const server = new McpServer({ name: "t", version: "1" });
+      let capturedInputSchema: Record<string, any> = {};
+
+      // @ts-ignore override registerTool to capture input schema
+      server.registerTool = (name: string, config: any, handler: any): any => {
+        capturedInputSchema = config.inputSchema;
+        return undefined as any;
+      };
+
+      const computedFields = new Set(["totalPrice"]);
+      const res = new McpResourceAnnotation(
+        "orders",
+        "Orders",
+        "Orders",
+        "SalesService",
+        new Set(["filter", "orderby", "select", "top", "skip"]),
+        new Map([
+          ["ID", "Integer"],
+          ["orderDate", "Date"],
+          ["quantity", "Integer"],
+          ["unitPrice", "Decimal"],
+          ["totalPrice", "Decimal"], // Computed: quantity * unitPrice
+          ["customer", "Association to Customers"], // Association
+        ]),
+        new Map([["ID", "Integer"]]),
+        new Map(),
+        { tools: true, modes: ["create"] },
+        undefined,
+        computedFields,
+      );
+
+      const accesses: WrapAccess = { canCreate: true };
+      registerEntityWrappers(res, server, false, ["create"], accesses);
+
+      // Regular fields should be present
+      expect(capturedInputSchema).toHaveProperty("orderDate");
+      expect(capturedInputSchema).toHaveProperty("quantity");
+      expect(capturedInputSchema).toHaveProperty("unitPrice");
+      // Computed field should NOT be present
+      expect(capturedInputSchema).not.toHaveProperty("totalPrice");
+      // Association should NOT be present (associations are handled via _ID)
+      expect(capturedInputSchema).not.toHaveProperty("customer");
+    });
+  });
+
+  describe("regression prevention", () => {
+    it("ensures computed fields remain excluded across multiple registrations", () => {
+      const server = new McpServer({ name: "t", version: "1" });
+      const schemas: Record<string, Record<string, any>> = {};
+
+      // @ts-ignore override registerTool to capture input schemas
+      server.registerTool = (name: string, config: any, handler: any): any => {
+        schemas[name] = config.inputSchema;
+        return undefined as any;
+      };
+
+      const computedFields = new Set(["computedValue"]);
+      const res = new McpResourceAnnotation(
+        "products",
+        "Products",
+        "Products",
+        "CatalogService",
+        new Set(["filter", "orderby", "select", "top", "skip"]),
+        new Map([
+          ["ID", "Integer"],
+          ["name", "String"],
+          ["computedValue", "Integer"],
+        ]),
+        new Map([["ID", "Integer"]]),
+        new Map(),
+        { tools: true, modes: ["create", "update"] },
+        undefined,
+        computedFields,
+      );
+
+      const accesses: WrapAccess = { canCreate: true, canUpdate: true };
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["create", "update"],
+        accesses,
+      );
+
+      // Check create tool
+      expect(schemas["CatalogService_Products_create"]).toBeDefined();
+      expect(schemas["CatalogService_Products_create"]).toHaveProperty("name");
+      expect(schemas["CatalogService_Products_create"]).not.toHaveProperty(
+        "computedValue",
+      );
+
+      // Check update tool
+      expect(schemas["CatalogService_Products_update"]).toBeDefined();
+      expect(schemas["CatalogService_Products_update"]).toHaveProperty("ID");
+      expect(schemas["CatalogService_Products_update"]).toHaveProperty("name");
+      expect(schemas["CatalogService_Products_update"]).not.toHaveProperty(
+        "computedValue",
+      );
+    });
+  });
+});
+
 // Import the internal functions for testing - these are not exported
 // We need to use require to access the internal module functions
 const entityToolsModule = require("../../../src/mcp/entity-tools");
