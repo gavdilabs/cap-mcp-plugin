@@ -1032,7 +1032,7 @@ describe("Utils", () => {
         ]);
       });
 
-      test("should map WRITE to all CRUD operations (string grant)", () => {
+      test("should map WRITE to CUD operations (string grant)", () => {
         const restrictions: CdsRestriction[] = [
           {
             grant: "WRITE",
@@ -1044,12 +1044,12 @@ describe("Utils", () => {
         expect(result).toEqual([
           {
             role: "admin",
-            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+            operations: ["CREATE", "UPDATE", "DELETE"],
           },
         ]);
       });
 
-      test("should map WRITE to all CRUD operations (array grant)", () => {
+      test("should map WRITE to CUD operations (array grant)", () => {
         const restrictions: CdsRestriction[] = [
           {
             grant: ["WRITE"],
@@ -1061,11 +1061,11 @@ describe("Utils", () => {
         expect(result).toEqual([
           {
             role: "admin",
-            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+            operations: ["CREATE", "UPDATE", "DELETE"],
           },
           {
             role: "superuser",
-            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+            operations: ["CREATE", "UPDATE", "DELETE"],
           },
         ]);
       });
@@ -1082,7 +1082,7 @@ describe("Utils", () => {
         expect(result).toEqual([
           {
             role: "poweruser",
-            operations: ["READ", "CREATE", "READ", "UPDATE", "DELETE"],
+            operations: ["READ", "CREATE", "UPDATE", "DELETE"],
           },
         ]);
       });
@@ -1164,7 +1164,7 @@ describe("Utils", () => {
           { role: "authenticated-user", operations: ["DELETE"] },
           {
             role: "admin",
-            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+            operations: ["CREATE", "UPDATE", "DELETE"],
           },
         ]);
       });

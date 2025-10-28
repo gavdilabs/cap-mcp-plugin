@@ -446,7 +446,7 @@ function translateOperationRestriction(
     case "CHANGE":
       return ["UPDATE"];
     case "WRITE":
-      return ["CREATE", "READ", "UPDATE", "DELETE"];
+      return ["CREATE", "UPDATE", "DELETE"];
     case "*":
       return ["CREATE", "READ", "UPDATE", "DELETE"];
     default:

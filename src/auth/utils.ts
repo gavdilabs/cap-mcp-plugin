@@ -645,3 +645,11 @@ export function getWrapAccesses(
 
   return access;
 }
+
+/**
+ * Utility method for checking whether auth used is mocked and not live
+ * @returns boolean
+ */
+export function useMockAuth(authKind: AuthTypes): boolean {
+  return authKind !== "jwt" && authKind !== "ias" && authKind !== "xsuaa";
+}
