@@ -1537,7 +1537,7 @@ describe("Parser", () => {
         ]);
       });
 
-      test("Resource: WRITE operation maps to all CRUD (string grant)", () => {
+      test("Resource: WRITE operation maps to CRD (string grant)", () => {
         const model: csn.CSN = {
           definitions: {
             "TestService.RestrictedEntity": {
@@ -1567,7 +1567,7 @@ describe("Parser", () => {
         expect(annotation.restrictions).toEqual([
           {
             role: "admin",
-            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+            operations: ["CREATE", "UPDATE", "DELETE"],
           },
         ]);
       });
@@ -1721,7 +1721,7 @@ describe("Parser", () => {
         expect(annotation.restrictions).toEqual([
           {
             role: "admin",
-            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+            operations: ["CREATE", "UPDATE", "DELETE"],
           },
         ]);
       });
@@ -1844,7 +1844,7 @@ describe("Parser", () => {
           { role: "authenticated-user", operations: ["DELETE"] },
           {
             role: "admin",
-            operations: ["CREATE", "READ", "UPDATE", "DELETE"],
+            operations: ["CREATE", "UPDATE", "DELETE"],
           },
         ]);
       });
