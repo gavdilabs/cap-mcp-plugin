@@ -88,6 +88,8 @@ service CatalogService {
 }
 ```
 
+> **Note**: The `@mcp.wrap.hint` annotation provides operation-level guidance, while `@mcp.hint` on individual elements provides field-level descriptions. Both work together to give AI agents comprehensive context.
+
 ### Step 4: Start Your Application
 
 ```bash
@@ -202,6 +204,8 @@ Example:
   };
 ```
 
+For field-level descriptions within these tools, see [Element Hints with @mcp.hint](#element-hints-with-mcphint).
+
 ### Tool Annotations
 
 Convert CAP functions and actions into executable AI tools:
@@ -271,6 +275,112 @@ function getBooksByAuthor(authorName: String) returns array of String;
 - **Input**: "Please fill out the required parameters" with a form for each parameter
 - **User Actions**: Accept, decline, or cancel the elicitation request
 - **Early Exit**: Tools return appropriate messages if declined or cancelled
+
+### Element Hints with @mcp.hint
+
+Provide contextual descriptions for individual properties and parameters using the `@mcp.hint` annotation. These hints help AI agents better understand the purpose, constraints, and expected values for specific fields.
+
+#### Where to Use Hints
+
+**Resource Entity Properties**
+```cds
+entity Books {
+  key ID    : Integer @mcp.hint: 'Must be a unique number not already in the system';
+      title : String;
+      stock : Integer @mcp.hint: 'The amount of books currently on store shelves';
+}
+```
+
+**Array Elements**
+```cds
+entity Authors {
+  key ID          : Integer;
+      name        : String @mcp.hint: 'Full name of the author';
+      nominations : array of String @mcp.hint: 'Awards that the author has been nominated for';
+}
+```
+
+**Function/Action Parameters**
+```cds
+@mcp: {
+  name       : 'books-by-author',
+  description: 'Gets a list of books made by the author',
+  tool       : true
+}
+function getBooksByAuthor(
+  authorName : String @mcp.hint: 'Full name of the author you want to get the books of'
+) returns array of String;
+```
+
+**Complex Type Fields**
+```cds
+type TValidQuantities {
+  positiveOnly : Integer @mcp.hint: 'Only takes in positive numbers, i.e. no negative values such as -1'
+};
+```
+
+#### How Hints Are Used
+
+Hints are automatically incorporated into:
+- **Resource Descriptions**: Field-level guidance in entity wrapper tools (query/get/create/update/delete)
+- **Tool Parameter Schemas**: Enhanced parameter descriptions visible to AI agents
+- **Input Validation**: Context for AI agents when constructing function calls
+
+#### Example: Enhanced Tool Experience
+
+Without `@mcp.hint`:
+```json
+{
+  "tool": "CatalogService_Books_create",
+  "parameters": {
+    "ID": { "type": "integer" },
+    "stock": { "type": "integer" }
+  }
+}
+```
+
+With `@mcp.hint`:
+```json
+{
+  "tool": "CatalogService_Books_create",
+  "parameters": {
+    "ID": {
+      "type": "integer",
+      "description": "Must be a unique number not already in the system"
+    },
+    "stock": {
+      "type": "integer",
+      "description": "The amount of books currently on store shelves"
+    }
+  }
+}
+```
+
+#### Best Practices
+
+1. **Be Specific**: Provide concrete examples and constraints
+   - ❌ Bad: `@mcp.hint: 'Author name'`
+   - ✅ Good: `@mcp.hint: 'Full name of the author (e.g., "Ernest Hemingway")'`
+
+2. **Include Constraints**: Document validation rules and business logic
+   - ✅ `@mcp.hint: 'Must be between 0 and 999, representing quantity in stock'`
+
+3. **Clarify Foreign Keys**: Help AI agents understand associations
+   - ✅ `@mcp.hint: 'Foreign key reference to Authors.ID'`
+
+4. **Explain Business Context**: Add domain-specific information
+   - ✅ `@mcp.hint: 'ISBN-13 format, used for unique book identification'`
+
+5. **Avoid Redundancy**: Don't repeat what's obvious from the field name and type
+   - ❌ Bad: `stock: Integer @mcp.hint: 'Stock value'`
+   - ✅ Good: `stock: Integer @mcp.hint: 'Current inventory count across all warehouses'`
+
+#### Technical Notes
+
+- Hints are parsed at model load time and stored in the `propertyHints` map
+- Hints work with both simple types and complex nested types
+- Hints are accessible in both resource queries and tool executions
+- Array element hints apply to the array items, not the array itself
 
 ### Prompt Templates
 
