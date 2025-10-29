@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.2.0...1.2.1) (2025-10-29)
+
+### Bug Fixes
+
+* Core.Computed elements ignored in Update and Create tooling ([#79](https://github.com/gavdilabs/cap-mcp-plugin/issues/79)) ([3723f23](https://github.com/gavdilabs/cap-mcp-plugin/commit/3723f23c6f4e41f03a70b075296494dbbc89ac94))
+* Correct scoped WRITE restrictions based on CAP specs ([#77](https://github.com/gavdilabs/cap-mcp-plugin/issues/77)) ([19f287b](https://github.com/gavdilabs/cap-mcp-plugin/commit/19f287b8b79d5e5b80c33c8ed42dd47b045518b7))
+* Local mock auth without xsuaa service instance creation ([#80](https://github.com/gavdilabs/cap-mcp-plugin/issues/80)) ([5125315](https://github.com/gavdilabs/cap-mcp-plugin/commit/5125315be908ea77d2e744520153429687b2787b))
+* skip core computed regardless of case ([#82](https://github.com/gavdilabs/cap-mcp-plugin/issues/82)) ([d01013f](https://github.com/gavdilabs/cap-mcp-plugin/commit/d01013f4053c3a33963010d22e108c503b277ca9))
+
+### Additional Changes
+
+* Remove old test file ([fbc2b43](https://github.com/gavdilabs/cap-mcp-plugin/commit/fbc2b43f586fc55b9ab8223ab61590fa8217270d))
+
 ## [1.2.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.1.5...1.2.0) (2025-10-27)
 
 ### Features
