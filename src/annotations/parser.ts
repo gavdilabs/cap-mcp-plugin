@@ -207,7 +207,10 @@ function constructResourceAnnotation(
       .map(([k, _]) => k),
   );
 
-  const { properties, resourceKeys } = parseResourceElements(definition, model);
+  const { properties, resourceKeys, propertyHints } = parseResourceElements(
+    definition,
+    model,
+  );
   const restrictions = parseCdsRestrictions(
     annotations.restrict,
     annotations.requires,
@@ -225,6 +228,7 @@ function constructResourceAnnotation(
     annotations.wrap,
     restrictions,
     computedFields,
+    propertyHints,
   );
 }
 
@@ -247,7 +251,7 @@ function constructToolAnnotation(
 ): McpToolAnnotation | undefined {
   if (!isValidToolAnnotation(annotations)) return undefined;
 
-  const { parameters, operationKind } = parseOperationElements(
+  const { parameters, operationKind, propertyHints } = parseOperationElements(
     annotations,
     model,
   );
@@ -266,6 +270,7 @@ function constructToolAnnotation(
     keyParams,
     restrictions,
     annotations.elicit,
+    propertyHints,
   );
 }
 

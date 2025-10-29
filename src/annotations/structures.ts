@@ -21,6 +21,8 @@ export class McpAnnotation {
   protected readonly _serviceName: string;
   /** Auth roles by providing CDS that is required for use */
   protected readonly _restrictions: McpRestriction[];
+  /** Property hints to be used for inputs */
+  protected readonly _propertyHints: Map<string, string>;
 
   /**
    * Creates a new MCP annotation instance
@@ -36,12 +38,14 @@ export class McpAnnotation {
     target: string,
     serviceName: string,
     restrictions: McpRestriction[],
+    propertyHints: Map<string, string>,
   ) {
     this._name = name;
     this._description = description;
     this._target = target;
     this._serviceName = serviceName;
     this._restrictions = restrictions;
+    this._propertyHints = propertyHints;
   }
 
   /**
@@ -84,6 +88,14 @@ export class McpAnnotation {
   get restrictions(): McpRestriction[] {
     return this._restrictions;
   }
+
+  /**
+   * Gets a map of possible property hints to be used for resource/tool properties.
+   * @returns Map of property hints
+   */
+  get propertyHints(): Map<string, string> {
+    return this._propertyHints;
+  }
 }
 
 /**
@@ -117,6 +129,7 @@ export class McpResourceAnnotation extends McpAnnotation {
    * @param wrap - Wrap usage
    * @param restrictions - Optional restrictions based on CDS roles
    * @param computedFields - Optional set of fields that are computed and should be ignored in create scenarios
+   * @param propertyHints - Optional map of hints for specific properties on resource
    */
   constructor(
     name: string,
@@ -130,8 +143,17 @@ export class McpResourceAnnotation extends McpAnnotation {
     wrap?: McpAnnotationWrap,
     restrictions?: McpRestriction[],
     computedFields?: Set<string>,
+    propertyHints?: Map<string, string>,
   ) {
-    super(name, description, target, serviceName, restrictions ?? []);
+    super(
+      name,
+      description,
+      target,
+      serviceName,
+      restrictions ?? [],
+      propertyHints ?? new Map(),
+    );
+
     this._functionalities = functionalities;
     this._properties = properties;
     this._resourceKeys = resourceKeys;
@@ -215,6 +237,7 @@ export class McpToolAnnotation extends McpAnnotation {
    * @param keyTypeMap - Optional map of key fields to types for bound operations
    * @param restrictions - Optional restrictions based on CDS roles
    * @param elicits - Optional elicited input requirement
+   * @param propertyHints - Optional map of property hints for tool inputs
    */
   constructor(
     name: string,
@@ -227,8 +250,17 @@ export class McpToolAnnotation extends McpAnnotation {
     keyTypeMap?: Map<string, string>,
     restrictions?: McpRestriction[],
     elicits?: McpElicit[],
+    propertyHints?: Map<string, string>,
   ) {
-    super(name, description, operation, serviceName, restrictions ?? []);
+    super(
+      name,
+      description,
+      operation,
+      serviceName,
+      restrictions ?? [],
+      propertyHints ?? new Map(),
+    );
+
     this._parameters = parameters;
     this._entityKey = entityKey;
     this._operationKind = operationKind;
@@ -298,7 +330,7 @@ export class McpPromptAnnotation extends McpAnnotation {
     serviceName: string,
     prompts: McpAnnotationPrompt[],
   ) {
-    super(name, description, serviceName, serviceName, []);
+    super(name, description, serviceName, serviceName, [], new Map());
     this._prompts = prompts;
   }
 

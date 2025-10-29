@@ -17,7 +17,7 @@ export function determineMcpParameterType(
   cdsType: string,
   key?: string,
   target?: string,
-): unknown {
+): z.ZodType {
   switch (cdsType) {
     case "String":
       return z.string();

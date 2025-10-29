@@ -46,3 +46,8 @@ export const DEFAULT_ALL_RESOURCE_OPTIONS = new Set<McpResourceOption>([
   "skip",
   "select",
 ]);
+
+/**
+ * Hint key for annotations made on specific properties/elements
+ */
+export const MCP_HINT_ELEMENT = "@mcp.hint";

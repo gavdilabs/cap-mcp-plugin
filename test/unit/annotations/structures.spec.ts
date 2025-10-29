@@ -21,6 +21,7 @@ describe("McpAnnotation", () => {
       "test-target",
       "test-service",
       [],
+      new Map(),
     );
   });
 
@@ -33,7 +34,7 @@ describe("McpAnnotation", () => {
   });
 
   test("should handle empty strings", () => {
-    const emptyAnnotation = new McpAnnotation("", "", "", "", []);
+    const emptyAnnotation = new McpAnnotation("", "", "", "", [], new Map());
     expect(emptyAnnotation.name).toBe("");
     expect(emptyAnnotation.description).toBe("");
     expect(emptyAnnotation.target).toBe("");
@@ -52,8 +53,23 @@ describe("McpAnnotation", () => {
       "test-target",
       "test-service",
       restrictions,
+      new Map(),
     );
     expect(annotationWithRestrictions.restrictions).toEqual(restrictions);
+  });
+
+  test("Should create instance with property hints", () => {
+    const hints = new Map<string, string>([["property", "this is a hint"]]);
+    const annotationWithHint = new McpAnnotation(
+      "test-name",
+      "test-description",
+      "test-target",
+      "test-service",
+      [],
+      hints,
+    );
+
+    expect(annotationWithHint.propertyHints).toEqual(hints);
   });
 });
 
