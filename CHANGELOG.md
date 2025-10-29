@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.2](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.2.1...1.2.2) (2025-10-29)
+
+### Bug Fixes
+
+* Multi service conflicts for identical endpoints ([#84](https://github.com/gavdilabs/cap-mcp-plugin/issues/84)) ([127ffb7](https://github.com/gavdilabs/cap-mcp-plugin/commit/127ffb74fe1146188ac132885a2bf9f07299376b))
+
 ## [1.2.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.2.0...1.2.1) (2025-10-29)
 
 ### Bug Fixes
