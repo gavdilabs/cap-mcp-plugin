@@ -231,7 +231,6 @@ entity Users {
 - Fields marked with `@mcp.omit` are automatically filtered from all MCP responses
 - Applies to:
   - **Resources**: Field will not appear in resource read operations
-  - **Tools**: Field will not appear in tool responses (query, get, create, update)
   - **Wrapped Entities**: Omission applies to all entity wrapper operations
 
 **Common Use Cases:**
