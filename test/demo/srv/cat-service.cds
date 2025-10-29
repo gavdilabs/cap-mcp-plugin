@@ -163,3 +163,48 @@ annotate CatalogService with @mcp.prompts: [{
     type: 'String'
   }]
 }];
+
+service AdminService {
+
+  @mcp: {
+    name       : 'admin-books',
+    description: 'Book data list',
+    resource   : [
+      'filter',
+      'orderby',
+      'select',
+      'skip',
+      'top'
+    ]
+  }
+  entity Books            as projection on my.Books;
+
+  // Wrap Books entity as tools for query/get/create/update (demo)
+  annotate CatalogService.Books with @mcp.wrap: {
+    tools: true,
+    modes: [
+      'query',
+      'get',
+      'create',
+      'update',
+      'delete'
+    ],
+    hint : 'Use for read and write demo operations'
+  };
+
+  @mcp: {
+    name       : 'book-recommendation-admin-service',
+    description: 'Get a random book recommendation',
+    tool       : true
+  }
+  function getBookRecommendation() returns String;
+
+  extend projection Books with actions {
+    @mcp: {
+      name       : 'get-stock-as-admin',
+      description: 'Retrieves stock from a given book',
+      tool       : true
+    }
+    function getStock() returns Integer;
+  }
+}

@@ -74,7 +74,7 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
           model,
         );
         if (!resourceAnnotation) continue;
-        result.set(resourceAnnotation.target, resourceAnnotation);
+        result.set(`${serviceName}.${target}`, resourceAnnotation);
         continue;
       case "function":
         const functionAnnotation = constructToolAnnotation(
@@ -84,7 +84,7 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
           verifiedAnnotations,
         );
         if (!functionAnnotation) continue;
-        result.set(functionAnnotation.target, functionAnnotation);
+        result.set(`${serviceName}.${target}`, functionAnnotation);
         continue;
       case "action":
         const actionAnnotation = constructToolAnnotation(
@@ -94,7 +94,7 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
           verifiedAnnotations,
         );
         if (!actionAnnotation) continue;
-        result.set(actionAnnotation.target, actionAnnotation);
+        result.set(`${serviceName}.${target}`, actionAnnotation);
         continue;
       case "service":
         const promptsAnnotation = constructPromptAnnotation(
@@ -339,6 +339,6 @@ function parseBoundOperations(
     );
     if (!toolAnnotation) continue;
 
-    resultRef.set(k, toolAnnotation);
+    resultRef.set(`${serviceName}.${entityKey}.${k}`, toolAnnotation);
   }
 }

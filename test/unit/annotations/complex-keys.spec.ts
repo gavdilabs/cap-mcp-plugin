@@ -35,7 +35,7 @@ describe("Complex Keys Annotation Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("MultiKeyEntity");
+      const annotation = result.get("TestService.MultiKeyEntity");
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation!.name).toBe("Multi Key Entity");
       expect(annotation!.serviceName).toBe("TestService");
@@ -73,7 +73,7 @@ describe("Complex Keys Annotation Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("EntityWithAssociationKey");
+      const annotation = result.get("TestService.EntityWithAssociationKey");
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation!.name).toBe("Entity With Association Key");
     });
@@ -116,7 +116,7 @@ describe("Complex Keys Annotation Parser", () => {
 
       expect(result.size).toBe(1);
       const annotation = result.get(
-        "ComplexKeyEntity",
+        "TestService.ComplexKeyEntity",
       ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation.name).toBe("Complex Key Entity");
@@ -176,11 +176,11 @@ describe("Complex Keys Annotation Parser", () => {
 
       expect(result.size).toBe(2);
 
-      const invoicesAnnotation = result.get("Invoices");
+      const invoicesAnnotation = result.get("TestService.Invoices");
       expect(invoicesAnnotation).toBeInstanceOf(McpResourceAnnotation);
       expect(invoicesAnnotation!.name).toBe("Invoices");
 
-      const linesAnnotation = result.get("InvoiceLines");
+      const linesAnnotation = result.get("TestService.InvoiceLines");
       expect(linesAnnotation).toBeInstanceOf(McpResourceAnnotation);
       expect(linesAnnotation!.name).toBe("Invoice Lines");
     });
@@ -226,7 +226,9 @@ describe("Complex Keys Annotation Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("processComplexEntity");
+      const annotation = result.get(
+        "TestService.ComplexKeyEntity.processComplexEntity",
+      );
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation!.name).toBe("Process Complex Entity");
 
@@ -266,7 +268,7 @@ describe("Complex Keys Annotation Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("EntityWithComplexAssociation");
+      const annotation = result.get("TestService.EntityWithComplexAssociation");
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation!.name).toBe("Entity With Complex Association");
     });
@@ -299,7 +301,7 @@ describe("Complex Keys Annotation Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("ComplexKeyFunction");
+      const annotation = result.get("TestService.ComplexKeyFunction");
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation!.name).toBe("Complex Key Function");
 
@@ -355,7 +357,7 @@ describe("Complex Keys Annotation Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("Level3");
+      const annotation = result.get("TestService.Level3");
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation!.name).toBe("Level 3 Entity");
     });
@@ -458,7 +460,7 @@ describe("Complex Keys Annotation Parser", () => {
       expect(result.size).toBe(2);
 
       const invoicesAnnotation = result.get(
-        "Invoices",
+        "AnMCPTestService1.Invoices",
       ) as McpResourceAnnotation;
       expect(invoicesAnnotation).toBeInstanceOf(McpResourceAnnotation);
       expect(invoicesAnnotation.name).toBe("test case 1");
@@ -471,7 +473,7 @@ describe("Complex Keys Annotation Parser", () => {
       ]);
 
       const linesAnnotation = result.get(
-        "InvoiceLines",
+        "AnMCPTestService1.InvoiceLines",
       ) as McpResourceAnnotation;
       expect(linesAnnotation).toBeInstanceOf(McpResourceAnnotation);
       expect(linesAnnotation.name).toBe("test case 2");

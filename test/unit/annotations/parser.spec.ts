@@ -43,7 +43,7 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity");
+      const annotation = result.get("TestService.TestEntity");
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation!.name).toBe("Test Entity");
       expect(annotation!.serviceName).toBe("TestService");
@@ -75,7 +75,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation.restrictions).toEqual([
         { role: "read-role", operations: ["READ"] },
@@ -100,7 +102,7 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestFunction");
+      const annotation = result.get("TestService.TestFunction");
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation!.name).toBe("Test Function");
       expect((annotation as McpToolAnnotation).restrictions).toEqual([]);
@@ -125,7 +127,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestFunction") as McpToolAnnotation;
+      const annotation = result.get(
+        "TestService.TestFunction",
+      ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation.restrictions).toEqual([{ role: "author-specialist" }]);
     });
@@ -198,7 +202,7 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("boundAction");
+      const annotation = result.get("TestService.TestEntity.boundAction");
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation!.name).toBe("Bound Action");
     });
@@ -237,7 +241,7 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("boundAction");
+      const annotation = result.get("TestService.TestEntity.boundAction");
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation!.name).toBe("Bound Action");
       const toolAnnotation = annotation as McpToolAnnotation;
@@ -272,7 +276,7 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestFunction");
+      const annotation = result.get("TestService.TestFunction");
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation!.name).toBe("Test Function");
       const toolAnnotation = annotation as McpToolAnnotation;
@@ -316,7 +320,7 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestFunction");
+      const annotation = result.get("TestService.TestFunction");
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation!.name).toBe("Test Function");
       const toolAnnotation = annotation as McpToolAnnotation;
@@ -371,7 +375,7 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestAction");
+      const annotation = result.get("TestService.TestAction");
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation!.name).toBe("Test Action");
       const toolAnnotation = annotation as McpToolAnnotation;
@@ -436,7 +440,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("testAction") as McpToolAnnotation;
+      const annotation = result.get(
+        "TestService.testAction",
+      ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation.name).toBe("Test Action");
       expect(annotation.elicits).toEqual(["input"]);
@@ -461,7 +467,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("testAction") as McpToolAnnotation;
+      const annotation = result.get(
+        "TestService.testAction",
+      ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation.elicits).toEqual(["input", "confirm"]);
     });
@@ -491,7 +499,7 @@ describe("Parser", () => {
 
       expect(result.size).toBe(1);
       const annotation = result.get(
-        "boundActionWithElicit",
+        "TestService.TestEntity.boundActionWithElicit",
       ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation.name).toBe("Bound Action with Elicit");
@@ -516,7 +524,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("testAction") as McpToolAnnotation;
+      const annotation = result.get(
+        "TestService.testAction",
+      ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation.elicits).toBeUndefined();
     });
@@ -564,7 +574,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation.name).toBe("Test Entity");
 
@@ -599,7 +611,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify only modes are set, other wrap properties should be undefined
@@ -635,7 +649,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation.name).toBe("Test Entity");
 
@@ -678,7 +694,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify only specified detailed hints are set
@@ -718,7 +736,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation.name).toBe("Test Entity");
 
@@ -776,7 +796,7 @@ describe("Parser", () => {
 
       // Check entity with string hint
       const stringHintAnnotation = result.get(
-        "EntityWithStringHint",
+        "TestService.EntityWithStringHint",
       ) as McpResourceAnnotation;
       expect(stringHintAnnotation).toBeInstanceOf(McpResourceAnnotation);
       expect(stringHintAnnotation.wrap?.hint).toBe(
@@ -785,7 +805,7 @@ describe("Parser", () => {
 
       // Check entity with detailed hint object
       const detailedHintAnnotation = result.get(
-        "EntityWithDetailedHint",
+        "TestService.EntityWithDetailedHint",
       ) as McpResourceAnnotation;
       expect(detailedHintAnnotation).toBeInstanceOf(McpResourceAnnotation);
       expect(detailedHintAnnotation.wrap?.hint).toEqual({
@@ -820,7 +840,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify all detailed hint operations are correctly parsed
@@ -857,7 +879,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify string hint is preserved for backward compatibility
@@ -884,7 +908,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify hint is undefined when no hint annotations are present
@@ -915,7 +941,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify flattened and nested annotations are correctly combined
@@ -953,7 +981,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestFunction") as McpToolAnnotation;
+      const annotation = result.get(
+        "TestService.TestFunction",
+      ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation.name).toBe("Test Array Function");
       expect(annotation.parameters?.get("stringIds")).toBe("StringArray");
@@ -986,7 +1016,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestAction") as McpToolAnnotation;
+      const annotation = result.get(
+        "TestService.TestAction",
+      ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation.parameters?.get("singleValue")).toBe("String");
       expect(annotation.parameters?.get("arrayValues")).toBe("StringArray");
@@ -1031,7 +1063,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestFunction") as McpToolAnnotation;
+      const annotation = result.get(
+        "TestService.TestFunction",
+      ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation.parameters?.get("personNames")).toBe("StringArray");
       expect(annotation.parameters?.get("personAges")).toBe("IntegerArray");
@@ -1070,7 +1104,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("processItems") as McpToolAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity.processItems",
+      ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
       expect(annotation.name).toBe("Process Items");
       expect(annotation.parameters?.get("itemIds")).toBe("UUIDArray");
@@ -1113,7 +1149,7 @@ describe("Parser", () => {
 
       expect(result.size).toBe(1);
       const annotation = result.get(
-        "AllArrayTypesFunction",
+        "TestService.AllArrayTypesFunction",
       ) as McpToolAnnotation;
       expect(annotation).toBeInstanceOf(McpToolAnnotation);
 
@@ -1164,7 +1200,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("TestEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify empty hint object is handled correctly
@@ -1199,7 +1237,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("Books") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.Books",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation.name).toBe("Books");
 
@@ -1234,7 +1274,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("SimpleEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.SimpleEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify foreign keys map is empty
@@ -1265,7 +1307,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("Orders") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.Orders",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify single foreign key is correctly parsed
@@ -1303,7 +1347,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("SecureEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.SecureEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify foreign keys work with restrictions
@@ -1335,7 +1381,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("MissingEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.MissingEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
       // Verify foreign keys map is empty when elements can't be found
@@ -1366,7 +1414,9 @@ describe("Parser", () => {
       const result = parseDefinitions(model);
 
       expect(result.size).toBe(1);
-      const annotation = result.get("ComputedEntity") as McpResourceAnnotation;
+      const annotation = result.get(
+        "TestService.ComputedEntity",
+      ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation.name).toBe("Computed Entity");
 
@@ -1404,7 +1454,7 @@ describe("Parser", () => {
 
       expect(result.size).toBe(1);
       const annotation = result.get(
-        "LowercaseComputedEntity",
+        "TestService.LowercaseComputedEntity",
       ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation.name).toBe("Lowercase Computed Entity");
@@ -1451,7 +1501,7 @@ describe("Parser", () => {
 
       expect(result.size).toBe(1);
       const annotation = result.get(
-        "MixedCaseComputedEntity",
+        "TestService.MixedCaseComputedEntity",
       ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
       expect(annotation.name).toBe("Mixed Case Computed Entity");
@@ -1488,7 +1538,7 @@ describe("Parser", () => {
 
       expect(result.size).toBe(1);
       const annotation = result.get(
-        "NoComputedEntity",
+        "TestService.NoComputedEntity",
       ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
@@ -1525,7 +1575,7 @@ describe("Parser", () => {
 
       expect(result.size).toBe(1);
       const annotation = result.get(
-        "FalseComputedEntity",
+        "TestService.FalseComputedEntity",
       ) as McpResourceAnnotation;
       expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
@@ -1562,7 +1612,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedEntity",
+          "TestService.RestrictedEntity",
         ) as McpResourceAnnotation;
         expect(annotation).toBeInstanceOf(McpResourceAnnotation);
         expect(annotation.restrictions).toEqual([
@@ -1594,7 +1644,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedEntity",
+          "TestService.RestrictedEntity",
         ) as McpResourceAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "authenticated-user", operations: ["READ", "UPDATE"] },
@@ -1626,7 +1676,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedEntity",
+          "TestService.RestrictedEntity",
         ) as McpResourceAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "viewer", operations: ["READ"] },
@@ -1659,7 +1709,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedEntity",
+          "TestService.RestrictedEntity",
         ) as McpResourceAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "viewer", operations: ["READ"] },
@@ -1691,7 +1741,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedEntity",
+          "TestService.RestrictedEntity",
         ) as McpResourceAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "maintainer", operations: ["READ", "UPDATE"] },
@@ -1724,7 +1774,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedEntity",
+          "TestService.RestrictedEntity",
         ) as McpResourceAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "maintainer", operations: ["READ", "UPDATE"] },
@@ -1756,7 +1806,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedEntity",
+          "TestService.RestrictedEntity",
         ) as McpResourceAnnotation;
         expect(annotation.restrictions).toEqual([
           {
@@ -1791,7 +1841,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedEntity",
+          "TestService.RestrictedEntity",
         ) as McpResourceAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "editor", operations: ["UPDATE"] },
@@ -1822,7 +1872,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedFunction",
+          "TestService.RestrictedFunction",
         ) as McpToolAnnotation;
         expect(annotation).toBeInstanceOf(McpToolAnnotation);
         expect(annotation.restrictions).toEqual([
@@ -1851,7 +1901,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("RestrictedAction") as McpToolAnnotation;
+        const annotation = result.get(
+          "TestService.RestrictedAction",
+        ) as McpToolAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "editor", operations: ["UPDATE"] },
         ]);
@@ -1882,7 +1934,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedFunction",
+          "TestService.RestrictedFunction",
         ) as McpToolAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "maintainer", operations: ["READ", "UPDATE"] },
@@ -1911,7 +1963,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("RestrictedAction") as McpToolAnnotation;
+        const annotation = result.get(
+          "TestService.RestrictedAction",
+        ) as McpToolAnnotation;
         expect(annotation.restrictions).toEqual([
           {
             role: "admin",
@@ -1942,7 +1996,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "RestrictedFunction",
+          "TestService.RestrictedFunction",
         ) as McpToolAnnotation;
         expect(annotation.restrictions).toEqual([
           {
@@ -1986,7 +2040,7 @@ describe("Parser", () => {
 
         expect(result.size).toBe(1);
         const annotation = result.get(
-          "restrictedBoundAction",
+          "TestService.TestEntity.restrictedBoundAction",
         ) as McpToolAnnotation;
         expect(annotation).toBeInstanceOf(McpToolAnnotation);
         expect(annotation.restrictions).toEqual([
@@ -2030,7 +2084,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("ComplexEntity") as McpResourceAnnotation;
+        const annotation = result.get(
+          "TestService.ComplexEntity",
+        ) as McpResourceAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "viewer", operations: ["READ"] },
           { role: "editor", operations: ["CREATE", "UPDATE"] },
@@ -2072,7 +2128,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("SecureEntity") as McpResourceAnnotation;
+        const annotation = result.get(
+          "TestService.SecureEntity",
+        ) as McpResourceAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "authenticated" },
           { role: "read-role", operations: ["READ"] },
@@ -2102,12 +2160,200 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("SecureFunction") as McpToolAnnotation;
+        const annotation = result.get(
+          "TestService.SecureFunction",
+        ) as McpToolAnnotation;
         expect(annotation.restrictions).toEqual([
           { role: "authenticated" },
           { role: "power-user", operations: ["READ", "UPDATE"] },
         ]);
       });
+    });
+  });
+
+  describe("Multi Service Expose", () => {
+    test("Should allow entity to be used with same name from different services", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity 1",
+            "@mcp.description": "Test entity description",
+            "@mcp.resource": true,
+            "@restrict": [
+              {
+                grant: ["READ"],
+                to: ["read-role"],
+              },
+            ],
+            elements: {
+              id: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+            },
+          },
+          "OtherTestService.TestEntity": {
+            kind: "entity",
+            "@mcp.name": "Test Entity 1",
+            "@mcp.description": "Test entity description",
+            "@mcp.resource": true,
+            "@restrict": [
+              {
+                grant: ["READ"],
+                to: ["read-role"],
+              },
+            ],
+            elements: {
+              id: { type: "cds.UUID", key: true },
+              name: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(2);
+      const annotation1 = result.get(
+        "TestService.TestEntity",
+      ) as McpResourceAnnotation;
+      expect(annotation1).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation1.serviceName).toEqual("TestService");
+      expect(annotation1.target).toEqual("TestEntity");
+
+      const annotation2 = result.get(
+        "OtherTestService.TestEntity",
+      ) as McpResourceAnnotation;
+      expect(annotation2).toBeInstanceOf(McpResourceAnnotation);
+      expect(annotation2.serviceName).toEqual("OtherTestService");
+      expect(annotation2.target).toEqual("TestEntity");
+    });
+
+    test("Should allow function to be used with same name from different services", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestFunction": {
+            kind: "function",
+            "@mcp.name": "Test Function",
+            "@mcp.description": "Test function description",
+            "@mcp.tool": true,
+            params: {
+              input: { type: "cds.String" },
+            },
+          },
+          "OtherTestService.TestFunction": {
+            kind: "function",
+            "@mcp.name": "Test Function 2",
+            "@mcp.description": "Test function description",
+            "@mcp.tool": true,
+            params: {
+              input: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(2);
+      const annotation1 = result.get("TestService.TestFunction");
+      expect(annotation1).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation1!.name).toBe("Test Function");
+      expect(annotation1!.target).toBe("TestFunction");
+      expect(annotation1!.serviceName).toBe("TestService");
+
+      const annotation2 = result.get("OtherTestService.TestFunction");
+      expect(annotation2).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation2!.name).toBe("Test Function 2");
+      expect(annotation2!.target).toBe("TestFunction");
+      expect(annotation2!.serviceName).toBe("OtherTestService");
+    });
+
+    test("Should allow actions to be used with same name from different services", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestAction": {
+            kind: "action",
+            "@mcp.name": "Test Action",
+            "@mcp.description": "Test Action description",
+            "@mcp.tool": true,
+            params: {
+              input: { type: "cds.String" },
+            },
+          },
+          "OtherTestService.TestAction": {
+            kind: "action",
+            "@mcp.name": "Test Action 2",
+            "@mcp.description": "Test action description",
+            "@mcp.tool": true,
+            params: {
+              input: { type: "cds.String" },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(2);
+      const annotation1 = result.get("TestService.TestAction");
+      expect(annotation1).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation1!.name).toBe("Test Action");
+      expect(annotation1!.target).toBe("TestAction");
+      expect(annotation1!.serviceName).toBe("TestService");
+
+      const annotation2 = result.get("OtherTestService.TestAction");
+      expect(annotation2).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation2!.name).toBe("Test Action 2");
+      expect(annotation2!.target).toBe("TestAction");
+      expect(annotation2!.serviceName).toBe("OtherTestService");
+    });
+
+    test("Should allow bound operations to be used with same name from different services", () => {
+      const model: csn.CSN = {
+        definitions: {
+          "TestService.TestEntity": {
+            kind: "entity",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+            actions: {
+              boundAction: {
+                kind: "action",
+                "@mcp.name": "Bound Action",
+                "@mcp.description": "Bound action description",
+                "@mcp.tool": true,
+              },
+            },
+          },
+          "OtherTestService.TestEntity": {
+            kind: "entity",
+            elements: {
+              id: { type: "cds.UUID", key: true },
+            },
+            actions: {
+              boundAction: {
+                kind: "action",
+                "@mcp.name": "Bound Action 2",
+                "@mcp.description": "Bound action description",
+                "@mcp.tool": true,
+              },
+            },
+          },
+        },
+      } as any;
+
+      const result = parseDefinitions(model);
+
+      expect(result.size).toBe(2);
+      const annotation1 = result.get("TestService.TestEntity.boundAction");
+      expect(annotation1).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation1!.name).toBe("Bound Action");
+      expect(annotation1!.serviceName).toBe("TestService");
+
+      const annotation2 = result.get("OtherTestService.TestEntity.boundAction");
+      expect(annotation2).toBeInstanceOf(McpToolAnnotation);
+      expect(annotation2!.name).toBe("Bound Action 2");
+      expect(annotation2!.serviceName).toBe("OtherTestService");
     });
   });
 });
