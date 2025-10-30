@@ -3,7 +3,7 @@ import { CustomResourceTemplate } from "./custom-resource-template";
 import { McpResourceAnnotation } from "../annotations/structures";
 import { LOGGER } from "../logger";
 import { Service } from "@sap/cds";
-import { writeODataDescriptionForResource } from "./utils";
+import { applyOmissionFilter, writeODataDescriptionForResource } from "./utils";
 import { ODataQueryValidator, ODataValidationError } from "./validation";
 import { McpResourceQueryParams } from "./types";
 import { getAccessRights } from "../auth/utils";
@@ -135,11 +135,15 @@ export function assignResourceToServer(
       try {
         const accessRights = getAccessRights(authEnabled);
         const response = await service.tx({ user: accessRights }).run(query);
+        const result = response?.map((el: any) =>
+          applyOmissionFilter(el, model),
+        );
+
         return {
           contents: [
             {
               uri: uri.href,
-              text: response ? JSON.stringify(response) : "",
+              text: result ? JSON.stringify(result) : "",
             },
           ],
         };
@@ -189,11 +193,15 @@ function registerStaticResource(
 
         const accessRights = getAccessRights(authEnabled);
         const response = await service.tx({ user: accessRights }).run(query);
+        const result = response?.map((el: any) =>
+          applyOmissionFilter(el, model),
+        );
+
         return {
           contents: [
             {
               uri: uri.href,
-              text: response ? JSON.stringify(response) : "",
+              text: result ? JSON.stringify(result) : "",
             },
           ],
         };

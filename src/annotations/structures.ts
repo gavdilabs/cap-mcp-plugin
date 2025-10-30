@@ -115,6 +115,8 @@ export class McpResourceAnnotation extends McpAnnotation {
   private readonly _foreignKeys: Map<string, string>;
   /** Set of computed field names */
   private readonly _computedFields?: Set<string>;
+  /** List of omitted fields */
+  private readonly _omittedFields?: Set<string>;
 
   /**
    * Creates a new MCP resource annotation
@@ -130,6 +132,7 @@ export class McpResourceAnnotation extends McpAnnotation {
    * @param restrictions - Optional restrictions based on CDS roles
    * @param computedFields - Optional set of fields that are computed and should be ignored in create scenarios
    * @param propertyHints - Optional map of hints for specific properties on resource
+   * @param omittedFields - Optional set of fields that should be omitted from MCP entity
    */
   constructor(
     name: string,
@@ -144,6 +147,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     restrictions?: McpRestriction[],
     computedFields?: Set<string>,
     propertyHints?: Map<string, string>,
+    omittedFields?: Set<string>,
   ) {
     super(
       name,
@@ -160,6 +164,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     this._wrap = wrap;
     this._foreignKeys = foreignKeys;
     this._computedFields = computedFields;
+    this._omittedFields = omittedFields;
   }
 
   /**
@@ -206,6 +211,13 @@ export class McpResourceAnnotation extends McpAnnotation {
    */
   get computedFields(): Set<string> | undefined {
     return this._computedFields;
+  }
+
+  /**
+   * Gets a set of fields/elements of the resource that should be omitted if any
+   */
+  get omittedFields(): Set<string> | undefined {
+    return this._omittedFields;
   }
 }
 

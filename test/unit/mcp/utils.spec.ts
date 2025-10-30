@@ -28,6 +28,7 @@ import {
   determineMcpParameterType,
   handleMcpSessionRequest,
   writeODataDescriptionForResource,
+  applyOmissionFilter,
 } from "../../../src/mcp/utils";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 import { McpSession } from "../../../src/mcp/types";
@@ -951,6 +952,369 @@ describe("Server Utils", () => {
       expect(result).toContain(
         "- another_extremely_long_field_name -> value type = AnotherCustomType",
       );
+    });
+  });
+
+  describe("applyOmissionFilter", () => {
+    test("should return undefined for undefined input", () => {
+      const mockAnnotation = new McpResourceAnnotation(
+        "Test",
+        "Test description",
+        "TestEntity",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+      );
+
+      const result = applyOmissionFilter(undefined, mockAnnotation);
+      expect(result).toBeUndefined();
+    });
+
+    test("should return a copy of object when no fields are omitted", () => {
+      const input = {
+        ID: 1,
+        title: "Test Book",
+        author: "Test Author",
+      };
+
+      const mockAnnotation = new McpResourceAnnotation(
+        "Books",
+        "Book catalog",
+        "Books",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation);
+
+      // Should return a copy with all fields
+      expect(result).toEqual(input);
+      // Should be a new object (not the same reference)
+      expect(result).not.toBe(input);
+    });
+
+    test("should omit single specified field", () => {
+      const input = {
+        ID: 1,
+        title: "Harry Potter",
+        author: "J.K. Rowling",
+        secretMessage: "This should be hidden",
+      };
+
+      const omittedFields = new Set(["secretMessage"]);
+      const mockAnnotation = new McpResourceAnnotation(
+        "Books",
+        "Book catalog",
+        "Books",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        omittedFields,
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation) as any;
+
+      expect(result).toHaveProperty("ID", 1);
+      expect(result).toHaveProperty("title", "Harry Potter");
+      expect(result).toHaveProperty("author", "J.K. Rowling");
+      expect(result).not.toHaveProperty("secretMessage");
+    });
+
+    test("should omit multiple specified fields", () => {
+      const input = {
+        ID: 1,
+        name: "John Doe",
+        email: "john@example.com",
+        password: "secret123",
+        ssn: "123-45-6789",
+        creditCard: "1234-5678-9012-3456",
+      };
+
+      const omittedFields = new Set(["password", "ssn", "creditCard"]);
+      const mockAnnotation = new McpResourceAnnotation(
+        "Users",
+        "User data",
+        "Users",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        omittedFields,
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation) as any;
+
+      expect(result).toHaveProperty("ID", 1);
+      expect(result).toHaveProperty("name", "John Doe");
+      expect(result).toHaveProperty("email", "john@example.com");
+      expect(result).not.toHaveProperty("password");
+      expect(result).not.toHaveProperty("ssn");
+      expect(result).not.toHaveProperty("creditCard");
+    });
+
+    test("should handle objects with nested properties", () => {
+      const input = {
+        ID: 1,
+        title: "Test",
+        metadata: {
+          created: "2024-01-01",
+          updated: "2024-01-02",
+        },
+        secretData: "hidden",
+      };
+
+      const omittedFields = new Set(["secretData"]);
+      const mockAnnotation = new McpResourceAnnotation(
+        "Items",
+        "Item data",
+        "Items",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        omittedFields,
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation) as any;
+
+      expect(result).toHaveProperty("ID", 1);
+      expect(result).toHaveProperty("title", "Test");
+      expect(result).toHaveProperty("metadata");
+      expect(result.metadata).toEqual({
+        created: "2024-01-01",
+        updated: "2024-01-02",
+      });
+      expect(result).not.toHaveProperty("secretData");
+    });
+
+    test("should handle objects with null values", () => {
+      const input = {
+        ID: 1,
+        title: "Test",
+        description: null,
+        secretField: null,
+      };
+
+      const omittedFields = new Set(["secretField"]);
+      const mockAnnotation = new McpResourceAnnotation(
+        "Items",
+        "Item data",
+        "Items",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        omittedFields,
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation) as any;
+
+      expect(result).toHaveProperty("ID", 1);
+      expect(result).toHaveProperty("title", "Test");
+      expect(result).toHaveProperty("description", null);
+      expect(result).not.toHaveProperty("secretField");
+    });
+
+    test("should handle empty objects", () => {
+      const input = {};
+
+      const omittedFields = new Set(["secretField"]);
+      const mockAnnotation = new McpResourceAnnotation(
+        "Items",
+        "Item data",
+        "Items",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        omittedFields,
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation);
+
+      expect(result).toEqual({});
+      expect(result).not.toBe(input); // Should be a copy
+    });
+
+    test("should handle omitting all fields", () => {
+      const input = {
+        secret1: "value1",
+        secret2: "value2",
+        secret3: "value3",
+      };
+
+      const omittedFields = new Set(["secret1", "secret2", "secret3"]);
+      const mockAnnotation = new McpResourceAnnotation(
+        "Secrets",
+        "Secret data",
+        "Secrets",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        omittedFields,
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation);
+
+      expect(result).toEqual({});
+    });
+
+    test("should handle undefined omittedFields set", () => {
+      const input = {
+        ID: 1,
+        title: "Test",
+        data: "some data",
+      };
+
+      const mockAnnotation = new McpResourceAnnotation(
+        "Items",
+        "Item data",
+        "Items",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        undefined, // No omitted fields
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation);
+
+      // Should return a copy with all fields
+      expect(result).toEqual(input);
+      expect(result).not.toBe(input);
+    });
+
+    test("should handle empty omittedFields set", () => {
+      const input = {
+        ID: 1,
+        title: "Test",
+        data: "some data",
+      };
+
+      const omittedFields = new Set<string>();
+      const mockAnnotation = new McpResourceAnnotation(
+        "Items",
+        "Item data",
+        "Items",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        omittedFields,
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation);
+
+      expect(result).toEqual(input);
+      expect(result).not.toBe(input);
+    });
+
+    test("should not mutate original object", () => {
+      const input = {
+        ID: 1,
+        title: "Test",
+        secretField: "secret",
+      };
+
+      const originalInput = { ...input };
+      const omittedFields = new Set(["secretField"]);
+      const mockAnnotation = new McpResourceAnnotation(
+        "Items",
+        "Item data",
+        "Items",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        omittedFields,
+      );
+
+      applyOmissionFilter(input, mockAnnotation);
+
+      // Original input should not be modified
+      expect(input).toEqual(originalInput);
+      expect(input).toHaveProperty("secretField", "secret");
+    });
+
+    test("should handle objects with various data types", () => {
+      const input = {
+        ID: 1,
+        title: "Test",
+        count: 42,
+        isActive: true,
+        price: 99.99,
+        tags: ["tag1", "tag2"],
+        secretNumber: 12345,
+      };
+
+      const omittedFields = new Set(["secretNumber"]);
+      const mockAnnotation = new McpResourceAnnotation(
+        "Products",
+        "Product data",
+        "Products",
+        "TestService",
+        new Set(),
+        new Map(),
+        new Map(),
+        new Map(),
+        undefined,
+        undefined,
+        undefined,
+        omittedFields,
+      );
+
+      const result = applyOmissionFilter(input, mockAnnotation) as any;
+
+      expect(result.ID).toBe(1);
+      expect(result.title).toBe("Test");
+      expect(result.count).toBe(42);
+      expect(result.isActive).toBe(true);
+      expect(result.price).toBe(99.99);
+      expect(result.tags).toEqual(["tag1", "tag2"]);
+      expect(result).not.toHaveProperty("secretNumber");
     });
   });
 });

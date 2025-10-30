@@ -2169,6 +2169,237 @@ describe("Parser", () => {
         ]);
       });
     });
+
+    // Tests for @mcp.omit feature
+    describe("Omitted Fields", () => {
+      test("should parse entity with single omitted field", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.Books": {
+              kind: "entity",
+              "@mcp.name": "Books",
+              "@mcp.description": "Book catalog with secret field",
+              "@mcp.resource": true,
+              elements: {
+                ID: { type: "cds.Integer", key: true },
+                title: { type: "cds.String" },
+                secretMessage: {
+                  type: "cds.String",
+                  "@mcp.omit": true,
+                },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("Books") as McpResourceAnnotation;
+        expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+        expect(annotation.name).toBe("Books");
+
+        // Verify omitted field is in the set
+        expect(annotation.omittedFields).toBeDefined();
+        expect(annotation.omittedFields?.size).toBe(1);
+        expect(annotation.omittedFields?.has("secretMessage")).toBe(true);
+      });
+
+      test("should parse entity with multiple omitted fields", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.Users": {
+              kind: "entity",
+              "@mcp.name": "Users",
+              "@mcp.description": "User data with sensitive fields",
+              "@mcp.resource": true,
+              elements: {
+                ID: { type: "cds.UUID", key: true },
+                name: { type: "cds.String" },
+                email: { type: "cds.String" },
+                password: {
+                  type: "cds.String",
+                  "@mcp.omit": true,
+                },
+                ssn: {
+                  type: "cds.String",
+                  "@mcp.omit": true,
+                },
+                creditCard: {
+                  type: "cds.String",
+                  "@mcp.omit": true,
+                },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("Users") as McpResourceAnnotation;
+        expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+        // Verify all omitted fields are in the set
+        expect(annotation.omittedFields).toBeDefined();
+        expect(annotation.omittedFields?.size).toBe(3);
+        expect(annotation.omittedFields?.has("password")).toBe(true);
+        expect(annotation.omittedFields?.has("ssn")).toBe(true);
+        expect(annotation.omittedFields?.has("creditCard")).toBe(true);
+
+        // Verify non-omitted fields are not in the set
+        expect(annotation.omittedFields?.has("ID")).toBe(false);
+        expect(annotation.omittedFields?.has("name")).toBe(false);
+        expect(annotation.omittedFields?.has("email")).toBe(false);
+      });
+
+      test("should handle entity with no omitted fields", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.SimpleEntity": {
+              kind: "entity",
+              "@mcp.name": "Simple Entity",
+              "@mcp.description": "Entity without omitted fields",
+              "@mcp.resource": true,
+              elements: {
+                ID: { type: "cds.UUID", key: true },
+                name: { type: "cds.String" },
+                value: { type: "cds.Integer" },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("SimpleEntity") as McpResourceAnnotation;
+        expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+        // Verify omitted fields set is empty
+        expect(annotation.omittedFields).toBeDefined();
+        expect(annotation.omittedFields?.size).toBe(0);
+      });
+
+      test("should parse entity with omitted fields and other annotations", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.SecureBooks": {
+              kind: "entity",
+              "@mcp.name": "Secure Books",
+              "@mcp.description": "Books with restrictions and omitted fields",
+              "@mcp.resource": true,
+              "@restrict": [
+                {
+                  grant: "READ",
+                  to: "reader",
+                },
+              ],
+              elements: {
+                ID: { type: "cds.Integer", key: true },
+                title: { type: "cds.String" },
+                author: { type: "cds.String" },
+                internalNotes: {
+                  type: "cds.String",
+                  "@mcp.omit": true,
+                },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("SecureBooks") as McpResourceAnnotation;
+        expect(annotation).toBeInstanceOf(McpResourceAnnotation);
+
+        // Verify omitted field
+        expect(annotation.omittedFields?.has("internalNotes")).toBe(true);
+        expect(annotation.omittedFields?.size).toBe(1);
+
+        // Verify restrictions are still parsed
+        expect(annotation.restrictions).toEqual([
+          { role: "reader", operations: ["READ"] },
+        ]);
+      });
+
+      test("should parse entity with omitted field that has various annotation values", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.TestEntity": {
+              kind: "entity",
+              "@mcp.name": "Test Entity",
+              "@mcp.description": "Test omit with different values",
+              "@mcp.resource": true,
+              elements: {
+                ID: { type: "cds.Integer", key: true },
+                omittedTrue: {
+                  type: "cds.String",
+                  "@mcp.omit": true,
+                },
+                omittedFalse: {
+                  type: "cds.String",
+                  "@mcp.omit": false,
+                },
+                noAnnotation: { type: "cds.String" },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("TestEntity") as McpResourceAnnotation;
+
+        // Only fields with @mcp.omit: true should be omitted
+        expect(annotation.omittedFields?.has("omittedTrue")).toBe(true);
+        expect(annotation.omittedFields?.has("omittedFalse")).toBe(false);
+        expect(annotation.omittedFields?.has("noAnnotation")).toBe(false);
+        expect(annotation.omittedFields?.size).toBe(1);
+      });
+
+      test("should handle omitted fields with foreign keys", () => {
+        const model: csn.CSN = {
+          definitions: {
+            "TestService.Orders": {
+              kind: "entity",
+              "@mcp.name": "Orders",
+              "@mcp.description": "Orders with omitted and foreign key fields",
+              "@mcp.resource": true,
+              elements: {
+                ID: { type: "cds.UUID", key: true },
+                orderNumber: { type: "cds.String" },
+                customer_ID: {
+                  type: "cds.UUID",
+                  "@odata.foreignKey4": "Customers",
+                },
+                internalReference: {
+                  type: "cds.String",
+                  "@mcp.omit": true,
+                },
+              },
+            },
+          },
+        } as any;
+
+        const result = parseDefinitions(model);
+
+        expect(result.size).toBe(1);
+        const annotation = result.get("Orders") as McpResourceAnnotation;
+
+        // Verify omitted field
+        expect(annotation.omittedFields?.has("internalReference")).toBe(true);
+
+        // Verify foreign key
+        expect(annotation.foreignKeys.get("customer_ID")).toBe("Customers");
+
+        // Both features should work independently
+        expect(annotation.omittedFields?.size).toBe(1);
+        expect(annotation.foreignKeys.size).toBe(1);
+      });
+    });
   });
 
   describe("Multi Service Expose", () => {
