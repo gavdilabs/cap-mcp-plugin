@@ -2195,7 +2195,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("Books") as McpResourceAnnotation;
+        const annotation = result.get(
+          "TestService.Books",
+        ) as McpResourceAnnotation;
         expect(annotation).toBeInstanceOf(McpResourceAnnotation);
         expect(annotation.name).toBe("Books");
 
@@ -2237,7 +2239,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("Users") as McpResourceAnnotation;
+        const annotation = result.get(
+          "TestService.Users",
+        ) as McpResourceAnnotation;
         expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
         // Verify all omitted fields are in the set
@@ -2273,7 +2277,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("SimpleEntity") as McpResourceAnnotation;
+        const annotation = result.get(
+          "TestService.SimpleEntity",
+        ) as McpResourceAnnotation;
         expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
         // Verify omitted fields set is empty
@@ -2311,7 +2317,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("SecureBooks") as McpResourceAnnotation;
+        const annotation = result.get(
+          "TestService.SecureBooks",
+        ) as McpResourceAnnotation;
         expect(annotation).toBeInstanceOf(McpResourceAnnotation);
 
         // Verify omitted field
@@ -2351,7 +2359,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("TestEntity") as McpResourceAnnotation;
+        const annotation = result.get(
+          "TestService.TestEntity",
+        ) as McpResourceAnnotation;
 
         // Only fields with @mcp.omit: true should be omitted
         expect(annotation.omittedFields?.has("omittedTrue")).toBe(true);
@@ -2387,7 +2397,9 @@ describe("Parser", () => {
         const result = parseDefinitions(model);
 
         expect(result.size).toBe(1);
-        const annotation = result.get("Orders") as McpResourceAnnotation;
+        const annotation = result.get(
+          "TestService.Orders",
+        ) as McpResourceAnnotation;
 
         // Verify omitted field
         expect(annotation.omittedFields?.has("internalReference")).toBe(true);

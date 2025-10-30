@@ -206,18 +206,22 @@ function constructResourceAnnotation(
       )
       .map(([k, _]) => k),
   );
-    
+
+  console.log("I AM TRYING TO PARSE", model.definitions);
+
   const omittedFields = new Set<string>(
     Object.entries(model.definitions?.[entityTarget].elements ?? {})
       .filter(([_, v]) => (v as any)[MCP_OMIT_PROP_KEY])
       .map(([k, _]) => k),
   );
 
+  console.log("OMITTED FIELDS", omittedFields);
+
   const { properties, resourceKeys, propertyHints } = parseResourceElements(
     definition,
     model,
   );
-  
+
   const restrictions = parseCdsRestrictions(
     annotations.restrict,
     annotations.requires,

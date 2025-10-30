@@ -52,6 +52,7 @@ export const DEFAULT_ALL_RESOURCE_OPTIONS = new Set<McpResourceOption>([
  */
 export const MCP_HINT_ELEMENT = "@mcp.hint";
 
+/**
  * MCP omit property annotation key
  */
 export const MCP_OMIT_PROP_KEY = "@mcp.omit";
