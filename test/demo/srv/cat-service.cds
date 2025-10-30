@@ -46,7 +46,7 @@ service CatalogService {
   entity Authors          as projection on my.Authors;
 
   extend my.Authors with {
-    nominations : array of String;
+    nominations : array of String @mcp.hint: 'Awards that the author has been nominated for';
   };
 
   annotate CatalogService.Authors with @mcp.wrap: {
@@ -99,7 +99,7 @@ service CatalogService {
     tool       : true,
     elicit     : ['input'] // Ask for the function import's input to be elicited
   }
-  function getAuthor(id : String)                               returns String;
+  function getAuthor(id : String)                                                                                  returns String;
 
   @requires: 'author-specialist'
   @mcp     : {
@@ -107,7 +107,7 @@ service CatalogService {
     description: 'Gets the desired authors details',
     tool       : true
   }
-  function getAuthorDetails()                                   returns String;
+  function getAuthorDetails()                                                                                      returns String;
 
   annotate getAuthor with @requires: 'book-keeper';
 
@@ -120,21 +120,21 @@ service CatalogService {
       'confirm'
     ] // Ask for the function import's input to be elicited
   }
-  function getBooksByAuthor(authorName : String)                returns array of String;
+  function getBooksByAuthor(authorName : String @mcp.hint:'Full name of the author you want to get the books of' ) returns array of String;
 
   @mcp: {
     name       : 'book-recommendation',
     description: 'Get a random book recommendation',
     tool       : true
   }
-  function getBookRecommendation()                              returns String;
+  function getBookRecommendation()                                                                                 returns String;
 
   @mcp: {
     name       : 'get-many-authors',
     description: 'Gets many authors. Using for testing "many"',
     tool       : true
   }
-  function getManyAuthors(ids : array of String)                returns many String;
+  function getManyAuthors(ids : array of String)                                                                   returns many String;
 
 
   @mcp: {
@@ -142,14 +142,14 @@ service CatalogService {
     description: 'Not implemented, just a test for parser',
     tool       : true
   }
-  function checkAuthorName(value : my.ComplexType:rangedNumber) returns String;
+  function checkAuthorName(value : my.ComplexType:rangedNumber)                                                    returns String;
 
   @mcp: {
     name       : 'not-real-tool',
     description: 'Not real, just used for nested types. Do not use',
     tool       : true
   }
-  function getNotReal(value : my.TValidQuantities:positiveOnly) returns String;
+  function getNotReal(value : my.TValidQuantities:positiveOnly)                                                    returns String;
 }
 
 annotate CatalogService with @mcp.prompts: [{

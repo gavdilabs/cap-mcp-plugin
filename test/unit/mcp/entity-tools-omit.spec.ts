@@ -55,6 +55,7 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
         { tools: true, modes: ["create"] },
         undefined,
         undefined,
+        undefined,
         omittedFields,
       );
 
@@ -117,6 +118,7 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
         new Map([["ID", "Integer"]]),
         new Map(),
         { tools: true, modes: ["create"] },
+        undefined,
         undefined,
         undefined,
         omittedFields,
@@ -243,6 +245,7 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
         { tools: true, modes: ["update"] },
         undefined,
         undefined,
+        undefined,
         omittedFields,
       );
 
@@ -306,6 +309,7 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
         new Map([["ID", "Integer"]]),
         new Map(),
         { tools: true, modes: ["update"] },
+        undefined,
         undefined,
         undefined,
         omittedFields,
@@ -437,6 +441,7 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
         new Map([["ID", "Integer"]]),
         new Map(),
         { tools: true, modes: ["create", "update"] },
+        undefined,
         undefined,
         undefined,
         omittedFields,

@@ -1019,6 +1019,7 @@ describe("Server Utils", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         omittedFields,
       );
 
@@ -1050,6 +1051,7 @@ describe("Server Utils", () => {
         new Map(),
         new Map(),
         new Map(),
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -1090,6 +1092,7 @@ describe("Server Utils", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         omittedFields,
       );
 
@@ -1126,6 +1129,7 @@ describe("Server Utils", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         omittedFields,
       );
 
@@ -1150,6 +1154,7 @@ describe("Server Utils", () => {
         new Map(),
         new Map(),
         new Map(),
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -1179,6 +1184,7 @@ describe("Server Utils", () => {
         new Map(),
         new Map(),
         new Map(),
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -1239,6 +1245,7 @@ describe("Server Utils", () => {
         undefined,
         undefined,
         undefined,
+        undefined,
         omittedFields,
       );
 
@@ -1266,6 +1273,7 @@ describe("Server Utils", () => {
         new Map(),
         new Map(),
         new Map(),
+        undefined,
         undefined,
         undefined,
         undefined,
@@ -1300,6 +1308,7 @@ describe("Server Utils", () => {
         new Map(),
         new Map(),
         new Map(),
+        undefined,
         undefined,
         undefined,
         undefined,

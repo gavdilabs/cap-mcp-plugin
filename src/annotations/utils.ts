@@ -1,5 +1,9 @@
 import { csn } from "@sap/cds";
-import { DEFAULT_ALL_RESOURCE_OPTIONS, MCP_ANNOTATION_KEY } from "./constants";
+import {
+  DEFAULT_ALL_RESOURCE_OPTIONS,
+  MCP_ANNOTATION_KEY,
+  MCP_HINT_ELEMENT,
+} from "./constants";
 import {
   CdsRestriction,
   CdsRestrictionType,
@@ -230,9 +234,11 @@ export function parseResourceElements(
 ): {
   properties: Map<string, string>;
   resourceKeys: Map<string, string>;
+  propertyHints: Map<string, string>;
 } {
   const properties = new Map<string, string>();
   const resourceKeys = new Map<string, string>();
+  const propertyHints = new Map<string, string>();
   const parseParam = (
     k: string,
     v: Omit<OperationParameter, "items">,
@@ -247,6 +253,10 @@ export function parseResourceElements(
       result = `${v.type.replace("cds.", "")}${suffix ?? ""}`;
     }
 
+    if ((v as any)[MCP_HINT_ELEMENT]) {
+      propertyHints.set(k, (v as any)[MCP_HINT_ELEMENT]);
+    }
+
     properties?.set(k, result);
     return result;
   };
@@ -254,6 +264,9 @@ export function parseResourceElements(
   for (const [k, v] of Object.entries(definition.elements || {})) {
     if (v.items) {
       const result = parseParam(k, v.items, "Array");
+      if ((v as any)[MCP_HINT_ELEMENT]) {
+        propertyHints.set(k, (v as any)[MCP_HINT_ELEMENT]);
+      }
 
       if (!v.key) continue;
       resourceKeys.set(k, result);
@@ -269,6 +282,7 @@ export function parseResourceElements(
   return {
     properties,
     resourceKeys,
+    propertyHints,
   };
 }
 
@@ -291,8 +305,10 @@ export function parseOperationElements(
 ): {
   parameters?: Map<string, string>;
   operationKind?: string;
+  propertyHints: Map<string, string>;
 } {
   let parameters: Map<string, string> | undefined;
+  const propertyHints = new Map<string, string>();
   const parseParam = (
     k: string,
     v: Omit<OperationParameter, "items">,
@@ -302,6 +318,10 @@ export function parseOperationElements(
       const referencedType = parseTypedReference(v.type, model);
       parameters?.set(k, `${referencedType}${suffix ?? ""}`);
       return;
+    }
+
+    if ((v as any)[MCP_HINT_ELEMENT]) {
+      propertyHints.set(k, (v as any)[MCP_HINT_ELEMENT]);
     }
 
     parameters?.set(k, `${v.type.replace("cds.", "")}${suffix ?? ""}`);
@@ -316,6 +336,10 @@ export function parseOperationElements(
     for (const [k, v] of Object.entries(params)) {
       if (v.items) {
         parseParam(k, v.items, "Array");
+        if ((v as any)[MCP_HINT_ELEMENT]) {
+          propertyHints.set(k, (v as any)[MCP_HINT_ELEMENT]);
+        }
+
         continue;
       }
 
@@ -326,6 +350,7 @@ export function parseOperationElements(
   return {
     parameters,
     operationKind: annotations.definition.kind,
+    propertyHints,
   };
 }
 

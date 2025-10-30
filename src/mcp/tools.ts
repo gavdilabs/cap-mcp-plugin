@@ -28,7 +28,7 @@ export function assignToolToServer(
   authEnabled: boolean,
 ): void {
   LOGGER.debug("Adding tool", model);
-  const parameters = buildToolParameters(model.parameters);
+  const parameters = buildToolParameters(model.parameters, model.propertyHints);
 
   if (model.entityKey) {
     // Assign tool as bound operation
@@ -61,7 +61,7 @@ function assignBoundOperation(
     );
   }
 
-  const keys = buildToolParameters(model.keyTypeMap);
+  const keys = buildToolParameters(model.keyTypeMap, model.propertyHints);
   const useElicitInput = isElicitInput(model.elicits);
   const inputSchema = buildZodSchema({
     ...keys,
@@ -194,12 +194,15 @@ function assignUnboundOperation(
  */
 function buildToolParameters(
   params: Map<string, string> | undefined,
+  propertyHints: Map<string, string>,
 ): McpParameters {
   if (!params || params.size <= 0) return {};
 
   const result: McpParameters = {};
   for (const [k, v] of params.entries()) {
-    result[k] = determineMcpParameterType(v);
+    result[k] = determineMcpParameterType(v)?.describe(
+      propertyHints.get(k) ?? "",
+    );
   }
   return result;
 }

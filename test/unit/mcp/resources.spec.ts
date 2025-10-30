@@ -626,6 +626,7 @@ describe("MCP Resources", () => {
             { tools: false },
             undefined,
             undefined,
+            undefined,
             omittedFields,
           );
 
@@ -689,6 +690,7 @@ describe("MCP Resources", () => {
             { tools: false },
             undefined,
             undefined,
+            undefined,
             omittedFields,
           );
 
@@ -745,6 +747,7 @@ describe("MCP Resources", () => {
             { tools: false },
             undefined,
             undefined,
+            undefined,
             omittedFields,
           );
 
@@ -786,6 +789,7 @@ describe("MCP Resources", () => {
             new Map([["ID", "Integer"]]),
             new Map(),
             { tools: false },
+            undefined,
             undefined,
             undefined,
             omittedFields,
@@ -894,6 +898,7 @@ describe("MCP Resources", () => {
             { tools: false },
             undefined,
             undefined,
+            undefined,
             omittedFields,
           );
 
@@ -947,6 +952,7 @@ describe("MCP Resources", () => {
             new Map([["ID", "Integer"]]),
             new Map(),
             { tools: false },
+            undefined,
             undefined,
             undefined,
             omittedFields,
@@ -1007,6 +1013,7 @@ describe("MCP Resources", () => {
             new Map([["ID", "Integer"]]),
             new Map(),
             { tools: false },
+            undefined,
             undefined,
             undefined,
             omittedFields,
@@ -1076,6 +1083,7 @@ describe("MCP Resources", () => {
             { tools: false },
             undefined,
             undefined,
+            undefined,
             omittedFields,
           );
 
@@ -1123,6 +1131,7 @@ describe("MCP Resources", () => {
             new Map([["ID", "Integer"]]),
             new Map(),
             { tools: false },
+            undefined,
             undefined,
             undefined,
             omittedFields,
@@ -1178,6 +1187,7 @@ describe("MCP Resources", () => {
             new Map([["ID", "Integer"]]),
             new Map(),
             { tools: false },
+            undefined,
             undefined,
             undefined,
             omittedFields,
@@ -1243,6 +1253,7 @@ describe("MCP Resources", () => {
             { tools: false },
             undefined,
             undefined,
+            undefined,
             omittedFields,
           );
 
@@ -1291,6 +1302,7 @@ describe("MCP Resources", () => {
             new Map([["ID", "Integer"]]),
             new Map(),
             { tools: false },
+            undefined,
             undefined,
             undefined,
             omittedFields,

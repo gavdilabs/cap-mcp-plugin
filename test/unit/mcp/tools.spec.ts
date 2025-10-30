@@ -465,10 +465,10 @@ describe("tools.ts", () => {
 
         determineMcpParameterTypeStub
           .withArgs("string")
-          .returns({ type: "string" });
+          .returns({ type: "string", describe: jest.fn() });
         determineMcpParameterTypeStub
           .withArgs("number")
-          .returns({ type: "number" });
+          .returns({ type: "number", describe: jest.fn() });
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
@@ -528,10 +528,10 @@ describe("tools.ts", () => {
 
         determineMcpParameterTypeStub
           .withArgs("string")
-          .returns({ type: "string" });
+          .returns({ type: "string", describe: jest.fn() });
         determineMcpParameterTypeStub
           .withArgs("number")
-          .returns({ type: "number" });
+          .returns({ type: "number", describe: jest.fn() });
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
@@ -594,7 +594,7 @@ describe("tools.ts", () => {
 
         determineMcpParameterTypeStub
           .withArgs("number")
-          .returns({ type: "number" });
+          .returns({ type: "number", describe: jest.fn() });
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),
@@ -643,7 +643,7 @@ describe("tools.ts", () => {
 
         determineMcpParameterTypeStub
           .withArgs("number")
-          .returns({ type: "number" });
+          .returns({ type: "number", describe: jest.fn() });
 
         const mockService = {
           send: jest.fn().mockResolvedValue(["item1", "item2", "item3"]),
@@ -738,7 +738,7 @@ describe("tools.ts", () => {
 
         determineMcpParameterTypeStub
           .withArgs("number")
-          .returns({ type: "number" });
+          .returns({ type: "number", describe: jest.fn() });
 
         const arrayResponse = [
           { status: "active", count: 5 },
@@ -1119,16 +1119,16 @@ describe("tools.ts", () => {
 
         determineMcpParameterTypeStub
           .withArgs("string")
-          .returns({ type: "string" });
+          .returns({ type: "string", describe: jest.fn() });
         determineMcpParameterTypeStub
           .withArgs("number")
-          .returns({ type: "number" });
+          .returns({ type: "number", describe: jest.fn() });
         determineMcpParameterTypeStub
           .withArgs("boolean")
-          .returns({ type: "boolean" });
+          .returns({ type: "boolean", describe: jest.fn() });
         determineMcpParameterTypeStub
           .withArgs("guid")
-          .returns({ type: "string" });
+          .returns({ type: "string", describe: jest.fn() });
 
         const mockService = {
           send: jest.fn().mockResolvedValue("success"),

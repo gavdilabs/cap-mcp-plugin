@@ -393,7 +393,7 @@ function registerGetTool(
   const inputSchema: Record<string, z.ZodType> = {};
   for (const [k, cdsType] of resAnno.resourceKeys.entries()) {
     inputSchema[k] = (determineMcpParameterType(cdsType) as z.ZodType).describe(
-      `Key ${k}`,
+      `Key ${k}. ${resAnno.propertyHints.get(k) ?? ""}`,
     );
   }
 
@@ -514,8 +514,8 @@ function registerCreateTool(
       .optional()
       .describe(
         resAnno.foreignKeys.has(propName)
-          ? `Foreign key to ${resAnno.foreignKeys.get(propName)} on ${propName}`
-          : `Field ${propName}`,
+          ? `Foreign key to ${resAnno.foreignKeys.get(propName)} on ${propName}. ${resAnno.propertyHints.get(propName) ?? ""}`
+          : `Field ${propName}. ${resAnno.propertyHints.get(propName) ?? ""}`,
       );
   }
 
@@ -608,7 +608,7 @@ function registerUpdateTool(
   // Keys required
   for (const [k, cdsType] of resAnno.resourceKeys.entries()) {
     inputSchema[k] = (determineMcpParameterType(cdsType) as z.ZodType).describe(
-      `Key ${k}`,
+      `Key ${k}. ${resAnno.propertyHints.get(k) ?? ""}`,
     );
   }
   // Other fields optional
@@ -630,8 +630,8 @@ function registerUpdateTool(
       .optional()
       .describe(
         resAnno.foreignKeys.has(propName)
-          ? `Foreign key to ${resAnno.foreignKeys.get(propName)} on ${propName}`
-          : `Field ${propName}`,
+          ? `Foreign key to ${resAnno.foreignKeys.get(propName)} on ${propName}. ${resAnno.propertyHints.get(propName) ?? ""}`
+          : `Field ${propName}. ${resAnno.propertyHints.get(propName) ?? ""}`,
       );
   }
 
@@ -741,7 +741,7 @@ function registerDeleteTool(
   // Keys required for deletion
   for (const [k, cdsType] of resAnno.resourceKeys.entries()) {
     inputSchema[k] = (determineMcpParameterType(cdsType) as z.ZodType).describe(
-      `Key ${k}`,
+      `Key ${k}. ${resAnno.propertyHints.get(k) ?? ""}`,
     );
   }
 
