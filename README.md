@@ -202,6 +202,61 @@ Example:
   };
 ```
 
+### Omitting Sensitive Fields
+
+Protect sensitive data by excluding specific fields from MCP responses using the `@mcp.omit` annotation:
+
+```cds
+namespace my.bookshop;
+
+entity Books {
+  key ID            : Integer;
+      title         : String;
+      stock         : Integer;
+      author        : Association to Authors;
+      secretMessage : String  @mcp.omit;  // Hidden from all MCP responses
+}
+
+entity Users {
+  key ID             : Integer;
+      username       : String;
+      email          : String;
+      darkestSecret  : String  @mcp.omit;      // Never exposed to MCP clients
+      ssn            : String  @mcp.omit;      // Protected sensitive data
+      lastLogin      : DateTime;
+}
+```
+
+**How It Works:**
+- Fields marked with `@mcp.omit` are automatically filtered from all MCP responses
+- Applies to:
+  - **Resources**: Field will not appear in resource read operations
+  - **Wrapped Entities**: Omission applies to all entity wrapper operations
+
+**Common Use Cases:**
+- **Security**: Hide information sensitive to functionality or business operations
+- **Privacy**: Protect personal identifiers
+- **Internal Data**: Exclude internal notes, audit logs, or system-only fields
+- **Compliance**: Ensure GDPR/CCPA compliance by hiding sensitive personal data
+
+**Important Notes:**
+- Omitted fields are **only excluded from outputs** - they can still be provided as inputs for create/update operations
+- The annotation works alongside the CAP standard annotation `@Core.Computed` for comprehensive field control
+- Omitted fields remain queryable in the CAP service - only MCP responses are filtered
+
+**Example with Multiple Annotations:**
+```cds
+entity Products {
+  key ID          : Integer;
+      name        : String;
+      price       : Decimal;
+      costPrice   : Decimal  @mcp.omit;    // Hide internal pricing
+      createdAt   : DateTime @Core.Computed; // Auto-generated, not writable
+      updatedAt   : DateTime @Core.Computed; // Auto-generated, not writable
+      secretNote  : String   @mcp.omit;    // Hide from MCP
+}
+```
+
 ### Tool Annotations
 
 Convert CAP functions and actions into executable AI tools:

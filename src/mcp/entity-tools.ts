@@ -3,7 +3,12 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { McpResourceAnnotation } from "../annotations/structures";
 import { getAccessRights, WrapAccess } from "../auth/utils";
 import { LOGGER } from "../logger";
-import { determineMcpParameterType, toolError, asMcpResult } from "./utils";
+import {
+  determineMcpParameterType,
+  toolError,
+  asMcpResult,
+  applyOmissionFilter,
+} from "./utils";
 import { EntityOperationMode, EntityListQueryArgs } from "./types";
 import type { csn, ql, Service } from "@sap/cds";
 import cds from "@sap/cds";
@@ -191,7 +196,9 @@ function registerQueryTool(
   const allKeys = Array.from(resAnno.properties.keys());
   const scalarKeys = Array.from(resAnno.properties.entries())
     .filter(
-      ([, cdsType]) => !String(cdsType).toLowerCase().includes("association"),
+      ([k, cdsType]) =>
+        !String(cdsType).toLowerCase().includes("association") &&
+        !resAnno.omittedFields?.has(k),
     )
     .map(([name]) => name);
 
@@ -347,12 +354,17 @@ function registerQueryTool(
         TIMEOUT_MS,
         toolName,
       );
+
+      const result = response?.map((obj: any) =>
+        applyOmissionFilter(obj, resAnno),
+      );
+
       LOGGER.debug(
         `[EXECUTION TIME] Query tool completed: ${toolName} in ${Date.now() - t0}ms`,
         { resultKind: args.return ?? "rows" },
       );
       return asMcpResult(
-        args.explain ? { data: response, plan: undefined } : response,
+        args.explain ? { data: result, plan: undefined } : result,
       );
     } catch (error: any) {
       const msg = `QUERY_FAILED: ${error?.message || String(error)}`;
@@ -445,7 +457,7 @@ function registerGetTool(
     LOGGER.debug(`Executing READ on ${resAnno.target} with keys`, keys);
 
     try {
-      const response = await withTimeout(
+      let response = await withTimeout(
         svc.run(svc.read(resAnno.target, keys)),
         TIMEOUT_MS,
         `${toolName}`,
@@ -456,7 +468,8 @@ function registerGetTool(
         { found: !!response },
       );
 
-      return asMcpResult(response ?? null);
+      const result = applyOmissionFilter(response, resAnno);
+      return asMcpResult(result ?? null);
     } catch (error: any) {
       const msg = `GET_FAILED: ${error?.message || String(error)}`;
       LOGGER.error(msg, error);
@@ -557,7 +570,9 @@ function registerCreateTool(
       try {
         await tx.commit();
       } catch {}
-      return asMcpResult(response ?? {});
+
+      const result = applyOmissionFilter(response, resAnno);
+      return asMcpResult(result ?? {});
     } catch (error: any) {
       try {
         await tx.rollback();
@@ -689,7 +704,8 @@ function registerUpdateTool(
         await tx.commit();
       } catch {}
 
-      return asMcpResult(response ?? {});
+      const result = applyOmissionFilter(response, resAnno);
+      return asMcpResult(result ?? {});
     } catch (error: any) {
       try {
         await tx.rollback();

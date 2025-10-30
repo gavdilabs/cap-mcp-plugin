@@ -46,3 +46,8 @@ export const DEFAULT_ALL_RESOURCE_OPTIONS = new Set<McpResourceOption>([
   "skip",
   "select",
 ]);
+
+/**
+ * MCP omit property annotation key
+ */
+export const MCP_OMIT_PROP_KEY = "@mcp.omit";

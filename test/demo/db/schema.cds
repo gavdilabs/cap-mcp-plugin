@@ -5,6 +5,7 @@ entity Books {
       title         : String;
       stock         : Integer;
       computedValue : Integer @Core.Computed;
+      secretMessage : String  @mcp.omit;
       author        : Association to Authors;
 }
 

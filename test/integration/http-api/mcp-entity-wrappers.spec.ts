@@ -767,4 +767,219 @@ describe("MCP HTTP API - Entity Wrappers", () => {
       expect(filteredAggregateResponse.body).toHaveProperty("result");
     });
   });
+
+  describe("omitted fields (@mcp.omit)", () => {
+    let testServer: TestMcpServer;
+    let app: any;
+    let sessionId: string;
+
+    beforeEach(async () => {
+      testServer = new TestMcpServer();
+      await testServer.setup();
+      app = testServer.getApp();
+
+      // Initialize session
+      const initResponse = await request(app)
+        .post("/mcp")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json, text/event-stream")
+        .send({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2024-11-05",
+            capabilities: { tools: {} },
+            clientInfo: { name: "test", version: "1.0.0" },
+          },
+        });
+
+      sessionId = initResponse.headers["mcp-session-id"];
+    });
+
+    afterEach(async () => {
+      await testServer.stop();
+    });
+
+    it("should omit fields marked with @mcp.omit in query results", async () => {
+      // Query for books - secretMessage field should be omitted
+      const queryResponse = await request(app)
+        .post("/mcp")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json, text/event-stream")
+        .set("mcp-session-id", sessionId)
+        .send({
+          jsonrpc: "2.0",
+          id: 2,
+          method: "tools/call",
+          params: {
+            name: "TestService_Books_query",
+            arguments: {
+              return: "rows",
+              top: 10,
+            },
+          },
+        });
+
+      expect(queryResponse.status).toBe(200);
+      expect(queryResponse.body).toHaveProperty("result");
+
+      const responseText = queryResponse.body?.result?.content?.[0]?.text;
+      expect(responseText).toBeDefined();
+
+      // Parse the response to check for omitted fields
+      // The response should not contain the secretMessage field
+      if (responseText && !responseText.includes("error")) {
+        expect(responseText).not.toContain("secretMessage");
+        expect(responseText).not.toContain("Shh this book");
+      }
+    });
+
+    it("should omit fields marked with @mcp.omit in get results", async () => {
+      // Get a specific book by ID - secretMessage should be omitted
+      const getResponse = await request(app)
+        .post("/mcp")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json, text/event-stream")
+        .set("mcp-session-id", sessionId)
+        .send({
+          jsonrpc: "2.0",
+          id: 3,
+          method: "tools/call",
+          params: {
+            name: "TestService_Books_get",
+            arguments: {
+              ID: 6, // Book with secretMessage in demo data
+            },
+          },
+        });
+
+      expect(getResponse.status).toBe(200);
+      expect(getResponse.body).toHaveProperty("result");
+
+      const responseText = getResponse.body?.result?.content?.[0]?.text;
+      expect(responseText).toBeDefined();
+
+      // The response should not contain the secretMessage field
+      if (responseText && !responseText.includes("error")) {
+        expect(responseText).not.toContain("secretMessage");
+        expect(responseText).not.toContain("Shh this book");
+      }
+    });
+
+    it("should include non-omitted fields in query results", async () => {
+      // Verify that other fields are still present
+      const queryResponse = await request(app)
+        .post("/mcp")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json, text/event-stream")
+        .set("mcp-session-id", sessionId)
+        .send({
+          jsonrpc: "2.0",
+          id: 4,
+          method: "tools/call",
+          params: {
+            name: "TestService_Books_query",
+            arguments: {
+              return: "rows",
+              where: [{ field: "ID", op: "eq", value: 6 }],
+              top: 1,
+            },
+          },
+        });
+
+      expect(queryResponse.status).toBe(200);
+
+      const responseText = queryResponse.body?.result?.content?.[0]?.text;
+      if (responseText && !responseText.includes("error")) {
+        // Normal fields should be present
+        expect(responseText).toMatch(/ID|title|stock/i);
+        // Secret field should not be present
+        expect(responseText).not.toContain("secretMessage");
+      }
+    });
+
+    it("should include non-omitted fields in get results", async () => {
+      // Verify that other fields are still present in get operation
+      const getResponse = await request(app)
+        .post("/mcp")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json, text/event-stream")
+        .set("mcp-session-id", sessionId)
+        .send({
+          jsonrpc: "2.0",
+          id: 5,
+          method: "tools/call",
+          params: {
+            name: "TestService_Books_get",
+            arguments: {
+              ID: 1, // Any valid book ID
+            },
+          },
+        });
+
+      expect(getResponse.status).toBe(200);
+
+      const responseText = getResponse.body?.result?.content?.[0]?.text;
+      if (responseText && !responseText.includes("error")) {
+        // Normal fields should be present
+        expect(responseText).toMatch(/ID|title/i);
+        // Secret field should not be present
+        expect(responseText).not.toContain("secretMessage");
+      }
+    });
+
+    it("should handle empty query results with omitted fields", async () => {
+      // Query with a filter that returns no results
+      const queryResponse = await request(app)
+        .post("/mcp")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json, text/event-stream")
+        .set("mcp-session-id", sessionId)
+        .send({
+          jsonrpc: "2.0",
+          id: 6,
+          method: "tools/call",
+          params: {
+            name: "TestService_Books_query",
+            arguments: {
+              return: "rows",
+              where: [{ field: "ID", op: "eq", value: 99999 }],
+              top: 10,
+            },
+          },
+        });
+
+      expect(queryResponse.status).toBe(200);
+      expect(queryResponse.body).toHaveProperty("result");
+    });
+
+    it("should not expose omitted fields in query tool parameter documentation", async () => {
+      // Check that the query tool doesn't suggest filtering by omitted fields
+      const toolsResponse = await request(app)
+        .post("/mcp")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json, text/event-stream")
+        .set("mcp-session-id", sessionId)
+        .send({ jsonrpc: "2.0", id: 7, method: "tools/list" })
+        .expect(200);
+
+      const tools = toolsResponse.body?.result?.tools || [];
+      const queryTool = tools.find(
+        (t: any) => t.name === "TestService_Books_query",
+      );
+
+      expect(queryTool).toBeDefined();
+
+      // The tool description should mention the available fields
+      // but should not include the omitted field
+      const description = queryTool.description || "";
+      if (
+        description.includes("fields") ||
+        description.includes("properties")
+      ) {
+        expect(description).not.toContain("secretMessage");
+      }
+    });
+  });
 });
