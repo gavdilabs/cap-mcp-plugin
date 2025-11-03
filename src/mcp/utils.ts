@@ -125,6 +125,33 @@ function buildCompositionZodType(
   const compProperties: Map<string, z.ZodType> = new Map();
   for (const [k, v] of Object.entries(comp.elements)) {
     if (!v.type) continue;
+
+    const elementKeys = new Map<string, string>(
+      Object.keys(v).map((el) => [el.toLowerCase(), el]),
+    );
+    const isComputed =
+      elementKeys.has("@core.computed") &&
+      (v as any)[elementKeys.get("@core.computed") ?? ""] === true;
+
+    if (isComputed) continue;
+
+    // Check if this field is a foreign key to the parent entity in the composition
+    // If so, exclude it because CAP will auto-fill it during deep insert
+    const foreignKeyAnnotation = elementKeys.has("@odata.foreignkey4")
+      ? elementKeys.get("@odata.foreignkey4")
+      : null;
+    if (foreignKeyAnnotation) {
+      const associationName = (v as any)[foreignKeyAnnotation];
+      // Check if the association references the parent entity
+      if (associationName && comp.elements[associationName]) {
+        const association = comp.elements[associationName] as any;
+        if (association.target === target) {
+          // This FK references the parent entity, exclude it from composition schema
+          continue;
+        }
+      }
+    }
+
     const parsedType = v.type.replace("cds.", "");
 
     if (parsedType === "Association" || parsedType === "Composition") continue; // We will not support nested compositions for now
