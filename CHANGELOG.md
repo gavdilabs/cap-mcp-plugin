@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.3.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.2.2...1.3.0) (2025-11-03)
+
+### Features
+
+* mcp hint elements ([#85](https://github.com/gavdilabs/cap-mcp-plugin/issues/85)) ([84ca765](https://github.com/gavdilabs/cap-mcp-plugin/commit/84ca765eed9c8b29c6c07f04db02c77251259f01))
+* Omit properties through annotation ([#81](https://github.com/gavdilabs/cap-mcp-plugin/issues/81)) ([6eef105](https://github.com/gavdilabs/cap-mcp-plugin/commit/6eef10526c8729538172a856834b70556f1ead22)), closes [#82](https://github.com/gavdilabs/cap-mcp-plugin/issues/82)
+
+### Bug Fixes
+
+* Computed elements removed from deep inserts ([#87](https://github.com/gavdilabs/cap-mcp-plugin/issues/87)) ([376de2a](https://github.com/gavdilabs/cap-mcp-plugin/commit/376de2a576656b995609d7f610482cef6664f224))
+
+### Additional Changes
+
+* Remove spelling mistake from package.json ([c348dd2](https://github.com/gavdilabs/cap-mcp-plugin/commit/c348dd2cae8e89ebfc8678066e353ea8c86264e3))
+
 ## [1.2.2](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.2.1...1.2.2) (2025-10-29)
 
 ### Bug Fixes
