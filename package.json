@@ -1,7 +1,7 @@
 {
   "name": "@gavdi/cap-mcp",
   "version": "1.2.2",
-  "description": "MCP Pluging for CAP",
+  "description": "MCP Plugin for CAP",
   "keywords": [
     "MCP",
     "CAP",
