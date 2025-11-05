@@ -38,7 +38,7 @@ export class TestMcpServer {
     } as any);
 
     // Initialize plugin AFTER mocking environment
-    this.plugin = new McpPlugin();
+    this.plugin = McpPlugin.getInstance();
   }
 
   /**

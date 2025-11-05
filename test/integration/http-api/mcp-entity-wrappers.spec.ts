@@ -1,5 +1,6 @@
 import request from "supertest";
 import { TestMcpServer } from "../fixtures/test-server";
+import McpPlugin from "../../../src/mcp";
 
 describe("MCP HTTP API - Entity Wrappers", () => {
   let testServer: TestMcpServer;
@@ -28,6 +29,7 @@ describe("MCP HTTP API - Entity Wrappers", () => {
       });
 
     sessionId = initResponse.headers["mcp-session-id"];
+    McpPlugin.restInstance();
   });
 
   afterEach(async () => {
@@ -79,7 +81,7 @@ describe("MCP HTTP API - Entity Wrappers", () => {
       wrap_entities_to_actions: true,
       wrap_entity_modes: ["query", "get"],
     });
-    const plugin = new McpPlugin();
+    const plugin = McpPlugin.getInstance();
     await plugin.onBootstrap(app);
     // Load a model similar to default fixture
     const model = {
@@ -178,7 +180,7 @@ describe("MCP HTTP API - Entity Wrappers", () => {
       wrap_entities_to_actions: true,
       wrap_entity_modes: ["query", "get"],
     });
-    const plugin = new McpPlugin();
+    const plugin = McpPlugin.getInstance();
     await plugin.onBootstrap(app);
 
     // Create CSN with override
@@ -352,7 +354,7 @@ describe("MCP HTTP API - Entity Wrappers", () => {
       wrap_entities_to_actions: true,
       wrap_entity_modes: ["query", "get"], // Global only allows query and get
     });
-    const plugin = new McpPlugin();
+    const plugin = McpPlugin.getInstance();
     await plugin.onBootstrap(app);
 
     // Create CSN with entity that has MORE modes than global config
