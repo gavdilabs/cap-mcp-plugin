@@ -5,7 +5,7 @@ const McpBuild = require("./lib/config/build");
 // Build tasks
 McpBuild.registerBuildTask();
 
-const plugin = new McpPlugin();
+const plugin = McpPlugin.getInstance();
 
 // Plugin hooks event registration
 cds.on("bootstrap", async (app) => {
