@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.3.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.3.0...1.3.1) (2025-11-06)
+
+### Bug Fixes
+
+* Remove left-over console.log statements ([#90](https://github.com/gavdilabs/cap-mcp-plugin/issues/90)) ([5d05469](https://github.com/gavdilabs/cap-mcp-plugin/commit/5d05469847b216f85aeefa1d72a2c14c9649cf54))
+
 ## [1.3.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.2.2...1.3.0) (2025-11-03)
 
 ### Features
