@@ -231,7 +231,7 @@ export default class McpPlugin {
     return McpPlugin._instance;
   }
 
-  public static restInstance() {
+  public static resetInstance() {
     McpPlugin._instance = undefined;
   }
 }
