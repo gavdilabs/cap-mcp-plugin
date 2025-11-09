@@ -63,7 +63,7 @@ describe("MCP Authentication - Integration Tests", () => {
           ],
         },
       };
-      McpPlugin.restInstance();
+      McpPlugin.resetInstance();
       plugin = McpPlugin.getInstance();
       await plugin.onBootstrap(app);
       await plugin.onLoaded(createTestModel());
@@ -335,7 +335,7 @@ describe("MCP Authentication - Integration Tests", () => {
           before: [], // No authentication middleware
         },
       };
-      McpPlugin.restInstance();
+      McpPlugin.resetInstance();
       plugin = McpPlugin.getInstance();
       await plugin.onBootstrap(app);
       await plugin.onLoaded(createTestModel());
@@ -462,7 +462,7 @@ describe("MCP Authentication - Integration Tests", () => {
           ],
         },
       };
-      McpPlugin.restInstance();
+      McpPlugin.resetInstance();
       plugin = McpPlugin.getInstance();
       await plugin.onBootstrap(app);
       await plugin.onLoaded(createTestModel());

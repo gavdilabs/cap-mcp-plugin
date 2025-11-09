@@ -29,7 +29,7 @@ describe("MCP HTTP API - Entity Wrappers", () => {
       });
 
     sessionId = initResponse.headers["mcp-session-id"];
-    McpPlugin.restInstance();
+    McpPlugin.resetInstance();
   });
 
   afterEach(async () => {
