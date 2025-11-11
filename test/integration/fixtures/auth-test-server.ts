@@ -35,7 +35,7 @@ export class AuthTestMcpServer {
     mockLoadConfiguration(createAuthTestConfig(this.authType));
 
     // Initialize plugin AFTER mocking environment
-    this.plugin = new McpPlugin();
+    this.plugin = McpPlugin.getInstance();
 
     // Bootstrap the plugin with Express app
     await this.plugin.onBootstrap(this.app);

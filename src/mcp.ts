@@ -26,11 +26,12 @@ export default class McpPlugin {
   private readonly config: CAPConfiguration;
   private expressApp?: Application;
   private annotations?: ParsedAnnotations;
-
+  private static _instance?: McpPlugin;
+  private static isInitializing: boolean = false;
   /**
    * Creates a new MCP plugin instance with configuration and session management
    */
-  constructor() {
+  private constructor() {
     LOGGER.debug("Plugin instance created");
     this.config = loadConfiguration();
     this.sessionManager = new McpSessionManager();
@@ -197,5 +198,40 @@ export default class McpPlugin {
         return;
       }
     });
+  }
+
+  /**
+   * Get McpPlugin Instance
+   *
+   * @description  Double Lock singleton initialization.
+   * @returns McpPlugin
+   */
+  public static getInstance(): McpPlugin {
+    if (!McpPlugin._instance) {
+      if (!McpPlugin.isInitializing) {
+        McpPlugin.isInitializing = true;
+
+        if (!McpPlugin._instance) {
+          McpPlugin._instance = new McpPlugin();
+        }
+        McpPlugin.isInitializing = false;
+      } else {
+        /**
+         * Busy Wait if it is initializing
+         */
+        while (McpPlugin.isInitializing) {}
+        /**
+         * check if not init, call again.
+         */
+        if (!McpPlugin._instance) {
+          return McpPlugin.getInstance();
+        }
+      }
+    }
+    return McpPlugin._instance;
+  }
+
+  public static resetInstance() {
+    McpPlugin._instance = undefined;
   }
 }

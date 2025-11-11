@@ -80,7 +80,7 @@ describe("MCP Security Boundary Tests", () => {
         },
       };
 
-      plugin = new McpPlugin();
+      plugin = McpPlugin.getInstance();
       await plugin.onBootstrap(app);
       await plugin.onLoaded(createTestModel());
     });
@@ -226,7 +226,7 @@ describe("MCP Security Boundary Tests", () => {
         },
       };
 
-      plugin = new McpPlugin();
+      plugin = McpPlugin.getInstance();
       await plugin.onBootstrap(app);
       await plugin.onLoaded(createTestModel());
 
@@ -375,7 +375,7 @@ describe("MCP Security Boundary Tests", () => {
         },
       };
 
-      plugin = new McpPlugin();
+      plugin = McpPlugin.getInstance();
       await plugin.onBootstrap(app);
       await plugin.onLoaded(createTestModel());
 
@@ -551,7 +551,7 @@ describe("MCP Security Boundary Tests", () => {
         },
       };
 
-      plugin = new McpPlugin();
+      plugin = McpPlugin.getInstance();
       await plugin.onBootstrap(app);
       await plugin.onLoaded(createTestModel());
 
@@ -702,7 +702,7 @@ describe("MCP Security Boundary Tests", () => {
         },
       };
 
-      plugin = new McpPlugin();
+      plugin = McpPlugin.getInstance();
       await plugin.onBootstrap(app);
       await plugin.onLoaded(createTestModel());
 
