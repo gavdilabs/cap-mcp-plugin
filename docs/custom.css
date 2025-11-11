@@ -1,0 +1,264 @@
+/* CAP MCP Plugin - Custom Theme Overrides */
+
+:root {
+  /* Primary Colors - Material Blue */
+  --theme-color: #2196F3;
+  --theme-color-dark: #1976D2;
+  --theme-color-light: #BBDEFB;
+  --theme-color-lightest: #E3F2FD;
+
+  /* Accent Colors */
+  --accent-color: #03A9F4;
+  --accent-color-dark: #0288D1;
+
+  /* Semantic Colors */
+  --success-color: #4CAF50;
+  --warning-color: #FF9800;
+  --error-color: #F44336;
+  --info-color: #2196F3;
+
+  /* Typography */
+  --base-font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --code-font-family: 'Roboto Mono', 'Courier New', monospace;
+  --base-font-size: 16px;
+  --base-line-height: 1.6;
+  --text-color-primary: #212121;
+  --text-color-secondary: #424242;
+  --text-color-tertiary: #616161;
+
+  /* Sidebar */
+  --sidebar-background: #fafafa;
+  --sidebar-width: 280px;
+  --sidebar-border-color: #e0e0e0;
+
+  /* Content */
+  --content-max-width: 900px;
+
+  /* Code blocks - GitHub inspired */
+  --code-theme-background: #f6f8fa;
+  --code-theme-text: #24292e;
+  --code-theme-border: #d1d5da;
+  --inline-code-background: #f5f5f5;
+  --inline-code-text: #000000;
+  --inline-code-border: #d0d0d0;
+
+  /* Borders & Shadows */
+  --border-radius-small: 4px;
+  --border-radius-medium: 8px;
+  --shadow-small: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-medium: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Inline code styling - NOT in pre blocks */
+code:not(pre code) {
+  background-color: var(--inline-code-background) !important;
+  color: #000000 !important;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: var(--code-font-family);
+  font-size: 0.9em;
+  border: 1px solid var(--inline-code-border);
+  font-weight: 500;
+}
+
+/* Ensure inline code doesn't get Monokai styling */
+p code,
+li code,
+table code,
+h1 code,
+h2 code,
+h3 code,
+h4 code,
+h5 code,
+h6 code {
+  background-color: var(--inline-code-background) !important;
+  color: #000000 !important;
+  font-weight: 500;
+}
+
+/* Extra emphasis for code in tables */
+table code {
+  background-color: #eeeeee !important;
+  color: #000000 !important;
+  border-color: #bdbdbd;
+}
+
+/* GitHub-style code blocks */
+pre {
+  background-color: var(--code-theme-background) !important;
+  border: 1px solid var(--code-theme-border) !important;
+  border-radius: var(--border-radius-small) !important;
+  padding: 16px !important;
+  overflow: auto;
+}
+
+pre code {
+  background-color: transparent !important;
+  color: var(--code-theme-text) !important;
+  padding: 0 !important;
+  border: none !important;
+  font-weight: normal !important;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+/* Better contrast for body text */
+body {
+  color: var(--text-color-primary);
+}
+
+/* Secondary text (metadata, descriptions) */
+.app-sub-sidebar,
+.markdown-section p.tip,
+.markdown-section blockquote {
+  color: var(--text-color-secondary);
+}
+
+/* Footer and less important text */
+footer,
+.pagination-item-label {
+  color: var(--text-color-tertiary);
+}
+
+/* Dark mode overrides */
+body.dark {
+  --theme-color: #42A5F5;
+  --sidebar-background: #1e1e1e;
+  --content-background: #252525;
+  --text-color-primary: #e0e0e0;
+  --text-color-secondary: #bdbdbd;
+  --text-color-tertiary: #9e9e9e;
+  --inline-code-background: #2d2d2d;
+  --inline-code-text: #e0e0e0;
+  --inline-code-border: #424242;
+  --code-theme-background: #161b22;
+  --code-theme-text: #c9d1d9;
+  --code-theme-border: #30363d;
+}
+
+/* Custom callouts */
+.callout {
+  padding: 16px;
+  margin: 16px 0;
+  border-left: 4px solid var(--theme-color);
+  border-radius: var(--border-radius-small);
+  background-color: var(--theme-color-lightest);
+}
+
+.callout.info { border-left-color: var(--info-color); }
+.callout.success { border-left-color: var(--success-color); }
+.callout.warning { border-left-color: var(--warning-color); }
+.callout.error { border-left-color: var(--error-color); }
+
+/* Code block language label */
+pre[data-lang]::before {
+  color: var(--text-color-tertiary);
+  font-size: 0.8em;
+  font-weight: 500;
+}
+
+/* Tables */
+table {
+  border-radius: var(--border-radius-small);
+  overflow: hidden;
+  box-shadow: var(--shadow-small);
+}
+
+/* Links */
+a {
+  color: var(--theme-color);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-bottom-color 0.2s;
+}
+
+a:hover {
+  border-bottom-color: var(--theme-color);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: var(--theme-color-light);
+  color: var(--theme-color-dark);
+}
+
+/* Material elevation */
+.elevation-1 { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.elevation-2 { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+.elevation-3 { box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+
+/* Video embeds */
+.video-container {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+  margin: 20px 0;
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-medium);
+}
+
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Grid layout for feature cards */
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin: 30px 0;
+}
+
+.grid-item {
+  padding: 24px;
+  border: 1px solid #e0e0e0;
+  border-radius: var(--border-radius-medium);
+  background-color: #fff;
+  box-shadow: var(--shadow-small);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.grid-item:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-medium);
+}
+
+.grid-item h3 {
+  margin-top: 0;
+  color: var(--theme-color);
+}
+
+.grid-item p {
+  color: var(--text-color-secondary);
+  line-height: 1.6;
+}
+
+.grid-item a {
+  color: var(--theme-color);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.grid-item a:hover {
+  border-bottom: 1px solid var(--theme-color);
+}
+
+/* Dark mode grid items */
+body.dark .grid-item {
+  background-color: #2a2a2a;
+  border-color: #444;
+}
+
+body.dark .grid-item p {
+  color: #ccc;
+}
