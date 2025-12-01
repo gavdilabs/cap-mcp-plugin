@@ -24,6 +24,8 @@ By integrating MCP with your CAP applications, you unlock:
 
 ## 🚀 Quick Setup
 
+> Want to read the full documentation? [Find it here](https://gavdilabs.github.io/cap-mcp-plugin/#/)
+
 ### Prerequisites
 
 - **Node.js**: Version 18 or higher
