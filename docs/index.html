@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <meta name="description" content="Transform your CAP services into AI-accessible MCP servers with simple annotations">
+  <meta name="keywords" content="CAP, MCP, SAP, AI, Claude, Anthropic, Plugin">
+
+  <title>CAP MCP Plugin - AI Integration Made Easy</title>
+
+  <link rel="icon" href="_media/favicon.ico">
+
+  <!-- Theme: docsify-themeable (Material) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css">
+  <link rel="stylesheet" href="custom.css">
+</head>
+<body>
+  <div id="app">Loading...</div>
+
+  <script>
+    window.$docsify = {
+      name: 'CAP MCP Plugin',
+      repo: 'gavdilabs/cap-mcp-plugin',
+      loadSidebar: true,
+      loadNavbar: false,
+      coverpage: false,
+      auto2top: true,
+      maxLevel: 4,
+      subMaxLevel: 3,
+
+      // Theme configuration
+      themeable: {
+        readyTransition: true,
+        responsiveTables: true
+      },
+
+      // Search configuration
+      search: {
+        maxAge: 86400000,
+        paths: 'auto',
+        placeholder: 'Search documentation...',
+        noData: 'No results found',
+        depth: 6,
+        hideOtherSidebarContent: false
+      },
+
+      // Pagination
+      pagination: {
+        previousText: 'Previous',
+        nextText: 'Next',
+        crossChapter: true,
+        crossChapterText: true
+      },
+
+      // Copy code
+      copyCode: {
+        buttonText: 'Copy',
+        errorText: 'Error',
+        successText: 'Copied!'
+      },
+
+      // Edit on GitHub
+      plugins: [
+        function(hook, vm) {
+          hook.beforeEach(function(html) {
+            const url = 'https://github.com/gavdilabs/cap-mcp-plugin/blob/main/docs/' + vm.route.file;
+            const editLink = '[📝 Edit on GitHub](' + url + ')\n\n';
+            return editLink + html;
+          });
+        }
+      ],
+
+      // Mermaid configuration
+      mermaid: {
+        theme: 'default',
+        themeVariables: {
+          primaryColor: '#2196F3',
+          primaryTextColor: '#fff',
+          primaryBorderColor: '#1976D2',
+          lineColor: '#2196F3',
+          secondaryColor: '#03A9F4',
+          tertiaryColor: '#BBDEFB'
+        }
+      }
+    }
+  </script>
+
+  <!-- Docsify core -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+
+  <!-- Search plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+
+  <!-- Pagination plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination@2/dist/docsify-pagination.min.js"></script>
+
+  <!-- Copy code plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2/dist/docsify-copy-code.min.js"></script>
+
+  <!-- Mermaid plugin -->
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true });
+    window.mermaid = mermaid;
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-mermaid@2/dist/docsify-mermaid.js"></script>
+
+  <!-- Syntax highlighting - GitHub theme -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+
+  <!-- Prism GitHub theme -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism.min.css">
+
+  <!-- docsify-themeable -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/js/docsify-themeable.min.js"></script>
+
+  <!-- Zoom image plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/zoom-image.min.js"></script>
+</body>
+</html>
