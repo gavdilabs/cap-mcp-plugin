@@ -88,8 +88,10 @@ describe("tools.ts", () => {
         assignToolToServer(model, mockServer as any, false);
 
         // Assert
-        sinon.assert.called(mockServer.registerTool);
-        const registerCall = mockServer.registerTool.getCall(0);
+        sinon.assert.called(mockServer.registerTool as sinon.SinonStub);
+        const registerCall = (
+          mockServer.registerTool as sinon.SinonStub
+        ).getCall(0);
         expect(registerCall.args[0]).toBe("TestTool");
         expect(registerCall.args[1]).toEqual({
           title: "TestTool",
@@ -142,7 +144,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -173,7 +176,8 @@ describe("tools.ts", () => {
         // No service added to cds.services
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -213,8 +217,10 @@ describe("tools.ts", () => {
         assignToolToServer(model, mockServer as any, false);
 
         // Assert
-        sinon.assert.called(mockServer.registerTool);
-        const registerCall = mockServer.registerTool.getCall(0);
+        sinon.assert.called(mockServer.registerTool as sinon.SinonStub);
+        const registerCall = (
+          mockServer.registerTool as sinon.SinonStub
+        ).getCall(0);
         expect(registerCall.args[0]).toBe("TestTool");
         expect(registerCall.args[1]).toEqual({
           title: "TestTool",
@@ -246,8 +252,10 @@ describe("tools.ts", () => {
         assignToolToServer(model, mockServer as any, false);
 
         // Assert
-        sinon.assert.called(mockServer.registerTool);
-        const registerCall = mockServer.registerTool.getCall(0);
+        sinon.assert.called(mockServer.registerTool as sinon.SinonStub);
+        const registerCall = (
+          mockServer.registerTool as sinon.SinonStub
+        ).getCall(0);
         expect(registerCall.args[0]).toBe("TestTool");
         expect(registerCall.args[1]).toEqual({
           title: "TestTool",
@@ -281,7 +289,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -332,8 +341,10 @@ describe("tools.ts", () => {
         assignToolToServer(model, mockServer as any, false);
 
         // Assert
-        sinon.assert.called(mockServer.registerTool);
-        const registerCall = mockServer.registerTool.getCall(0);
+        sinon.assert.called(mockServer.registerTool as sinon.SinonStub);
+        const registerCall = (
+          mockServer.registerTool as sinon.SinonStub
+        ).getCall(0);
         expect(registerCall.args[0]).toBe("BoundTool");
         expect(registerCall.args[1]).toEqual({
           title: "BoundTool",
@@ -432,7 +443,8 @@ describe("tools.ts", () => {
         // No service added to cds.services
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -479,7 +491,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -542,7 +555,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -605,7 +619,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -654,7 +669,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -699,7 +715,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -754,7 +771,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -813,7 +831,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -860,7 +879,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -911,7 +931,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -949,7 +970,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -983,7 +1005,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -1017,7 +1040,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -1051,7 +1075,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -1085,7 +1110,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {
@@ -1139,7 +1165,8 @@ describe("tools.ts", () => {
         (cds as any).services["TestService"] = mockService;
 
         assignToolToServer(model, mockServer as any, false);
-        const handler = mockServer.registerTool.getCall(0).args[2] as any;
+        const handler = (mockServer.registerTool as sinon.SinonStub).getCall(0)
+          .args[2] as any;
 
         // Act
         const mockExtra = {

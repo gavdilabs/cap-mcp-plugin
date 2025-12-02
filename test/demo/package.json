@@ -6,12 +6,12 @@
   "license": "UNLICENSED",
   "private": true,
   "dependencies": {
-    "@sap/cds": "^9",
+    "@sap/cds": ">=9",
     "express": "^4",
     "@gavdi/cap-mcp": "../../."
   },
   "devDependencies": {
-    "@cap-js/sqlite": "^1",
+    "@cap-js/sqlite": "^2",
     "@cap-js/cds-types": "^0.10.0"
   },
   "scripts": {

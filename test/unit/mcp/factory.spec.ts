@@ -93,9 +93,11 @@ describe("Factory", () => {
         {
           name: "Test Server",
           version: "1.0.0",
+        },
+        {
+          instructions: mockConfig.instructions,
           capabilities: mockConfig.capabilities,
         },
-        { instructions: mockConfig.instructions },
       );
       expect(server).toBeDefined();
       expect(LOGGER.debug).toHaveBeenCalledWith("Creating MCP server instance");
