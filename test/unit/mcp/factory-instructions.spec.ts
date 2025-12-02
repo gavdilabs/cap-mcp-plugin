@@ -94,9 +94,11 @@ describe("MCP Factory Instructions Integration", () => {
         {
           name: config.name,
           version: config.version,
+        },
+        {
+          instructions: instructionText,
           capabilities: config.capabilities,
         },
-        { instructions: instructionText },
       );
       expect((server as any).serverOptions.instructions).toBe(instructionText);
     });
@@ -117,9 +119,11 @@ describe("MCP Factory Instructions Integration", () => {
         {
           name: config.name,
           version: config.version,
+        },
+        {
+          instructions: fileContent,
           capabilities: config.capabilities,
         },
-        { instructions: fileContent },
       );
       expect((server as any).serverOptions.instructions).toBe(fileContent);
     });
@@ -155,9 +159,11 @@ describe("MCP Factory Instructions Integration", () => {
         {
           name: config.name,
           version: config.version,
+        },
+        {
+          instructions: undefined,
           capabilities: config.capabilities,
         },
-        { instructions: undefined },
       );
       expect((server as any).serverOptions.instructions).toBeUndefined();
     });
@@ -177,9 +183,11 @@ describe("MCP Factory Instructions Integration", () => {
         {
           name: config.name,
           version: config.version,
+        },
+        {
+          instructions: undefined,
           capabilities: config.capabilities,
         },
-        { instructions: undefined },
       );
       expect((server as any).serverOptions.instructions).toBeUndefined();
     });
@@ -208,7 +216,7 @@ describe("MCP Factory Instructions Integration", () => {
       // Verify server info is correct
       expect((server as any).serverInfo.name).toBe(config.name);
       expect((server as any).serverInfo.version).toBe(config.version);
-      expect((server as any).serverInfo.capabilities).toEqual(
+      expect((server as any).serverOptions.capabilities).toEqual(
         config.capabilities,
       );
 

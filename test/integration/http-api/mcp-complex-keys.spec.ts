@@ -109,8 +109,9 @@ describe("MCP HTTP API - Complex Keys Integration", () => {
 
       // Should return validation error
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.error.message).toContain("invalid_type");
+      expect(response.body).toHaveProperty("result");
+      expect(response.body.result).toHaveProperty("isError", true);
+      expect(response.body.result.content[0].text).toContain("invalid_type");
     });
 
     it("should validate parameter types correctly", async () => {
@@ -133,8 +134,9 @@ describe("MCP HTTP API - Complex Keys Integration", () => {
 
       // Should return validation error for type mismatch
       expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.error.message).toContain("invalid_type");
+      expect(response.body).toHaveProperty("result");
+      expect(response.body.result).toHaveProperty("isError", true);
+      expect(response.body.result.content[0].text).toContain("invalid_type");
     });
 
     it("should handle entity operations for simple key entities", async () => {

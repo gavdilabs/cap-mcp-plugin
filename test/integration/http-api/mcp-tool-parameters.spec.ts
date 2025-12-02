@@ -129,9 +129,9 @@ describe("MCP HTTP API - Tool Parameter Regression Tests", () => {
 
       const responseData = response.body;
 
-      expect(responseData.error).toBeDefined();
-      expect(responseData.error.code).toBe(-32602);
-      expect(responseData.error.message).toContain("not found");
+      expect(responseData.result).toBeDefined();
+      expect(responseData.result.isError).toBe(true);
+      expect(responseData.result.content[0].text).toContain("not found");
     });
 
     it("should handle tool call with extra parameters (should be ignored)", async () => {

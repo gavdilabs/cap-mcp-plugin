@@ -168,9 +168,10 @@ describe("MCP HTTP API - Tools", () => {
       // Should return proper JSON-RPC error response
       expect(response.body).toHaveProperty("jsonrpc", "2.0");
       expect(response.body).toHaveProperty("id", 6);
-      expect(response.body).toHaveProperty("error");
-      expect(response.body.error).toHaveProperty("code");
-      expect(response.body.error).toHaveProperty("message");
+      expect(response.body).toHaveProperty("result");
+      expect(response.body.result).toHaveProperty("isError", true);
+      expect(response.body.result).toHaveProperty("content");
+      expect(Array.isArray(response.body.result.content)).toBe(true);
     });
   });
 });

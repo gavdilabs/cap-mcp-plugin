@@ -84,21 +84,21 @@ describe("elicited-input", () => {
         (r) => r.message === "Please fill out the required parameters",
       );
       expect(inputRequest).toBeDefined();
-      expect(inputRequest?.requestedSchema.type).toBe("object");
-      expect(inputRequest?.requestedSchema.required).toEqual([
+      expect((inputRequest?.requestedSchema as any).type).toBe("object");
+      expect((inputRequest?.requestedSchema as any).required).toEqual([
         "param1",
         "param2",
         "param3",
       ]);
-      expect(inputRequest?.requestedSchema.properties.param1.type).toBe(
-        "string",
-      );
-      expect(inputRequest?.requestedSchema.properties.param2.type).toBe(
-        "number",
-      );
-      expect(inputRequest?.requestedSchema.properties.param3.type).toBe(
-        "boolean",
-      );
+      expect(
+        (inputRequest?.requestedSchema as any).properties.param1.type,
+      ).toBe("string");
+      expect(
+        (inputRequest?.requestedSchema as any).properties.param2.type,
+      ).toBe("number");
+      expect(
+        (inputRequest?.requestedSchema as any).properties.param3.type,
+      ).toBe("boolean");
 
       // Check confirm request
       const confirmRequest = result.find((r) =>
@@ -108,9 +108,9 @@ describe("elicited-input", () => {
       expect(confirmRequest?.message).toBe(
         "Please confirm that you want to perform action 'Test tool description'",
       );
-      expect(confirmRequest?.requestedSchema.properties.confirm.type).toBe(
-        "boolean",
-      );
+      expect(
+        (confirmRequest?.requestedSchema as any).properties.confirm.type,
+      ).toBe("boolean");
     });
 
     test("should construct only input elicitation request", () => {
@@ -202,9 +202,9 @@ describe("elicited-input", () => {
       const inputRequest = result.find(
         (r) => r.message === "Please fill out the required parameters",
       );
-      expect(inputRequest?.requestedSchema.required).toEqual([]);
+      expect((inputRequest?.requestedSchema as any).required).toEqual([]);
       expect(
-        Object.keys(inputRequest?.requestedSchema.properties || {}),
+        Object.keys((inputRequest?.requestedSchema as any).properties || {}),
       ).toHaveLength(0);
     });
 
