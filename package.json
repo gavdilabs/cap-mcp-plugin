@@ -47,7 +47,7 @@
     "express": "^4"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.19.1",
+    "@modelcontextprotocol/sdk": "^1.23.0",
     "@sap/xssec": "^4.9.1",
     "cors": "^2.8.5",
     "helmet": "^8.1.0",

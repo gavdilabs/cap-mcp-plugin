@@ -37,9 +37,11 @@ export function createMcpServer(
     {
       name: config.name,
       version: config.version,
+    },
+    {
+      instructions: getMcpInstructions(config),
       capabilities: config.capabilities,
     },
-    { instructions: getMcpInstructions(config) },
   );
 
   if (!annotations) {
