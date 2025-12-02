@@ -43,7 +43,7 @@
     "docs:links": "markdown-link-check docs/**/*.md"
   },
   "peerDependencies": {
-    "@sap/cds": "^9",
+    "@sap/cds": ">=9",
     "express": "^4"
   },
   "dependencies": {
