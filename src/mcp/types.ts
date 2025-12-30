@@ -49,6 +49,8 @@ export interface McpResourceQueryParams {
   skip?: string;
   /** OData $orderby parameter for sorting results (e.g., "name asc") */
   orderby?: string;
+  /** OData $expand parameter for expanding associations (e.g., "*" or "items,partners") */
+  expand?: string;
 }
 
 /**
@@ -97,6 +99,7 @@ export interface EntityListQueryArgs {
   return?: "rows" | "count" | "aggregate";
   aggregate?: AggregateClause[];
   explain?: boolean;
+  expand?: string | string[];
 }
 
 export interface McpResult {

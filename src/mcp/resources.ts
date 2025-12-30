@@ -113,6 +113,10 @@ export function assignResourceToServer(
               const validatedOrderBy = validator.validateOrderBy(v);
               query.orderBy(validatedOrderBy);
               continue;
+            case "expand":
+              const validatedExpand = validator.validateExpand(v);
+              query.columns('*', ...validatedExpand as any);
+              continue;
             default:
               continue;
           }

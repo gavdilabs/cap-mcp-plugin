@@ -299,6 +299,10 @@ function registerQueryTool(
           ) => (val && val.length > 0 ? val : undefined),
         ),
       explain: z.boolean().optional(),
+      expand: z.union([
+        z.string(),
+        z.array(z.string())
+      ]).optional().describe('Expand associations: "*" for all, or array of association names'),
     })
     .strict();
   const inputSchema: Record<string, z.ZodType> = {
@@ -311,6 +315,7 @@ function registerQueryTool(
     return: inputZod.shape.return,
     aggregate: inputZod.shape.aggregate,
     explain: inputZod.shape.explain,
+    expand: inputZod.shape.expand,
   } as unknown as Record<string, z.ZodType>;
 
   const hint = constructHintMessage(resAnno, "query");
@@ -838,7 +843,38 @@ function buildQuery(
   );
   if ((propKeys?.length ?? 0) === 0) return qy;
 
+  // Handle expand - must be processed before select to build proper columns
+  if (args.expand) {
+    // Detect available associations (raw names, NOT _ID suffixed)
+    const assocNames = Array.from(resAnno.properties.entries())
+      .filter(([, cdsType]) => String(cdsType).toLowerCase().includes("association"))
+      .map(([name]) => name);
+
+    // Normalize expand to array (handle both string and array input)
+    const expandInput = Array.isArray(args.expand) ? args.expand : [args.expand];
+
+    // Determine which associations to expand
+    const expandList = expandInput.includes('*') || expandInput[0] === '*'
+      ? assocNames
+      : expandInput.filter((e: string) => assocNames.includes(e));
+
+    // Build columns array with expand structures
+    if (expandList.length > 0) {
+      const expandColumns = expandList.map((name: string) => ({
+        ref: [name],
+        expand: ['*']
+      }));
+
+      // If select is specified, use it; otherwise use '*'
   if (args.select?.length) {
+        qy = qy.columns(...args.select, ...expandColumns as any);
+      } else {
+        qy = qy.columns('*', ...expandColumns as any);
+      }
+    } else if (args.select?.length) {
+      qy = qy.columns(...args.select);
+    }
+  } else if (args.select?.length) {
     qy = qy.columns(...args.select);
   }
 
