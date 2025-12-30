@@ -69,7 +69,7 @@ describe("MCP Resource Templates - Regression Tests", () => {
 
       // Verify template URI format - should use grouped parameter format
       expect(bookTemplate.uriTemplate).toBe(
-        "odata://TestService/test-books{?filter,orderby,select,top,skip}",
+        "odata://TestService/test-books{?filter,orderby,select,top,skip,expand}",
       );
 
       // Verify this is NOT the old individual parameter format
