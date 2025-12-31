@@ -114,8 +114,11 @@ export function assignResourceToServer(
               query.orderBy(validatedOrderBy);
               continue;
             case "expand":
+              // Handle expand for associations
               const validatedExpand = validator.validateExpand(v);
-              query.columns('*', ...validatedExpand as any);
+              // Preserve existing SELECT columns if they exist
+              const cols = query.SELECT?.columns || ['*'];
+              query.columns(...cols, ...validatedExpand as any);
               continue;
             default:
               continue;
