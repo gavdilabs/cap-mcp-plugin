@@ -117,6 +117,7 @@ This plugin transforms your annotated CAP services into a fully functional MCP s
 - **📊 Resources**: Expose CAP entities as MCP resources with OData v4 query capabilities
 - **🔧 Tools**: Convert CAP functions and actions into executable MCP tools
 - **🧩 Entity Wrappers (optional)**: Expose CAP entities as tools (`query`, `get`, and optionally `create`, `update`) for LLM tool use while keeping resources intact
+- **🔗 Deep Insert**: Create parent and child entities in a single operation with `@mcp.deepInsert` annotation
 - **💡 Prompts**: Define reusable prompt templates for AI interactions
 - **⚡ Elicitation**: Request user confirmation or input parameters before tool execution
 - **🔄 Auto-generation**: Automatically creates MCP server endpoints based on annotations

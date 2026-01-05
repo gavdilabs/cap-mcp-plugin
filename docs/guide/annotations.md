@@ -343,6 +343,71 @@ entity Products {
 
 See [Data Privacy Guide](guide/data-privacy.md) for details.
 
+## @mcp.deepInsert (Deep Insert)
+
+Enable creating parent and child entities in a single operation.
+
+**Syntax**:
+```cds
+associationProperty: Association to TargetEntity @mcp.deepInsert: 'TargetEntityName';
+```
+
+**Example**:
+```cds
+entity Bookings {
+  key ID : UUID;
+  customerName : String;
+  
+  @mcp.deepInsert: 'BookingItems'
+  items : Association to many BookingItems on items.booking = $self;
+}
+
+entity BookingItems {
+  key ID : UUID;
+  booking : Association to Bookings;
+  product : String;
+  quantity : Integer;
+}
+```
+
+**How it works**:
+- Annotate associations that should support nested creation
+- Pass an array of child objects when calling create/update tools
+- CAP handles the nested insert automatically
+
+**Generated tool schema**:
+```typescript
+// Instead of foreign key (items_ID), you get:
+items: z.array(z.object({
+  product: z.string().optional(),
+  quantity: z.number().optional()
+})).optional()
+```
+
+**Usage**:
+```typescript
+CatalogService_Bookings_create({
+  customerName: "John Doe",
+  items: [
+    { product: "Widget A", quantity: 5 },
+    { product: "Widget B", quantity: 3 }
+  ]
+})
+```
+
+**Common use cases**:
+- Order + Line Items
+- Invoice + Invoice Lines
+- Project + Tasks
+- Document + Attachments
+
+**Limitations**:
+- Only one level of nesting supported
+- Requires entity wrappers (`@mcp.wrap`) with `create` or `update` modes
+- Skips computed fields and nested associations in child entities
+
+See [Entity Wrappers Guide](guide/entity-wrappers.md) for wrapper configuration.
+
 ## Combining Annotations
 
 Annotations can be combined for comprehensive configuration.
@@ -528,6 +593,7 @@ entity Books { /* base entity */ }
 | `@mcp.wrap` | Entity | Entity wrappers | `@mcp.wrap: { tools: true, modes: ['query'] }` |
 | `@mcp.hint` | Property/Parameter | Field description | `@mcp.hint: 'Description here'` |
 | `@mcp.omit` | Property | Hide from MCP | `@mcp.omit` |
+| `@mcp.deepInsert` | Association | Enable deep insert | `@mcp.deepInsert: 'TargetEntity'` |
 
 ## Related Topics
 
