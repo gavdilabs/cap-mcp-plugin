@@ -142,6 +142,49 @@ describe("McpResourceAnnotation", () => {
     );
     expect(annotationWithRestrictions.restrictions).toEqual(restrictions);
   });
+
+  test("should handle deepInsertRefs correctly", () => {
+    const deepInsertRefs = new Map([
+      ["items", "BookingService.BookingItem"],
+      ["addresses", "CustomerService.Address"],
+    ]);
+    const annotationWithDeepInsert = new McpResourceAnnotation(
+      "resource-name",
+      "resource-description",
+      "resource-target",
+      "resource-service",
+      new Set(["filter"]),
+      new Map([["id", "UUID"]]),
+      new Map([["id", "UUID"]]),
+      new Map(),
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      deepInsertRefs,
+    );
+    expect(annotationWithDeepInsert.deepInsertRefs).toBe(deepInsertRefs);
+    expect(annotationWithDeepInsert.deepInsertRefs.size).toBe(2);
+    expect(annotationWithDeepInsert.deepInsertRefs.get("items")).toBe(
+      "BookingService.BookingItem",
+    );
+  });
+
+  test("should initialize empty deepInsertRefs map when not provided", () => {
+    const annotation = new McpResourceAnnotation(
+      "resource-name",
+      "resource-description",
+      "resource-target",
+      "resource-service",
+      new Set(["filter"]),
+      new Map([["id", "UUID"]]),
+      new Map([["id", "UUID"]]),
+      new Map(),
+    );
+    expect(annotation.deepInsertRefs).toBeInstanceOf(Map);
+    expect(annotation.deepInsertRefs.size).toBe(0);
+  });
 });
 
 describe("McpToolAnnotation", () => {
