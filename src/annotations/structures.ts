@@ -117,6 +117,8 @@ export class McpResourceAnnotation extends McpAnnotation {
   private readonly _computedFields?: Set<string>;
   /** List of omitted fields */
   private readonly _omittedFields?: Set<string>;
+  /** Map of association property names to target entity names for deep insert */
+  private readonly _deepInsertRefs: Map<string, string>;
 
   /**
    * Creates a new MCP resource annotation
@@ -133,6 +135,7 @@ export class McpResourceAnnotation extends McpAnnotation {
    * @param computedFields - Optional set of fields that are computed and should be ignored in create scenarios
    * @param propertyHints - Optional map of hints for specific properties on resource
    * @param omittedFields - Optional set of fields that should be omitted from MCP entity
+   * @param deepInsertRefs - Optional map of association property names to target entity names for deep insert
    */
   constructor(
     name: string,
@@ -148,6 +151,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     computedFields?: Set<string>,
     propertyHints?: Map<string, string>,
     omittedFields?: Set<string>,
+    deepInsertRefs?: Map<string, string>,
   ) {
     super(
       name,
@@ -165,6 +169,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     this._foreignKeys = foreignKeys;
     this._computedFields = computedFields;
     this._omittedFields = omittedFields;
+    this._deepInsertRefs = deepInsertRefs ?? new Map();
   }
 
   /**
@@ -218,6 +223,14 @@ export class McpResourceAnnotation extends McpAnnotation {
    */
   get omittedFields(): Set<string> | undefined {
     return this._omittedFields;
+  }
+
+  /**
+   * Gets the map of association property names to target entity names for deep insert
+   * @returns Map of association names to entity names for deep insert schema references
+   */
+  get deepInsertRefs(): Map<string, string> {
+    return this._deepInsertRefs;
   }
 }
 

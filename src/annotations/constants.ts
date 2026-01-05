@@ -30,6 +30,7 @@ export const MCP_ANNOTATION_MAPPING = new Map<string, string>([
   ["@mcp.wrap.hint.update", "wrap.hint.update"],
   ["@mcp.wrap.hint.delete", "wrap.hint.delete"],
   ["@mcp.elicit", "elicit"],
+  ["@mcp.deepInsert", "deepInsert"],
   ["@requires", "requires"],
   ["@restrict", "restrict"],
 ]);
@@ -56,3 +57,8 @@ export const MCP_HINT_ELEMENT = "@mcp.hint";
  * MCP omit property annotation key
  */
 export const MCP_OMIT_PROP_KEY = "@mcp.omit";
+
+/**
+ * MCP deep insert annotation key for element-level deep insert references
+ */
+export const MCP_DEEP_INSERT_KEY = "@mcp.deepInsert";

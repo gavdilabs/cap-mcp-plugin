@@ -25,6 +25,7 @@ import {
   parseOperationElements,
   parseResourceElements,
   splitDefinitionName,
+  parseDeepInsertRefs,
 } from "./utils";
 import { MCP_ANNOTATION_MAPPING, MCP_OMIT_PROP_KEY } from "./constants";
 
@@ -223,6 +224,8 @@ function constructResourceAnnotation(
     annotations.requires,
   );
 
+  const deepInsertRefs = parseDeepInsertRefs(definition);
+
   return new McpResourceAnnotation(
     annotations.name as string,
     annotations.description as string,
@@ -237,6 +240,7 @@ function constructResourceAnnotation(
     computedFields,
     propertyHints,
     omittedFields,
+    deepInsertRefs,
   );
 }
 

@@ -5,6 +5,7 @@ import { getAccessRights, WrapAccess } from "../auth/utils";
 import { LOGGER } from "../logger";
 import {
   determineMcpParameterType,
+  buildDeepInsertZodType,
   toolError,
   asMcpResult,
   applyOmissionFilter,
@@ -499,8 +500,21 @@ function registerCreateTool(
   for (const [propName, cdsType] of resAnno.properties.entries()) {
     const isAssociation = String(cdsType).toLowerCase().includes("association");
     const isComputed = resAnno.computedFields?.has(propName);
-    if (isAssociation || isComputed) {
-      // Association keys are supplied directly from model loading as of v1.1.2
+    // Check if this association is marked for deep insert
+    if (isAssociation) {
+      if (resAnno.deepInsertRefs.has(propName)) {
+        // This association has @mcp.deepInsert annotation
+        const targetEntityName = resAnno.deepInsertRefs.get(propName);
+        inputSchema[propName] = buildDeepInsertZodType(targetEntityName)
+          .optional()
+          .describe(
+            `Deep insert array for ${propName}. ${resAnno.propertyHints.get(propName) ?? ""}`,
+          );
+      }
+      // Skip regular associations (no deep insert)
+      continue;
+    }
+    if (isComputed) {
       continue;
     }
 
@@ -540,6 +554,15 @@ function registerCreateTool(
         .toLowerCase()
         .includes("association");
       if (isAssociation) {
+        // Check if this association is marked for deep insert
+        if (resAnno.deepInsertRefs.has(propName)) {
+          // Pass through the nested array for deep insert
+          if (args[propName] !== undefined && Array.isArray(args[propName])) {
+            data[propName] = args[propName];
+          }
+          continue;
+        }
+        // Regular association - use foreign key
         const fkName = `${propName}_ID`;
         if (args[fkName] !== undefined) {
           const val = (args as any)[fkName];
@@ -616,8 +639,21 @@ function registerUpdateTool(
     if (resAnno.resourceKeys.has(propName)) continue;
     const isComputed = resAnno.computedFields?.has(propName);
     const isAssociation = String(cdsType).toLowerCase().includes("association");
-    if (isAssociation || isComputed) {
-      // Association keys are supplied directly from model loading as of v1.1.2
+    if (isComputed) {
+      continue;
+    }
+    // Check if this association is marked for deep insert
+    if (isAssociation) {
+      if (resAnno.deepInsertRefs.has(propName)) {
+        // This association has @mcp.deepInsert annotation
+        const targetEntityName = resAnno.deepInsertRefs.get(propName);
+        inputSchema[propName] = buildDeepInsertZodType(targetEntityName)
+          .optional()
+          .describe(
+            `Deep update array for ${propName}. ${resAnno.propertyHints.get(propName) ?? ""}`,
+          );
+      }
+      // Skip regular associations (no deep insert)
       continue;
     }
     inputSchema[propName] = (
@@ -669,6 +705,15 @@ function registerUpdateTool(
         .toLowerCase()
         .includes("association");
       if (isAssociation) {
+        // Check if this association is marked for deep insert
+        if (resAnno.deepInsertRefs.has(propName)) {
+          // Pass through the nested array for deep update
+          if (args[propName] !== undefined && Array.isArray(args[propName])) {
+            updates[propName] = args[propName];
+          }
+          continue;
+        }
+        // Regular association - use foreign key
         const fkName = `${propName}_ID`;
         if (args[fkName] !== undefined) {
           const val = (args as any)[fkName];
