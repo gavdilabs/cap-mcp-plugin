@@ -299,10 +299,12 @@ function registerQueryTool(
           ) => (val && val.length > 0 ? val : undefined),
         ),
       explain: z.boolean().optional(),
-      expand: z.union([
-        z.string(),
-        z.array(z.string())
-      ]).optional().describe('Expand associations: "*" for all, or array of association names'),
+      expand: z
+        .union([z.string(), z.array(z.string())])
+        .optional()
+        .describe(
+          'Expand associations: "*" for all, or array of association names',
+        ),
     })
     .strict();
   const inputSchema: Record<string, z.ZodType> = {
@@ -847,29 +849,46 @@ function buildQuery(
   if (args.expand) {
     // Detect available associations (raw names, NOT _ID suffixed)
     const assocNames = Array.from(resAnno.properties.entries())
-      .filter(([, cdsType]) => String(cdsType).toLowerCase().includes("association"))
+      .filter(([, cdsType]) =>
+        String(cdsType).toLowerCase().includes("association"),
+      )
       .map(([name]) => name);
 
     // Normalize expand to array (handle both string and array input)
-    const expandInput = Array.isArray(args.expand) ? args.expand : [args.expand];
+    const expandInput = Array.isArray(args.expand)
+      ? args.expand
+      : [args.expand];
 
     // Determine which associations to expand
-    const expandList = expandInput.includes('*') || expandInput[0] === '*'
-      ? assocNames
-      : expandInput.filter((e: string) => assocNames.includes(e));
+    const expandList =
+      expandInput.includes("*") || expandInput[0] === "*"
+        ? assocNames
+        : expandInput.filter((e: string) => assocNames.includes(e));
 
     // Build columns array with expand structures
     if (expandList.length > 0) {
-      const expandColumns = expandList.map((name: string) => ({
-        ref: [name],
-        expand: ['*']
-      }));
+      const expandColumns = expandList.map((name: string) => {
+        // Use pre-computed safe columns, or '*' if no omitted fields
+        const safeColumns = resAnno.getAssociationSafeColumns(name) ?? ["*"];
+        return {
+          ref: [name],
+          expand: safeColumns,
+        };
+      });
 
-      // If select is specified, use it; otherwise use '*'
-  if (args.select?.length) {
-        qy = qy.columns(...args.select, ...expandColumns as any);
+      // Use safe columns for main entity too
+      const mainColumns = resAnno.safeColumns;
+
+      if (args.select?.length) {
+        // Filter user's select to only safe columns
+        const safeSelect = args.select.filter(
+          (field) => !resAnno.omittedFields?.has(field),
+        );
+        qy = qy.columns(...safeSelect, ...(expandColumns as any));
+      } else if (mainColumns[0] === "*") {
+        qy = qy.columns("*", ...(expandColumns as any));
       } else {
-        qy = qy.columns('*', ...expandColumns as any);
+        qy = qy.columns(...mainColumns, ...(expandColumns as any));
       }
     } else if (args.select?.length) {
       qy = qy.columns(...args.select);

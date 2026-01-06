@@ -116,9 +116,23 @@ export function assignResourceToServer(
             case "expand":
               // Handle expand for associations
               const validatedExpand = validator.validateExpand(v);
-              // Preserve existing SELECT columns if they exist
-              const cols = query.SELECT?.columns || ['*'];
-              query.columns(...cols, ...validatedExpand as any);
+
+              // Replace '*' with safe columns for each association
+              const safeExpandColumns = validatedExpand.map((assoc: any) => {
+                const assocName = assoc.ref?.[0];
+                const safeCols = model.getAssociationSafeColumns?.(
+                  assocName,
+                ) ?? ["*"];
+                return {
+                  ref: assoc.ref,
+                  expand: safeCols,
+                };
+              });
+
+              // Use main entity's safe columns
+              const mainSafe = model.safeColumns ?? ["*"];
+              const cols = query.SELECT?.columns || mainSafe;
+              query.columns(...cols, ...(safeExpandColumns as any));
               continue;
             default:
               continue;

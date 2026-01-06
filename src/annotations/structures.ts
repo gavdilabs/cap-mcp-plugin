@@ -117,6 +117,8 @@ export class McpResourceAnnotation extends McpAnnotation {
   private readonly _computedFields?: Set<string>;
   /** List of omitted fields */
   private readonly _omittedFields?: Set<string>;
+  /** Map of association name → target entity's safe columns (excluding omitted) */
+  private readonly _associationSafeColumns?: Map<string, string[]>;
 
   /**
    * Creates a new MCP resource annotation
@@ -133,6 +135,7 @@ export class McpResourceAnnotation extends McpAnnotation {
    * @param computedFields - Optional set of fields that are computed and should be ignored in create scenarios
    * @param propertyHints - Optional map of hints for specific properties on resource
    * @param omittedFields - Optional set of fields that should be omitted from MCP entity
+   * @param associationSafeColumns - Optional map of association names to their safe columns (pre-computed)
    */
   constructor(
     name: string,
@@ -148,6 +151,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     computedFields?: Set<string>,
     propertyHints?: Map<string, string>,
     omittedFields?: Set<string>,
+    associationSafeColumns?: Map<string, string[]>,
   ) {
     super(
       name,
@@ -165,6 +169,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     this._foreignKeys = foreignKeys;
     this._computedFields = computedFields;
     this._omittedFields = omittedFields;
+    this._associationSafeColumns = associationSafeColumns;
   }
 
   /**
@@ -218,6 +223,28 @@ export class McpResourceAnnotation extends McpAnnotation {
    */
   get omittedFields(): Set<string> | undefined {
     return this._omittedFields;
+  }
+
+  /**
+   * Gets the list of safe (non-omitted) columns for the main entity.
+   * Returns ['*'] if no fields are omitted, otherwise returns explicit column list.
+   */
+  get safeColumns(): string[] {
+    if (!this._omittedFields || this._omittedFields.size === 0) {
+      return ["*"]; // No omitted fields, safe to use star
+    }
+    return Array.from(this._properties.keys()).filter(
+      (k) => !this._omittedFields?.has(k),
+    );
+  }
+
+  /**
+   * Gets safe columns for an association target, if available.
+   * Returns undefined if the association has no omitted fields (use '*' as fallback).
+   * @param assocName - Name of the association property
+   */
+  getAssociationSafeColumns(assocName: string): string[] | undefined {
+    return this._associationSafeColumns?.get(assocName);
   }
 }
 

@@ -223,6 +223,40 @@ function constructResourceAnnotation(
     annotations.requires,
   );
 
+  // Build association safe columns map
+  const associationSafeColumns = new Map<string, string[]>();
+  const entityDef = model.definitions?.[entityTarget];
+
+  if (entityDef?.elements) {
+    for (const [propName, propDef] of Object.entries(entityDef.elements)) {
+      const cdsType = String((propDef as any).type || "");
+      if (!cdsType.toLowerCase().includes("association")) continue;
+
+      // Get target entity from the association definition
+      const assocTarget = (propDef as any).target;
+      if (!assocTarget) continue;
+
+      const targetDef = model.definitions?.[assocTarget];
+      if (!targetDef?.elements) continue;
+
+      // Find omitted fields on the target entity
+      const targetOmitted = new Set<string>(
+        Object.entries(targetDef.elements)
+          .filter(([_, v]) => (v as any)[MCP_OMIT_PROP_KEY])
+          .map(([k]) => k),
+      );
+
+      // If target has omitted fields, compute safe columns
+      if (targetOmitted.size > 0) {
+        const safeColumns = Object.keys(targetDef.elements).filter(
+          (k) => !targetOmitted.has(k),
+        );
+        associationSafeColumns.set(propName, safeColumns);
+      }
+      // If no omitted fields, don't add to map (will use '*' as fallback)
+    }
+  }
+
   return new McpResourceAnnotation(
     annotations.name as string,
     annotations.description as string,
@@ -237,6 +271,7 @@ function constructResourceAnnotation(
     computedFields,
     propertyHints,
     omittedFields,
+    associationSafeColumns,
   );
 }
 
