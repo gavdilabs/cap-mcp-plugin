@@ -201,9 +201,10 @@ export function buildDeepInsertZodType(
     // Skip associations and compositions in deep insert items
     if (parsedType === "Association" || parsedType === "Composition") continue;
 
-    const isOptional = !v.key && !v.notNull;
+    // Make all non-key fields optional (consistent with direct entity create)
+    // This ensures external services with notNull on all fields don't require all fields
     const paramType = determineMcpParameterType(parsedType) as z.ZodType;
-    itemProperties.set(k, isOptional ? paramType.optional() : paramType);
+    itemProperties.set(k, v.key ? paramType : paramType.optional());
   }
 
   const zodType = z.object(Object.fromEntries(itemProperties));
