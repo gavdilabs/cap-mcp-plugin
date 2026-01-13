@@ -168,6 +168,47 @@ export class ODataQueryValidator {
   }
 
   /**
+   * Validates and sanitizes the $expand query parameter
+   * @param value - Expand parameter: '*' for all associations, or comma-separated list
+   * @returns Array of CQN column objects with expand configuration
+   * @throws Error if any association name is invalid or not allowed
+   */
+  validateExpand(value: string): any[] {
+    const decoded = decodeURIComponent(value).trim();
+
+    // Get available associations from the entity
+    const availableAssociations = Array.from(this.allowedTypes.entries())
+      .filter(([, cdsType]) => String(cdsType).toLowerCase().includes("association"))
+      .map(([name]) => name);
+
+    if (availableAssociations.length === 0) {
+      throw new Error("No associations available for expansion");
+    }
+
+    // Parse expand parameter: '*' for all, or comma-separated list
+    const expandList = decoded === '*'
+      ? availableAssociations
+      : decoded.split(',').map((e: string) => e.trim()).filter((e: string) => {
+        if (!availableAssociations.includes(e)) {
+          throw new Error(
+            `Invalid expand association: ${e}. Available associations: ${availableAssociations.join(", ")}`
+          );
+        }
+        return true;
+      });
+
+    if (expandList.length === 0) {
+      throw new Error("No valid associations specified for expansion");
+    }
+
+    // Return CQN column objects for expansion
+    return expandList.map((name: string) => ({
+      ref: [name],
+      expand: ['*']
+    }));
+  }
+
+  /**
    * Validates and sanitizes the $filter query parameter with comprehensive security checks
    * Prevents injection attacks, validates operators and property references
    * @param value - OData filter expression

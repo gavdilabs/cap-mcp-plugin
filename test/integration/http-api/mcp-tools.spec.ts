@@ -28,6 +28,7 @@ describe("MCP HTTP API - Tools", () => {
       });
 
     sessionId = initResponse.headers["mcp-session-id"];
+    expect(sessionId).toBeDefined();
   });
 
   afterEach(async () => {

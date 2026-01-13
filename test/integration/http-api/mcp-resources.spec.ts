@@ -145,6 +145,36 @@ describe("MCP HTTP API - Resources", () => {
       }
     });
 
+    it("should handle resource reading with expand query parameter gracefully", async () => {
+      const response = await request(app)
+        .post("/mcp")
+        .set("Content-Type", "application/json")
+        .set("Accept", "application/json, text/event-stream")
+        .set("mcp-session-id", sessionId)
+        .send({
+          jsonrpc: "2.0",
+          id: 51,
+          method: "resources/read",
+          params: {
+            uri: "odata://TestService/test-books?$expand=authorRef",
+          },
+        })
+        .expect(200);
+
+      // Should return proper JSON-RPC response structure
+      expect(response.body).toHaveProperty("jsonrpc", "2.0");
+      expect(response.body).toHaveProperty("id", 51);
+
+      // Either successful with contents or error response is acceptable
+      if (response.body.result) {
+        expect(response.body.result).toHaveProperty("contents");
+        expect(Array.isArray(response.body.result.contents)).toBe(true);
+      } else if (response.body.error) {
+        expect(response.body.error).toHaveProperty("code");
+        expect(response.body.error).toHaveProperty("message");
+      }
+    });
+
     it("should handle malicious query parameters gracefully", async () => {
       const maliciousResponse = await request(app)
         .post("/mcp")

@@ -45,6 +45,7 @@ export const DEFAULT_ALL_RESOURCE_OPTIONS = new Set<McpResourceOption>([
   "top",
   "skip",
   "select",
+  "expand",
 ]);
 
 /**
