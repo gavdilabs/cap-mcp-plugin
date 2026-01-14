@@ -200,7 +200,7 @@ entity Bookings {
   key ID : UUID;
   customerName : String;
   
-  @mcp.deepInsert: 'BookingItems'
+  @mcp.deepInsert
   items : Association to many BookingItems on items.booking = $self;
 }
 
@@ -239,7 +239,7 @@ CatalogService_Bookings_update({
 ```
 
 **Requirements**:
-- `@mcp.deepInsert: 'TargetEntityName'` on association
+- `@mcp.deepInsert` on association
 - Entity wrappers enabled with `create` or `update` mode
 - Target entity defined in the same service
 

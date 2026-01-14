@@ -6,9 +6,10 @@ import { parseDeepInsertRefs } from "../../../src/annotations/utils";
  *
  * This annotation allows associations to support deep insert operations,
  * similar to how compositions work by default.
+ * The target entity is automatically inferred from the association's target property.
  */
 describe("Annotation Parsing - @mcp.deepInsert for Associations", () => {
-  it("should parse @mcp.deepInsert annotation on association elements", () => {
+  it("should parse @mcp.deepInsert annotation and infer target from association", () => {
     const definition: csn.Definition = {
       kind: "entity",
       elements: {
@@ -18,7 +19,7 @@ describe("Annotation Parsing - @mcp.deepInsert for Associations", () => {
           type: "cds.Association",
           target: "TestService.InvoiceItems",
           cardinality: { max: "*" },
-          "@mcp.deepInsert": "TestService.InvoiceItems",
+          "@mcp.deepInsert": true,
         },
       },
     } as any;
@@ -37,11 +38,13 @@ describe("Annotation Parsing - @mcp.deepInsert for Associations", () => {
         ID: { type: "cds.UUID", key: true },
         invoiceItems: {
           type: "cds.Association",
-          "@mcp.deepInsert": "TestService.InvoiceItems",
+          target: "TestService.InvoiceItems",
+          "@mcp.deepInsert": true,
         },
         orderItems: {
           type: "cds.Association",
-          "@mcp.deepInsert": "TestService.OrderItems",
+          target: "TestService.OrderItems",
+          "@mcp.deepInsert": true,
         },
       },
     } as any;
@@ -66,7 +69,8 @@ describe("Annotation Parsing - @mcp.deepInsert for Associations", () => {
         },
         deepInsertAssociation: {
           type: "cds.Association",
-          "@mcp.deepInsert": "TestService.InvoiceItems",
+          target: "TestService.InvoiceItems",
+          "@mcp.deepInsert": true,
         },
       },
     } as any;
@@ -103,7 +107,7 @@ describe("Annotation Parsing - @mcp.deepInsert for Associations", () => {
         items: {
           type: "cds.Association",
           target: "ExternalInvoiceService.InvoiceItems",
-          "@mcp.deepInsert": "ExternalInvoiceService.InvoiceItems",
+          "@mcp.deepInsert": true,
         },
       },
     } as any;
@@ -114,17 +118,14 @@ describe("Annotation Parsing - @mcp.deepInsert for Associations", () => {
     expect(result.get("items")).toBe("ExternalInvoiceService.InvoiceItems");
   });
 
-  it("should only parse string values for @mcp.deepInsert", () => {
+  it("should accept boolean true as valid @mcp.deepInsert value", () => {
     const definition: csn.Definition = {
       kind: "entity",
       elements: {
-        validAnnotation: {
+        items: {
           type: "cds.Association",
-          "@mcp.deepInsert": "TestService.InvoiceItems",
-        },
-        invalidAnnotation: {
-          type: "cds.Association",
-          "@mcp.deepInsert": true, // Invalid: not a string
+          target: "TestService.InvoiceItems",
+          "@mcp.deepInsert": true,
         },
       },
     } as any;
@@ -132,7 +133,24 @@ describe("Annotation Parsing - @mcp.deepInsert for Associations", () => {
     const result = parseDeepInsertRefs(definition);
 
     expect(result.size).toBe(1);
-    expect(result.has("validAnnotation")).toBe(true);
-    expect(result.has("invalidAnnotation")).toBe(false);
+    expect(result.has("items")).toBe(true);
+    expect(result.get("items")).toBe("TestService.InvoiceItems");
+  });
+
+  it("should skip annotation when target is missing", () => {
+    const definition: csn.Definition = {
+      kind: "entity",
+      elements: {
+        items: {
+          type: "cds.Association",
+          // Missing target property
+          "@mcp.deepInsert": true,
+        },
+      },
+    } as any;
+
+    const result = parseDeepInsertRefs(definition);
+
+    expect(result.size).toBe(0);
   });
 });

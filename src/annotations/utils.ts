@@ -492,13 +492,21 @@ export function parseDeepInsertRefs(
   if (!definition?.elements) return deepInsertRefs;
 
   for (const [propName, element] of Object.entries(definition.elements)) {
-    // Check if element has @mcp.deepInsert annotation
-    const deepInsertTarget = (element as any)[MCP_DEEP_INSERT_KEY];
-    if (deepInsertTarget && typeof deepInsertTarget === "string") {
-      deepInsertRefs.set(propName, deepInsertTarget);
-      LOGGER.debug(
-        `Found @mcp.deepInsert annotation on ${propName} -> ${deepInsertTarget}`,
-      );
+    // Check if element has @mcp.deepInsert annotation (boolean or truthy)
+    const hasDeepInsert = (element as any)[MCP_DEEP_INSERT_KEY];
+    if (hasDeepInsert) {
+      // Infer target from association/composition definition
+      const targetEntity = (element as any).target;
+      if (targetEntity) {
+        deepInsertRefs.set(propName, targetEntity);
+        LOGGER.debug(
+          `Found @mcp.deepInsert on ${propName} -> inferred target: ${targetEntity}`,
+        );
+      } else {
+        LOGGER.warn(
+          `@mcp.deepInsert on ${propName} but no target entity found`,
+        );
+      }
     }
   }
 

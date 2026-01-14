@@ -349,7 +349,7 @@ Enable creating parent and child entities in a single operation.
 
 **Syntax**:
 ```cds
-associationProperty: Association to TargetEntity @mcp.deepInsert: 'TargetEntityName';
+associationProperty: Association to TargetEntity @mcp.deepInsert;
 ```
 
 **Example**:
@@ -358,7 +358,7 @@ entity Bookings {
   key ID : UUID;
   customerName : String;
   
-  @mcp.deepInsert: 'BookingItems'
+  @mcp.deepInsert
   items : Association to many BookingItems on items.booking = $self;
 }
 
