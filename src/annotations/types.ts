@@ -56,7 +56,8 @@ export type McpResourceOption =
   | "orderby" // $orderby - Sorting specifications
   | "select" // $select - Property selection
   | "top" // $top - Limit number of results
-  | "skip"; // $skip - Skip number of results
+  | "skip" // $skip - Skip number of results
+  | "expand"; // $expand - Expand associations
 
 /**
  * Resource annotation configuration options

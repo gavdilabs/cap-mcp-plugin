@@ -269,6 +269,10 @@ export function writeODataDescriptionForResource(
     description += `- orderby: OData $orderby syntax (e.g., "$orderby=property1 asc", or "$orderby=property1 desc")${NEW_LINE}`;
   }
 
+  if (model.functionalities.has("expand")) {
+    description += `- expand: OData $expand syntax to include related associations (e.g., $expand=* for all, or $expand=property1,property2 for specific ones)${NEW_LINE}`;
+  }
+
   description += `${NEW_LINE}Available properties on ${model.target}: ${NEW_LINE}`;
   for (const [key, type] of model.properties.entries()) {
     description += `- ${key} -> value type = ${type} ${NEW_LINE}`;

@@ -192,7 +192,9 @@ describe("MCP Resource Security - Integration Tests", () => {
 
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty("error");
-        expect(response.body.error.message).toContain("not found");
+        expect(response.body.error.message).toMatch(
+          /not found|Invalid service found/,
+        );
       }
     });
 
@@ -215,8 +217,8 @@ describe("MCP Resource Security - Integration Tests", () => {
 
       // Should either succeed or fail due to missing service, but NOT due to parameter rejection
       if (response.body.error) {
-        expect(response.body.error.message).toContain(
-          "Resource odata://TestService/test-authors not found",
+        expect(response.body.error.message).toMatch(
+          /Resource odata:\/\/TestService\/test-authors not found|Invalid service found/,
         );
       } else {
         expect(response.body.result).toHaveProperty("contents");

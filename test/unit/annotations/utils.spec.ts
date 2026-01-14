@@ -326,7 +326,7 @@ describe("Utils", () => {
       };
 
       const result = determineResourceOptions(annotations);
-      expect(result.size).toBe(5);
+      expect(result.size).toBe(6);
       expect(result.has("filter")).toBe(true);
       expect(result.has("orderby")).toBe(true);
     });

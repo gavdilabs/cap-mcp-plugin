@@ -70,7 +70,7 @@ service CatalogService {
   @mcp: {
     name: 'books',
     description: 'Book catalog with search and filtering',
-    resource: ['filter', 'orderby', 'select', 'top', 'skip']
+    resource: ['filter', 'orderby', 'select', 'top', 'skip', 'expand']
   }
   entity Books as projection on my.Books;
 
@@ -151,7 +151,8 @@ service CatalogService {
       'orderby',
       'select',
       'skip',
-      'top'
+      'top',
+      'expand'
     ]
   }
   entity Books as projection on my.Books;
@@ -175,7 +176,7 @@ service CatalogService {
 ```
 
 **Generated MCP Resource Capabilities:**
-- **OData v4 Query Support**: `$filter`, `$orderby`, `$top`, `$skip`, `$select`
+- **OData v4 Query Support**: `$filter`, `$orderby`, `$top`, `$skip`, `$select`, `$expand`
 - **Natural Language Queries**: "Find books by Stephen King with stock > 20"
 - **Dynamic Filtering**: Complex filter expressions using OData syntax
 - **Flexible Selection**: Choose specific fields and sort orders

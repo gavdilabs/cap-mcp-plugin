@@ -28,6 +28,7 @@ describe("MCP HTTP API - Complex Keys Integration", () => {
       });
 
     sessionId = initResponse.headers["mcp-session-id"];
+    expect(sessionId).toBeDefined();
   });
 
   afterEach(async () => {
