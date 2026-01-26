@@ -13,7 +13,14 @@ describe("Annotations - Constants", () => {
 
   describe("DEFAULT_ALL_RESOURCE_OPTIONS", () => {
     test("should contain all expected resource options", () => {
-      const expectedOptions = ["filter", "orderby", "top", "skip", "select", "expand"];
+      const expectedOptions = [
+        "filter",
+        "orderby",
+        "top",
+        "skip",
+        "select",
+        "expand",
+      ];
       expectedOptions.forEach((option) => {
         expect(
           DEFAULT_ALL_RESOURCE_OPTIONS.has(option as McpResourceOption),

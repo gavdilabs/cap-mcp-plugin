@@ -37,6 +37,7 @@ describe("DEMO: Verify Safe Column Filtering Works", () => {
       undefined,
       new Map(),
       booksOmitted,
+      undefined, // deepInsertRefs
       associationSafeColumns,
     );
 

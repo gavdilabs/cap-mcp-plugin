@@ -190,6 +190,67 @@ CatalogService_Books_delete(123)
 
 ⚠️ **Warning**: This operation cannot be undone.
 
+### Deep Insert (Nested Creation)
+
+Create parent and child entities atomically using `@mcp.deepInsert`:
+
+**Configuration**:
+```cds
+entity Bookings {
+  key ID : UUID;
+  customerName : String;
+  
+  @mcp.deepInsert
+  items : Association to many BookingItems on items.booking = $self;
+}
+
+entity BookingItems {
+  key ID : UUID;
+  booking : Association to Bookings;
+  product : String;
+  quantity : Integer;
+}
+
+annotate CatalogService.Bookings with @mcp.wrap: {
+  tools: true,
+  modes: ['create', 'update']
+};
+```
+
+**Usage**:
+```typescript
+// Create booking with items in one call
+CatalogService_Bookings_create({
+  customerName: "John Doe",
+  items: [
+    { product: "Widget A", quantity: 5 },
+    { product: "Widget B", quantity: 3 }
+  ]
+})
+
+// Update booking and replace items
+CatalogService_Bookings_update({
+  ID: "booking-123",
+  customerName: "Jane Doe",
+  items: [
+    { product: "Widget C", quantity: 10 }
+  ]
+})
+```
+
+**Requirements**:
+- `@mcp.deepInsert` on association
+- Entity wrappers enabled with `create` or `update` mode
+- Target entity defined in the same service
+
+**Benefits**:
+- Atomic operation (all-or-nothing)
+- Fewer API calls
+- Automatic foreign key management
+- Cleaner AI agent interactions
+
+See [Annotations Reference](guide/annotations.md#mcpdeepinsert-deep-insert) for details.
+
 ## Advanced Query Features
 
 ### Count Results

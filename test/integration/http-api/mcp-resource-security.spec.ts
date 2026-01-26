@@ -192,7 +192,9 @@ describe("MCP Resource Security - Integration Tests", () => {
 
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty("error");
-        expect(response.body.error.message).toMatch(/not found|Invalid service found/);
+        expect(response.body.error.message).toMatch(
+          /not found|Invalid service found/,
+        );
       }
     });
 

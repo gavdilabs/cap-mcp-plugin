@@ -25,6 +25,7 @@ import {
   parseOperationElements,
   parseResourceElements,
   splitDefinitionName,
+  parseDeepInsertRefs,
 } from "./utils";
 import { MCP_ANNOTATION_MAPPING, MCP_OMIT_PROP_KEY } from "./constants";
 
@@ -223,6 +224,8 @@ function constructResourceAnnotation(
     annotations.requires,
   );
 
+  const deepInsertRefs = parseDeepInsertRefs(definition);
+
   // Build association safe columns map
   const associationSafeColumns = new Map<string, string[]>();
   const entityDef = model.definitions?.[entityTarget];
@@ -271,6 +274,7 @@ function constructResourceAnnotation(
     computedFields,
     propertyHints,
     omittedFields,
+    deepInsertRefs,
     associationSafeColumns,
   );
 }

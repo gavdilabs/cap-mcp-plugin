@@ -178,7 +178,9 @@ export class ODataQueryValidator {
 
     // Get available associations from the entity
     const availableAssociations = Array.from(this.allowedTypes.entries())
-      .filter(([, cdsType]) => String(cdsType).toLowerCase().includes("association"))
+      .filter(([, cdsType]) =>
+        String(cdsType).toLowerCase().includes("association"),
+      )
       .map(([name]) => name);
 
     if (availableAssociations.length === 0) {
@@ -186,16 +188,20 @@ export class ODataQueryValidator {
     }
 
     // Parse expand parameter: '*' for all, or comma-separated list
-    const expandList = decoded === '*'
-      ? availableAssociations
-      : decoded.split(',').map((e: string) => e.trim()).filter((e: string) => {
-        if (!availableAssociations.includes(e)) {
-          throw new Error(
-            `Invalid expand association: ${e}. Available associations: ${availableAssociations.join(", ")}`
-          );
-        }
-        return true;
-      });
+    const expandList =
+      decoded === "*"
+        ? availableAssociations
+        : decoded
+            .split(",")
+            .map((e: string) => e.trim())
+            .filter((e: string) => {
+              if (!availableAssociations.includes(e)) {
+                throw new Error(
+                  `Invalid expand association: ${e}. Available associations: ${availableAssociations.join(", ")}`,
+                );
+              }
+              return true;
+            });
 
     if (expandList.length === 0) {
       throw new Error("No valid associations specified for expansion");
@@ -204,7 +210,7 @@ export class ODataQueryValidator {
     // Return CQN column objects for expansion
     return expandList.map((name: string) => ({
       ref: [name],
-      expand: ['*']
+      expand: ["*"],
     }));
   }
 

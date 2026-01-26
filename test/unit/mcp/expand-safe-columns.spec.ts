@@ -114,6 +114,7 @@ describe("Safe Column Filtering for Association Expand", () => {
         undefined,
         new Map(),
         undefined,
+        undefined, // deepInsertRefs
         associationSafeColumns,
       );
 
@@ -147,6 +148,7 @@ describe("Safe Column Filtering for Association Expand", () => {
         undefined,
         new Map(),
         undefined,
+        undefined, // deepInsertRefs
         associationSafeColumns,
       );
 
@@ -191,6 +193,7 @@ describe("Safe Column Filtering for Association Expand", () => {
         undefined,
         new Map(),
         booksOmitted,
+        undefined, // deepInsertRefs
         associationSafeColumns,
       );
 

@@ -3,6 +3,7 @@ import {
   DEFAULT_ALL_RESOURCE_OPTIONS,
   MCP_ANNOTATION_KEY,
   MCP_HINT_ELEMENT,
+  MCP_DEEP_INSERT_KEY,
 } from "./constants";
 import {
   CdsRestriction,
@@ -477,4 +478,37 @@ function translateOperationRestriction(
     default:
       return [restrictionType as McpRestrictionType];
   }
+}
+
+/**
+ * Parses @mcp.deepInsert annotations from entity elements
+ * @param definition - The entity definition to parse
+ * @returns Map of association property names to target entity names for deep insert
+ */
+export function parseDeepInsertRefs(
+  definition: csn.Definition,
+): Map<string, string> {
+  const deepInsertRefs = new Map<string, string>();
+  if (!definition?.elements) return deepInsertRefs;
+
+  for (const [propName, element] of Object.entries(definition.elements)) {
+    // Check if element has @mcp.deepInsert annotation (boolean or truthy)
+    const hasDeepInsert = (element as any)[MCP_DEEP_INSERT_KEY];
+    if (hasDeepInsert) {
+      // Infer target from association/composition definition
+      const targetEntity = (element as any).target;
+      if (targetEntity) {
+        deepInsertRefs.set(propName, targetEntity);
+        LOGGER.debug(
+          `Found @mcp.deepInsert on ${propName} -> inferred target: ${targetEntity}`,
+        );
+      } else {
+        LOGGER.warn(
+          `@mcp.deepInsert on ${propName} but no target entity found`,
+        );
+      }
+    }
+  }
+
+  return deepInsertRefs;
 }

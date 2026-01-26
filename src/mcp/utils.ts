@@ -166,6 +166,52 @@ function buildCompositionZodType(
 }
 
 /**
+ * Builds a Zod schema for deep insert by referencing another entity's schema
+ * Similar to buildCompositionZodType but works with explicit entity references
+ * @param targetEntityName - Full entity name (e.g., 'OnPremiseBookingService.BookingItems')
+ * @returns ZodType array schema for the target entity
+ */
+export function buildDeepInsertZodType(
+  targetEntityName: string | undefined,
+): z.ZodArray<z.ZodType> {
+  const model = cds.model as csn.CSN;
+  if (!model.definitions || !targetEntityName) {
+    return z.array(z.object({})); // fallback
+  }
+
+  const targetDef = model.definitions[targetEntityName];
+  if (!targetDef || !targetDef.elements) {
+    return z.array(z.object({}));
+  }
+
+  const itemProperties: Map<string, z.ZodType> = new Map();
+  for (const [k, v] of Object.entries(targetDef.elements)) {
+    if (!v.type) continue;
+
+    const elementKeys = new Map<string, string>(
+      Object.keys(v).map((el) => [el.toLowerCase(), el]),
+    );
+    // Skip computed fields
+    const isComputed =
+      elementKeys.has("@core.computed") &&
+      (v as any)[elementKeys.get("@core.computed") ?? ""] === true;
+    if (isComputed) continue;
+
+    const parsedType = v.type.replace("cds.", "");
+    // Skip associations and compositions in deep insert items
+    if (parsedType === "Association" || parsedType === "Composition") continue;
+
+    // Make all non-key fields optional (consistent with direct entity create)
+    // This ensures external services with notNull on all fields don't require all fields
+    const paramType = determineMcpParameterType(parsedType) as z.ZodType;
+    itemProperties.set(k, v.key ? paramType : paramType.optional());
+  }
+
+  const zodType = z.object(Object.fromEntries(itemProperties));
+  return z.array(zodType); // Always return array for deep insert
+}
+
+/**
  * Handles incoming MCP session requests by validating session IDs and routing to appropriate session
  * @param req - Express request object containing session headers
  * @param res - Express response object for sending responses

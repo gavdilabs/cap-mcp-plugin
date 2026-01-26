@@ -109,7 +109,14 @@ export class TestMcpServer {
           kind: "entity",
           "@mcp.name": "test-books",
           "@mcp.description": "Test books resource",
-          "@mcp.resource": ["filter", "orderby", "select", "top", "skip", "expand"],
+          "@mcp.resource": [
+            "filter",
+            "orderby",
+            "select",
+            "top",
+            "skip",
+            "expand",
+          ],
           "@mcp.wrap": {
             tools: true,
             modes: ["query", "get", "create", "update", "delete"],
@@ -121,14 +128,25 @@ export class TestMcpServer {
             author: { type: "cds.String" },
             price: { type: "cds.Decimal" },
             stock: { type: "cds.Integer" },
-            authorRef: { type: "cds.Association", target: "TestService.Authors", keys: [] },
+            authorRef: {
+              type: "cds.Association",
+              target: "TestService.Authors",
+              keys: [],
+            },
           },
         },
         "TestService.Authors": {
           kind: "entity",
           "@mcp.name": "test-authors",
           "@mcp.description": "Test authors resource",
-          "@mcp.resource": ["filter", "orderby", "select", "top", "skip", "expand"],
+          "@mcp.resource": [
+            "filter",
+            "orderby",
+            "select",
+            "top",
+            "skip",
+            "expand",
+          ],
           elements: {
             ID: { type: "cds.Integer", key: true },
             name: { type: "cds.String" },
