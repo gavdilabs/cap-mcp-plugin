@@ -2,7 +2,6 @@ import {
   isElicitInput,
   constructElicitationFunctions,
   handleElicitationRequests,
-  ElicitationResponse,
 } from "../../../src/mcp/elicited-input";
 import { McpToolAnnotation } from "../../../src/annotations/structures";
 import { McpElicit } from "../../../src/annotations/types";
@@ -84,20 +83,20 @@ describe("elicited-input", () => {
         (r) => r.message === "Please fill out the required parameters",
       );
       expect(inputRequest).toBeDefined();
-      expect((inputRequest?.requestedSchema as any).type).toBe("object");
-      expect((inputRequest?.requestedSchema as any).required).toEqual([
+      expect((inputRequest as any)?.requestedSchema.type).toBe("object");
+      expect((inputRequest as any)?.requestedSchema.required).toEqual([
         "param1",
         "param2",
         "param3",
       ]);
       expect(
-        (inputRequest?.requestedSchema as any).properties.param1.type,
+        (inputRequest as any)?.requestedSchema.properties.param1.type,
       ).toBe("string");
       expect(
-        (inputRequest?.requestedSchema as any).properties.param2.type,
+        (inputRequest as any)?.requestedSchema.properties.param2.type,
       ).toBe("number");
       expect(
-        (inputRequest?.requestedSchema as any).properties.param3.type,
+        (inputRequest as any)?.requestedSchema.properties.param3.type,
       ).toBe("boolean");
 
       // Check confirm request
@@ -109,7 +108,7 @@ describe("elicited-input", () => {
         "Please confirm that you want to perform action 'Test tool description'",
       );
       expect(
-        (confirmRequest?.requestedSchema as any).properties.confirm.type,
+        (confirmRequest as any)?.requestedSchema.properties.confirm.type,
       ).toBe("boolean");
     });
 
@@ -202,9 +201,9 @@ describe("elicited-input", () => {
       const inputRequest = result.find(
         (r) => r.message === "Please fill out the required parameters",
       );
-      expect((inputRequest?.requestedSchema as any).required).toEqual([]);
+      expect((inputRequest as any)?.requestedSchema.required).toEqual([]);
       expect(
-        Object.keys((inputRequest?.requestedSchema as any).properties || {}),
+        Object.keys((inputRequest as any)?.requestedSchema.properties || {}),
       ).toHaveLength(0);
     });
 
