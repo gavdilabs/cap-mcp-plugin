@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.0](///compare/1.3.2...1.4.0) (2026-01-26)
+
+### Features
+
+* **annotations:** add support for $expand OData query parameter ([#100](undefined/undefined/undefined/issues/100)) 4362e0a, closes #98
+
+### Bug Fixes
+
+* ISO Date Validation in Zod ([#106](undefined/undefined/undefined/issues/106)) c0b007d
+
 ## [1.3.2](///compare/1.3.1...1.3.2) (2025-12-03)
 
 ## [1.3.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.3.0...1.3.1) (2025-11-06)
