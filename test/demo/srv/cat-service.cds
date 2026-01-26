@@ -150,6 +150,17 @@ service CatalogService {
     tool       : true
   }
   function getNotReal(value : my.TValidQuantities:positiveOnly)                                                    returns String;
+
+  @mcp: {
+    name       : 'get-books-by-date',
+    description: 'Gets books published on or after the specified date',
+    tool       : true
+  }
+  function getBooksByDate(
+    publishDate : Date      @mcp.hint: 'Publication date in ISO 8601 format (YYYY-MM-DD)',
+    updatedAfter: DateTime  @mcp.hint: 'Filter by last updated timestamp (ISO 8601)',
+    createdAfter: Timestamp @mcp.hint: 'Filter by creation timestamp (ISO 8601 or epoch ms)'
+  ) returns array of String;
 }
 
 annotate CatalogService with @mcp.prompts: [{

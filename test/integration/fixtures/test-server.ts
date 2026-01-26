@@ -128,6 +128,9 @@ export class TestMcpServer {
             author: { type: "cds.String" },
             price: { type: "cds.Decimal" },
             stock: { type: "cds.Integer" },
+            publishDate: { type: "cds.Date" },
+            lastUpdated: { type: "cds.DateTime" },
+            createdAt: { type: "cds.Timestamp" },
             authorRef: {
               type: "cds.Association",
               target: "TestService.Authors",
@@ -159,6 +162,18 @@ export class TestMcpServer {
           "@mcp.tool": true,
           params: {
             bookId: { type: "cds.Integer" },
+          },
+          returns: { type: "cds.String" },
+        },
+        "TestService.getBooksByDate": {
+          kind: "function",
+          "@mcp.name": "get-books-by-date",
+          "@mcp.description": "Get books by date parameters",
+          "@mcp.tool": true,
+          params: {
+            publishDate: { type: "cds.Date" },
+            updatedAfter: { type: "cds.DateTime" },
+            createdAfter: { type: "cds.Timestamp" },
           },
           returns: { type: "cds.String" },
         },

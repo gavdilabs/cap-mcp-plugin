@@ -75,6 +75,9 @@ jest.mock("zod", () => ({
     ),
     any: jest.fn(() => "any-type"),
     object: jest.fn(() => "object-type"),
+    coerce: {
+      date: jest.fn(() => ({ ...mockZodType, _type: "coerce-date-type" })),
+    },
   },
 }));
 
@@ -96,21 +99,21 @@ describe("Server Utils", () => {
       expect(result).toMatchObject({ _type: "string-type" });
     });
 
-    test("should return date type for Date CDS types", () => {
+    test("should return coerced date type for Date CDS types", () => {
       const dateTypes = ["Date", "Time", "DateTime"];
 
       dateTypes.forEach((type) => {
         const result = determineMcpParameterType(type);
-        expect(result).toMatchObject({ _type: "date-type" });
+        expect(result).toMatchObject({ _type: "coerce-date-type" });
       });
 
-      expect(z.date).toHaveBeenCalledTimes(dateTypes.length);
+      expect(z.coerce.date).toHaveBeenCalledTimes(dateTypes.length);
     });
 
-    test("should return number type for Timestamp CDS type", () => {
+    test("should return coerced date type for Timestamp CDS type", () => {
       const result = determineMcpParameterType("Timestamp");
-      expect(z.number).toHaveBeenCalled();
-      expect(result).toMatchObject({ _type: "number-type" });
+      expect(z.coerce.date).toHaveBeenCalled();
+      expect(result).toMatchObject({ _type: "coerce-date-type" });
     });
 
     test("should return number type for Integer CDS types", () => {

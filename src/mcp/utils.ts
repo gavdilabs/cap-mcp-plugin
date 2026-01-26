@@ -24,13 +24,13 @@ export function determineMcpParameterType(
     case "UUID":
       return z.string();
     case "Date":
-      return z.date();
+      return z.coerce.date();
     case "Time":
-      return z.date();
+      return z.coerce.date();
     case "DateTime":
-      return z.date();
+      return z.coerce.date();
     case "Timestamp":
-      return z.number();
+      return z.coerce.date();
     case "Integer":
       return z.number();
     case "Int16":
@@ -58,13 +58,13 @@ export function determineMcpParameterType(
     case "StringArray":
       return z.array(z.string());
     case "DateArray":
-      return z.array(z.date());
+      return z.array(z.coerce.date());
     case "TimeArray":
-      return z.array(z.date());
+      return z.array(z.coerce.date());
     case "DateTimeArray":
-      return z.array(z.date());
+      return z.array(z.coerce.date());
     case "TimestampArray":
-      return z.array(z.number());
+      return z.array(z.coerce.date());
     case "UUIDArray":
       return z.array(z.string());
     case "IntegerArray":
