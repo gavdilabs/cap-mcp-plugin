@@ -38,6 +38,16 @@ class CatalogService extends cds.ApplicationService {
       const result = await cds.run(query);
       return result?.stock;
     });
+
+    this.on("getBooksByDate", async (req) => {
+      // This handler validates that date parameters are received correctly
+      const { publishDate, updatedAfter, createdAfter } = req.data;
+      return [
+        `publishDate: ${publishDate}`,
+        `updatedAfter: ${updatedAfter}`,
+        `createdAfter: ${createdAfter}`,
+      ];
+    });
   }
 }
 

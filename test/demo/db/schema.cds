@@ -1,11 +1,14 @@
 namespace my.bookshop;
 
 entity Books {
-  key ID            : Integer @mcp.hint: 'Must be a unique number not already in the system';
+  key ID            : Integer   @mcp.hint: 'Must be a unique number not already in the system';
       title         : String;
-      stock         : Integer @mcp.hint: 'The amount of books currently on store shelves';
-      computedValue : Integer @Core.Computed;
-      secretMessage : String  @mcp.omit;
+      stock         : Integer   @mcp.hint: 'The amount of books currently on store shelves';
+      computedValue : Integer   @Core.Computed;
+      secretMessage : String    @mcp.omit;
+      publishDate   : Date      @mcp.hint: 'Publication date in ISO 8601 format (YYYY-MM-DD)';
+      lastUpdated   : DateTime  @mcp.hint: 'Last update timestamp in ISO 8601 format';
+      createdAt     : Timestamp @mcp.hint: 'Creation timestamp (ISO 8601 or epoch milliseconds)';
       author        : Association to Authors;
 }
 
