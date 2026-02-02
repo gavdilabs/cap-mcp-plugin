@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.1](///compare/1.4.0...1.4.1) (2026-02-02)
+
+### Bug Fixes
+
+* Remove string coercion from update and create tools ([#108](undefined/undefined/undefined/issues/108)) 724ba0c
+
 ## [1.4.0](///compare/1.3.2...1.4.0) (2026-01-26)
 
 ### Features
