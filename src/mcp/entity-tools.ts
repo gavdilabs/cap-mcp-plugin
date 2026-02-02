@@ -572,16 +572,12 @@ function registerCreateTool(
         // Regular association - use foreign key
         const fkName = `${propName}_ID`;
         if (args[fkName] !== undefined) {
-          const val = (args as any)[fkName];
-          data[fkName] =
-            typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
+          data[fkName] = args[fkName];
         }
         continue;
       }
       if (args[propName] !== undefined) {
-        const val = (args as any)[propName];
-        data[propName] =
-          typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
+        data[propName] = args[propName];
       }
     }
 
@@ -723,16 +719,12 @@ function registerUpdateTool(
         // Regular association - use foreign key
         const fkName = `${propName}_ID`;
         if (args[fkName] !== undefined) {
-          const val = (args as any)[fkName];
-          updates[fkName] =
-            typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
+          updates[fkName] = args[fkName];
         }
         continue;
       }
       if (args[propName] !== undefined) {
-        const val = (args as any)[propName];
-        updates[propName] =
-          typeof val === "string" && /^\d+$/.test(val) ? Number(val) : val;
+        updates[propName] = args[propName];
       }
     }
     if (Object.keys(updates).length === 0) {
