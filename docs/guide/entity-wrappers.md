@@ -26,6 +26,26 @@ For an annotated entity like `CatalogService.Books`, the plugin can generate:
 
 **Naming Convention**: `Service_Entity_Mode` - intentionally descriptive for both humans and AI agents.
 
+### Custom Tool Naming
+
+Customize the tool name prefix using `@mcp.wrap.name`:
+
+```cds
+annotate CatalogService.Books with @mcp.wrap: {
+  tools: true,
+  name: 'BookCatalog',
+  modes: ['query', 'get']
+};
+```
+
+**Result**: Generates `BookCatalog_query` and `BookCatalog_get` instead of `CatalogService_Books_query` and `CatalogService_Books_get`.
+
+**Use cases**:
+- Shorter, more concise tool names
+- Abstract away internal entity names
+- Align tool names with business terminology
+
+
 ## Enabling Entity Wrappers
 
 ### Global Configuration

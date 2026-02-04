@@ -23,6 +23,7 @@ export const MCP_ANNOTATION_MAPPING = new Map<string, string>([
   ["@mcp.wrap", "wrap"],
   ["@mcp.wrap.tools", "wrap.tools"],
   ["@mcp.wrap.modes", "wrap.modes"],
+  ["@mcp.wrap.name", "wrap.name"],
   ["@mcp.wrap.hint", "wrap.hint"],
   ["@mcp.wrap.hint.get", "wrap.hint.get"],
   ["@mcp.wrap.hint.query", "wrap.hint.query"],
