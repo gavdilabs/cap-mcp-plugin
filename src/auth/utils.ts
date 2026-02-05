@@ -8,6 +8,11 @@ import { McpRestriction } from "../annotations/types";
 import { XSUAAService, AuthCredentials } from "./xsuaa-service";
 import { handleTokenRequest } from "./handlers";
 import { LOGGER } from "../logger";
+import {
+  resolveEffectiveHost,
+  buildPublicBaseUrl,
+  getProtocol as getProtocolFromResolver,
+} from "./host-resolver";
 
 /**
  * @fileoverview Authentication utilities for MCP-CAP integration.

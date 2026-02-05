@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { XSUAAService, AuthCredentials } from "./xsuaa-service";
 import { LOGGER } from "../logger";
-import { getEffectiveHost } from "./utils";
+import { resolveEffectiveHost } from "./host-resolver";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds");
@@ -134,7 +134,7 @@ function buildAuthHeader(): string {
  */
 function buildSubscriberTokenUrl(req: Request): string {
   const creds = getXsuaaCredentials();
-  const effectiveHost = getEffectiveHost(req);
+  const effectiveHost = resolveEffectiveHost(req);
   let subdomain = effectiveHost.split(".")[0];
 
   // Handle local development (localhost doesn't have subdomains)
