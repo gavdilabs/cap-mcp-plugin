@@ -170,12 +170,18 @@ export function registerEntityWrappers(
  * Builds the visible tool name for a given operation mode.
  * We prefer a descriptive naming scheme that is easy for humans and LLMs:
  *   Service_Entity_mode
+ * If customName is provided via @mcp.wrap.name, uses customName_mode instead.
  */
 function nameFor(
   service: string,
   entity: string,
   suffix: EntityOperationMode,
+  customName?: string,
 ): string {
+  // Custom name takes priority - uses format: customName_suffix
+  if (customName) {
+    return `${customName}_${suffix}`;
+  }
   // Use explicit Service_Entity_suffix naming to match docs/tests
   const entityName = entity.split(".").pop()!; // keep original case
   const serviceName = service.split(".").pop()!; // keep original case
@@ -191,7 +197,12 @@ function registerQueryTool(
   server: McpServer,
   authEnabled: boolean,
 ): void {
-  const toolName = nameFor(resAnno.serviceName, resAnno.target, "query");
+  const toolName = nameFor(
+    resAnno.serviceName,
+    resAnno.target,
+    "query",
+    resAnno.wrap?.name,
+  );
 
   // Structured input schema for queries with guard for empty property lists
   const allKeys = Array.from(resAnno.properties.keys());
@@ -397,7 +408,12 @@ function registerGetTool(
   server: McpServer,
   authEnabled: boolean,
 ): void {
-  const toolName = nameFor(resAnno.serviceName, resAnno.target, "get");
+  const toolName = nameFor(
+    resAnno.serviceName,
+    resAnno.target,
+    "get",
+    resAnno.wrap?.name,
+  );
   const inputSchema: Record<string, z.ZodType> = {};
   for (const [k, cdsType] of resAnno.resourceKeys.entries()) {
     inputSchema[k] = (determineMcpParameterType(cdsType) as z.ZodType).describe(
@@ -501,7 +517,12 @@ function registerCreateTool(
   server: McpServer,
   authEnabled: boolean,
 ): void {
-  const toolName = nameFor(resAnno.serviceName, resAnno.target, "create");
+  const toolName = nameFor(
+    resAnno.serviceName,
+    resAnno.target,
+    "create",
+    resAnno.wrap?.name,
+  );
 
   const inputSchema: Record<string, z.ZodType> = {};
   for (const [propName, cdsType] of resAnno.properties.entries()) {
@@ -628,7 +649,12 @@ function registerUpdateTool(
   server: McpServer,
   authEnabled: boolean,
 ): void {
-  const toolName = nameFor(resAnno.serviceName, resAnno.target, "update");
+  const toolName = nameFor(
+    resAnno.serviceName,
+    resAnno.target,
+    "update",
+    resAnno.wrap?.name,
+  );
 
   const inputSchema: Record<string, z.ZodType> = {};
   // Keys required
@@ -779,7 +805,12 @@ function registerDeleteTool(
   server: McpServer,
   authEnabled: boolean,
 ): void {
-  const toolName = nameFor(resAnno.serviceName, resAnno.target, "delete");
+  const toolName = nameFor(
+    resAnno.serviceName,
+    resAnno.target,
+    "delete",
+    resAnno.wrap?.name,
+  );
 
   const inputSchema: Record<string, z.ZodType> = {};
   // Keys required for deletion

@@ -107,8 +107,122 @@ describe("entity-tools - registration", () => {
 
     const accesses: WrapAccess = { canDelete: true };
     registerEntityWrappers(res, server, false, ["delete"], accesses);
+  });
+});
 
-    expect(reg).toEqual([]);
+describe("entity-tools - custom tool naming via @mcp.wrap.name", () => {
+  it("uses custom name prefix when @mcp.wrap.name is specified", () => {
+    const server = new McpServer({ name: "t", version: "1" });
+    const reg: string[] = [];
+    // @ts-ignore override registerTool to capture registrations
+    server.registerTool = (name: string) => {
+      reg.push(name);
+      // return noop handler
+      return undefined as any;
+    };
+
+    const res = new McpResourceAnnotation(
+      "books",
+      "Books",
+      "Books",
+      "CatalogService",
+      new Set(["filter", "orderby", "select", "top", "skip"]),
+      new Map([
+        ["ID", "Integer"],
+        ["title", "String"],
+      ]),
+      new Map([["ID", "Integer"]]),
+      new Map(),
+      { tools: true, modes: ["query", "get"], name: "BookCatalog" }, // Custom name
+    );
+
+    const accesses: WrapAccess = { canRead: true };
+    registerEntityWrappers(res, server, false, ["query", "get"], accesses);
+
+    expect(reg).toEqual(["BookCatalog_query", "BookCatalog_get"]);
+  });
+
+  it("falls back to default naming when @mcp.wrap.name is not specified", () => {
+    const server = new McpServer({ name: "t", version: "1" });
+    const reg: string[] = [];
+    // @ts-ignore override registerTool to capture registrations
+    server.registerTool = (name: string) => {
+      reg.push(name);
+      // return noop handler
+      return undefined as any;
+    };
+
+    const res = new McpResourceAnnotation(
+      "books",
+      "Books",
+      "Books",
+      "CatalogService",
+      new Set(["filter", "orderby", "select", "top", "skip"]),
+      new Map([
+        ["ID", "Integer"],
+        ["title", "String"],
+      ]),
+      new Map([["ID", "Integer"]]),
+      new Map(),
+      { tools: true, modes: ["query"] }, // No custom name
+    );
+
+    const accesses: WrapAccess = { canRead: true };
+    registerEntityWrappers(res, server, false, ["query"], accesses);
+
+    expect(reg).toEqual(["CatalogService_Books_query"]);
+  });
+
+  it("applies custom naming to all CRUD operations", () => {
+    const server = new McpServer({ name: "t", version: "1" });
+    const reg: string[] = [];
+    // @ts-ignore override registerTool to capture registrations
+    server.registerTool = (name: string) => {
+      reg.push(name);
+      // return noop handler
+      return undefined as any;
+    };
+
+    const res = new McpResourceAnnotation(
+      "books",
+      "Books",
+      "Books",
+      "CatalogService",
+      new Set(["filter", "orderby", "select", "top", "skip"]),
+      new Map([
+        ["ID", "Integer"],
+        ["title", "String"],
+      ]),
+      new Map([["ID", "Integer"]]),
+      new Map(),
+      {
+        tools: true,
+        modes: ["query", "get", "create", "update", "delete"],
+        name: "MyBooks",
+      },
+    );
+
+    const accesses: WrapAccess = {
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canDelete: true,
+    };
+    registerEntityWrappers(
+      res,
+      server,
+      false,
+      ["query", "get", "create", "update", "delete"],
+      accesses,
+    );
+
+    expect(reg).toEqual([
+      "MyBooks_query",
+      "MyBooks_get",
+      "MyBooks_create",
+      "MyBooks_update",
+      "MyBooks_delete",
+    ]);
   });
 });
 
