@@ -250,7 +250,7 @@ function configureOAuthProxy(expressApp: Application): void {
  * @param req - Express request object
  * @returns Protocol string ('http' or 'https')
  */
-function getProtocol(req: Request): string {
+export function getProtocol(req: Request): string {
   // Check for reverse proxy header first (most reliable)
   if (req.headers["x-forwarded-proto"]) {
     return req.headers["x-forwarded-proto"] as string;
@@ -260,6 +260,239 @@ function getProtocol(req: Request): string {
   const isProduction =
     process.env.NODE_ENV === "production" || process.env.VCAP_APPLICATION;
   return isProduction ? "https" : req.protocol;
+}
+
+/**
+ * Resolves the effective host for multi-tenant routing.
+ * Returns subscriber approuter URL, not internal CF app URL.
+ *
+ * CRITICAL: This function determines which tenant's URLs are used for OAuth flows.
+ * If resolved incorrectly, OAuth callbacks and metadata will point to wrong tenant.
+ *
+ * @param req - Express request object
+ * @returns Effective host string (subscriber approuter URL)
+ */
+export function getEffectiveHost(req: Request): string {
+  const xForwardedHost = req.headers["x-forwarded-host"] as string | undefined;
+  const xCustomHost = req.headers["x-custom-host"] as string | undefined;
+  const xApprouterHost = req.headers["x-approuter-host"] as string | undefined;
+  const rawHost = req.get("host") || "";
+  const appDomain = process.env.appDomain;
+  const tenantSeparator = process.env.tenantSeparator || ".";
+  const isCfAppUrl =
+    rawHost.includes(".cfapps.") || rawHost.includes(".hana.ondemand.com");
+
+  LOGGER.debug("[MCP-HOST] Resolving effective host for request", {
+    rawHost,
+    xForwardedHost: xForwardedHost || null,
+    xCustomHost: xCustomHost || null,
+    xApprouterHost: xApprouterHost || null,
+    appDomain: appDomain || null,
+    isCfAppUrl,
+  });
+
+  // Priority 1: Forwarded headers from approuter (most reliable for multi-tenant)
+  if (xForwardedHost) {
+    LOGGER.info("[MCP-HOST] Host resolved via x-forwarded-host header", {
+      host: xForwardedHost,
+      source: "x-forwarded-host",
+      subdomain: xForwardedHost.split(".")[0],
+    });
+    return xForwardedHost;
+  }
+  if (xCustomHost) {
+    LOGGER.info("[MCP-HOST] Host resolved via x-custom-host header", {
+      host: xCustomHost,
+      source: "x-custom-host",
+      subdomain: xCustomHost.split(".")[0],
+    });
+    return xCustomHost;
+  }
+  if (xApprouterHost) {
+    LOGGER.info("[MCP-HOST] Host resolved via x-approuter-host header", {
+      host: xApprouterHost,
+      source: "x-approuter-host",
+      subdomain: xApprouterHost.split(".")[0],
+    });
+    return xApprouterHost;
+  }
+
+  // Priority 2: Construct from appDomain env var
+  if (appDomain) {
+    const { subdomain, resolution } = extractSubdomainFromCfUrl(
+      req,
+      rawHost,
+      isCfAppUrl,
+      appDomain,
+    );
+    const host = `${subdomain}${tenantSeparator}${appDomain}`;
+    LOGGER.info(
+      "[MCP-HOST] Host constructed from appDomain environment variable",
+      {
+        host,
+        subdomain,
+        appDomain,
+        resolution,
+        source: "appDomain-env",
+      },
+    );
+    return host;
+  }
+
+  // Priority 3: Raw host (local development only)
+  if (!isCfAppUrl) {
+    LOGGER.debug("[MCP-HOST] Using raw host for local development", {
+      host: rawHost,
+      source: "raw-host-local",
+    });
+    return rawHost;
+  }
+
+  // Error: CF URL without appDomain - this will cause multi-tenant issues
+  LOGGER.error(
+    "[MCP-HOST] CRITICAL: CF app URL detected but no appDomain env var set",
+    {
+      rawHost,
+      impact:
+        "OAuth callbacks will use internal CF URL instead of approuter URL",
+      fix: "Set appDomain env var (e.g., 'dev.mymediset.cloud') in manifest.yml or mta.yaml",
+    },
+  );
+  return rawHost;
+}
+
+function extractSubdomainFromCfUrl(
+  req: Request,
+  rawHost: string,
+  isCfAppUrl: boolean,
+  appDomain: string,
+): { subdomain: string; resolution: string } {
+  let subdomain = rawHost.split(".")[0];
+  let resolution = "appDomain";
+
+  if (!isCfAppUrl) {
+    LOGGER.debug("[MCP-HOST] Not a CF URL, using raw subdomain", { subdomain });
+    return { subdomain, resolution };
+  }
+
+  // Try extracting from forwarding headers
+  LOGGER.debug(
+    "[MCP-HOST] Attempting to extract subdomain from CF forwarding headers",
+  );
+
+  const extracted =
+    tryExtractSubdomain(
+      req.headers["x-cf-forwarded-url"] as string | undefined,
+      "cf-forwarded-url",
+    ) ||
+    tryExtractSubdomain(
+      req.headers["origin"] as string | undefined,
+      "origin",
+      ".cfapps.",
+    ) ||
+    tryExtractSubdomain(
+      req.headers["referer"] as string | undefined,
+      "referer",
+      ".cfapps.",
+    );
+
+  if (extracted) {
+    LOGGER.debug("[MCP-HOST] Subdomain extracted from header", extracted);
+    return extracted;
+  }
+
+  LOGGER.warn(
+    "[MCP-HOST] CF URL without usable forwarding headers - using raw subdomain",
+    {
+      rawHost,
+      subdomain,
+      warning: "Subdomain may be wrong for multi-tenant scenarios",
+      headersChecked: ["x-cf-forwarded-url", "origin", "referer"],
+    },
+  );
+  return { subdomain, resolution: "appDomain-cf-fallback" };
+}
+
+function tryExtractSubdomain(
+  url: string | undefined,
+  source: string,
+  excludePattern?: string,
+): { subdomain: string; resolution: string } | null {
+  if (!url) return null;
+  if (excludePattern && url.includes(excludePattern)) return null;
+  try {
+    const subdomain = new URL(url).hostname.split(".")[0];
+    LOGGER.debug("[MCP-HOST] Extracted subdomain from URL", {
+      source,
+      url,
+      subdomain,
+    });
+    return { subdomain, resolution: source };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Builds subscriber-specific XSUAA URL for multi-tenant OAuth flows.
+ *
+ * CRITICAL: In multi-tenant SaaS apps, OAuth flows must use the SUBSCRIBER's
+ * XSUAA, not the provider's. This function extracts the subscriber subdomain
+ * from the request and constructs the correct XSUAA URL.
+ *
+ * @param req - Express request object
+ * @param credentials - XSUAA credentials
+ * @param urlPath - Path to append to XSUAA URL (e.g., '/oauth/authorize')
+ * @returns Subscriber-specific XSUAA URL
+ */
+function getSubscriberXsuaaUrl(
+  req: Request,
+  credentials: AuthCredentials,
+  urlPath: string,
+): string {
+  let subdomain = getEffectiveHost(req).split(".")[0];
+  const originalSubdomain = subdomain;
+
+  // Check if subdomain looks like localhost (local development)
+  const isLocalDev =
+    subdomain.includes(":") ||
+    subdomain === "localhost" ||
+    subdomain.startsWith("127");
+
+  if (isLocalDev) {
+    subdomain = credentials.identityzone || credentials.zid || subdomain;
+    LOGGER.debug(
+      "[MCP-XSUAA] Local development detected - using identity zone as subdomain",
+      {
+        originalSubdomain,
+        identityZone: subdomain,
+        source: credentials.identityzone
+          ? "identityzone"
+          : credentials.zid
+            ? "zid"
+            : "fallback",
+      },
+    );
+  }
+
+  const domain =
+    credentials.uaadomain || "authentication.eu10.hana.ondemand.com";
+  const xsuaaUrl = `https://${subdomain}.${domain}${urlPath}`;
+
+  LOGGER.info("[MCP-XSUAA] Built subscriber XSUAA URL", {
+    xsuaaUrl,
+    subdomain,
+    domain,
+    urlPath,
+    isLocalDev,
+    purpose: urlPath.includes("authorize")
+      ? "authorization"
+      : urlPath.includes("token")
+        ? "token-exchange"
+        : "other",
+  });
+
+  return xsuaaUrl;
 }
 
 /**
@@ -309,19 +542,29 @@ function registerOAuthEndpoints(
     // Client validation and redirect URI validation is handled by XSUAA
     // We delegate all client management to XSUAA's built-in OAuth server
 
-    const protocol = getProtocol(req);
     const redirectUri =
-      redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
+      redirect_uri ||
+      `${getProtocol(req)}://${getEffectiveHost(req)}/oauth/callback`;
 
-    const authUrl = xsuaaService.getAuthorizationUrl(
-      redirectUri,
-      client_id ?? "",
-      state,
-      code_challenge,
-      code_challenge_method,
-      scope,
-    );
-    res.redirect(authUrl);
+    // Build subscriber-specific XSUAA authorization URL
+    const params = new URLSearchParams({
+      client_id: client_id || credentials.clientid,
+      response_type: "code",
+      redirect_uri: redirectUri,
+    });
+    if (code_challenge) params.set("code_challenge", code_challenge);
+    if (code_challenge_method)
+      params.set("code_challenge_method", code_challenge_method);
+    if (scope) params.set("scope", scope);
+    if (state) params.set("state", state);
+
+    const xsuaaUrl = `${getSubscriberXsuaaUrl(req, credentials, "/oauth/authorize")}?${params}`;
+
+    LOGGER.debug("[MCP-OAUTH] Redirecting to XSUAA", {
+      subdomain: getEffectiveHost(req).split(".")[0],
+    });
+
+    res.redirect(xsuaaUrl);
   });
 
   // OAuth Callback endpoint - stateless token exchange
@@ -355,9 +598,9 @@ function registerOAuthEndpoints(
       }
 
       try {
-        const protocol = getProtocol(req);
         const url =
-          redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
+          redirect_uri ||
+          `${getProtocol(req)}://${getEffectiveHost(req)}/oauth/callback`;
 
         const tokenData = await xsuaaService.exchangeCodeForToken(
           code,
@@ -391,14 +634,19 @@ function registerOAuthEndpoints(
   expressApp.get(
     "/.well-known/oauth-authorization-server",
     (req: Request, res: Response): void => {
-      const protocol = getProtocol(req);
-      const baseUrl = `${protocol}://${req.get("host")}`;
+      const base = `${getProtocol(req)}://${getEffectiveHost(req)}`;
+      const issuer = getSubscriberXsuaaUrl(req, credentials, "");
+
+      LOGGER.debug("[MCP-OAUTH] Authorization server metadata requested", {
+        baseUrl: base,
+        issuer,
+      });
 
       res.json({
-        issuer: credentials.url,
-        authorization_endpoint: `${baseUrl}/oauth/authorize`,
-        token_endpoint: `${baseUrl}/oauth/token`,
-        registration_endpoint: `${baseUrl}/oauth/register`,
+        issuer,
+        authorization_endpoint: `${base}/oauth/authorize`,
+        token_endpoint: `${base}/oauth/token`,
+        registration_endpoint: `${base}/oauth/register`,
         response_types_supported: ["code"],
         grant_types_supported: ["authorization_code", "refresh_token"],
         code_challenge_methods_supported: ["S256"],
@@ -415,12 +663,17 @@ function registerOAuthEndpoints(
     async (req: Request, res: Response): Promise<void> => {
       // IAS does not support DCR so we will respond with the pre-configured client_id
       if (kind === "ias") {
-        const protocol = getProtocol(req);
+        const callback = `${getProtocol(req)}://${getEffectiveHost(req)}/oauth/callback`;
+        LOGGER.debug("[MCP-OAUTH] Client registration discovery requested", {
+          callback,
+        });
         const enhancedResponse = {
-          client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: req.body.redirect_uris || [
-            `${protocol}://${req.get("host")}/oauth/callback`,
-          ],
+          client_id: credentials.clientid,
+          client_name: "MCP Server",
+          redirect_uris: [callback],
+          token_endpoint_auth_method: "none",
+          grant_types: ["authorization_code", "refresh_token"],
+          response_types: ["code"],
         };
         LOGGER.debug(
           "Provided static client_id during DCR registration process",
@@ -443,11 +696,11 @@ function registerOAuthEndpoints(
         const xsuaaData = await response.json();
 
         // Add missing required fields that MCP client expects
-        const protocol = getProtocol(req);
+        const callback = `${getProtocol(req)}://${getEffectiveHost(req)}/oauth/callback`;
         const enhancedResponse = {
           ...xsuaaData, // Keep all XSUAA fields
           client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: [`${protocol}://${req.get("host")}/oauth/callback`], // Add our callback URL for discovery
+          redirect_uris: [callback], // Add our callback URL for discovery
         };
 
         res.status(response.status).json(enhancedResponse);
@@ -525,14 +778,19 @@ function registerOAuthEndpoints(
         const xsuaaData = await registrationResponse.json();
 
         // Add missing required fields that MCP client expects
-        const protocol = getProtocol(req);
+        const callback = `${getProtocol(req)}://${getEffectiveHost(req)}/oauth/callback`;
+        const requestedUris = req.body?.redirect_uris;
         const enhancedResponse = {
           ...xsuaaData, // Keep all XSUAA fields
           client_id: credentials.clientid, // Add our CAP app's client ID
-          // client_secret: credentials.clientsecret, // CAP app's client secret
-          redirect_uris: req.body.redirect_uris || [
-            `${protocol}://${req.get("host")}/oauth/callback`,
-          ], // Use client's redirect URIs
+          client_name: req.body?.client_name || "MCP Client",
+          redirect_uris:
+            Array.isArray(requestedUris) && requestedUris.length > 0
+              ? requestedUris
+              : [callback],
+          token_endpoint_auth_method: "none",
+          grant_types: ["authorization_code", "refresh_token"],
+          response_types: ["code"],
         };
 
         LOGGER.debug("[AUTH] Register POST response", enhancedResponse);

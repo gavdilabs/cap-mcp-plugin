@@ -24,6 +24,7 @@ export interface AuthCredentials {
   uaadomain?: string;
   verificationkey?: string;
   identityzone?: string;
+  zid?: string;
   tenantid?: string;
 }
 
