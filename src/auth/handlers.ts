@@ -30,6 +30,87 @@ function decodeJwtPayload(token: string): any | null {
 }
 
 // ============================================================================
+// Exports for Testing
+// ============================================================================
+
+export interface SubdomainExtractionOptions {
+  appName?: string;
+  fallbackSubdomain?: string;
+}
+
+export interface SubdomainExtractionResult {
+  subdomain: string;
+  isLocalDev: boolean;
+  wasStripped: boolean;
+}
+
+/**
+ * Extract subscriber subdomain from effective host.
+ * Exported for unit testing.
+ *
+ * @param effectiveHost - The host from x-forwarded-host or host header
+ * @param options - Options
+ * @param options.appName - App name to strip from subdomain (from XSAPPNAME)
+ * @param options.fallbackSubdomain - Fallback subdomain for local dev
+ * @returns Result with subdomain, isLocalDev, and wasStripped flags
+ */
+export function extractSubscriberSubdomain(
+  effectiveHost: string,
+  options: SubdomainExtractionOptions = {},
+): SubdomainExtractionResult {
+  const { appName, fallbackSubdomain = "localhost" } = options;
+
+  // Remove port if present
+  const hostWithoutPort = effectiveHost.split(":")[0];
+
+  // Extract first part of hostname
+  const firstPart = hostWithoutPort.split(".")[0];
+
+  // Check if it's local development
+  const isLocalDev =
+    firstPart === "localhost" ||
+    firstPart === "127" ||
+    hostWithoutPort.startsWith("127.0.0.1");
+
+  if (isLocalDev) {
+    return {
+      subdomain: fallbackSubdomain,
+      isLocalDev: true,
+      wasStripped: false,
+    };
+  }
+
+  // Try to strip app prefix if appName is provided
+  let subdomain = firstPart;
+  let wasStripped = false;
+
+  if (appName && firstPart.startsWith(appName + "-")) {
+    const withoutPrefix = firstPart.substring(appName.length + 1);
+    if (withoutPrefix) {
+      subdomain = withoutPrefix;
+      wasStripped = true;
+    }
+  }
+
+  return { subdomain, isLocalDev: false, wasStripped };
+}
+
+/**
+ * Build subscriber XSUAA token URL.
+ * Exported for unit testing.
+ *
+ * @param subdomain - Subscriber subdomain
+ * @param uaaDomain - UAA domain (e.g., "authentication.eu10.hana.ondemand.com")
+ * @returns Full XSUAA token URL
+ */
+export function buildSubscriberXsuaaTokenUrl(
+  subdomain: string,
+  uaaDomain: string,
+): string {
+  return `https://${subdomain}.${uaaDomain}/oauth/token`;
+}
+
+// ============================================================================
 // Subscriber XSUAA Token Exchange
 // CRITICAL: For multi-tenant SaaS, the authorization code must be exchanged
 // at the SUBSCRIBER's XSUAA, not the provider's. The code was issued by the
@@ -319,7 +400,7 @@ export async function handleTokenRequest(
         });
         return;
       }
-      return handleAuthorizationCodeGrant(
+      await handleAuthorizationCodeGrant(
         req,
         res,
         code as string,
@@ -327,6 +408,7 @@ export async function handleTokenRequest(
         code_verifier as string | undefined,
         xsuaaService,
       );
+      return;
     }
 
     if (grant_type === "refresh_token") {
