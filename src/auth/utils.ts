@@ -8,7 +8,7 @@ import { McpRestriction } from "../annotations/types";
 import { XSUAAService, AuthCredentials } from "./xsuaa-service";
 import { handleTokenRequest } from "./handlers";
 import { LOGGER } from "../logger";
-import { buildPublicBaseUrl, getProtocol } from "./host-resolver";
+import { buildPublicBaseUrl } from "./host-resolver";
 
 /**
  * @fileoverview Authentication utilities for MCP-CAP integration.
@@ -243,8 +243,6 @@ function configureOAuthProxy(expressApp: Application): void {
 
   registerOAuthEndpoints(expressApp, credentials, kind);
 }
-
-// getProtocol is now imported from host-resolver.ts
 
 /**
  * Registers OAuth endpoints for XSUAA integration
