@@ -1,13 +1,46 @@
-import { RequestHandler, ErrorRequestHandler } from "express";
+import {
+  Request,
+  Response,
+  RequestHandler,
+  ErrorRequestHandler,
+} from "express";
 import { XSUAAService } from "./xsuaa-service";
 import { AuthTypes, useMockAuth } from "./utils";
 import { LOGGER } from "../logger";
+import { buildPublicBaseUrl } from "./host-resolver";
 
 /** JSON-RPC 2.0 error code for unauthorized requests */
 const RPC_UNAUTHORIZED = 10;
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds"); // This is a work around for missing cds context
+
+/**
+ * Sends a 401 response with RFC 9728 compliant WWW-Authenticate header.
+ * The header includes `resource_metadata` pointing to the protected resource metadata endpoint.
+ *
+ * @param req - Express request object
+ * @param res - Express response object
+ * @param message - Error message for the JSON-RPC response
+ */
+function send401WithMetadata(
+  req: Request,
+  res: Response,
+  message: string,
+): void {
+  const baseUrl = buildPublicBaseUrl(req);
+  const metadataUrl = `${baseUrl}/.well-known/oauth-protected-resource`;
+
+  res.set("WWW-Authenticate", `Bearer resource_metadata="${metadataUrl}"`);
+  res.status(401).json({
+    jsonrpc: "2.0",
+    error: {
+      code: RPC_UNAUTHORIZED,
+      message,
+      id: null,
+    },
+  });
+}
 
 /**
  * Creates an Express middleware for MCP authentication validation.
@@ -41,14 +74,7 @@ export function authHandlerFactory(): RequestHandler {
 
   return async (req, res, next) => {
     if (!req.headers.authorization && authKind !== "dummy") {
-      res.status(401).json({
-        jsonrpc: "2.0",
-        error: {
-          code: RPC_UNAUTHORIZED,
-          message: "Unauthorized",
-          id: null,
-        },
-      });
+      send401WithMetadata(req, res, "Unauthorized");
       return;
     }
 
@@ -60,14 +86,7 @@ export function authHandlerFactory(): RequestHandler {
       const securityContext = await xsuaaService.createSecurityContext(req);
 
       if (!securityContext) {
-        res.status(401).json({
-          jsonrpc: "2.0",
-          error: {
-            code: RPC_UNAUTHORIZED,
-            message: "Invalid or expired token",
-            id: null,
-          },
-        });
+        send401WithMetadata(req, res, "Invalid or expired token");
         return;
       }
 
@@ -91,14 +110,7 @@ export function authHandlerFactory(): RequestHandler {
 
     const user = ctx.user;
     if (!user || user === cds.User.anonymous) {
-      res.status(401).json({
-        jsonrpc: "2.0",
-        error: {
-          code: RPC_UNAUTHORIZED,
-          message: "Unauthorized",
-          id: null,
-        },
-      });
+      send401WithMetadata(req, res, "Unauthorized");
       return;
     }
 
@@ -127,13 +139,18 @@ export function authHandlerFactory(): RequestHandler {
  * @param next - Express next function for passing unhandled errors
  */
 export function errorHandlerFactory(): ErrorRequestHandler {
-  return (err, _, res, next) => {
-    if (err === 401 || err === 403) {
-      res.status(err).json({
+  return (err, req, res, next) => {
+    if (err === 401) {
+      send401WithMetadata(req, res, "Unauthorized");
+      return;
+    }
+
+    if (err === 403) {
+      res.status(403).json({
         jsonrpc: "2.0",
         error: {
           code: RPC_UNAUTHORIZED,
-          message: err === 401 ? "Unauthorized" : "Forbidden",
+          message: "Forbidden",
           id: null,
         },
       });

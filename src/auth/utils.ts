@@ -8,6 +8,7 @@ import { McpRestriction } from "../annotations/types";
 import { XSUAAService, AuthCredentials } from "./xsuaa-service";
 import { handleTokenRequest } from "./handlers";
 import { LOGGER } from "../logger";
+import { buildPublicBaseUrl } from "./host-resolver";
 
 /**
  * @fileoverview Authentication utilities for MCP-CAP integration.
@@ -244,25 +245,6 @@ function configureOAuthProxy(expressApp: Application): void {
 }
 
 /**
- * Determines the correct protocol (HTTP/HTTPS) for URL construction.
- * Accounts for reverse proxy headers and production environment defaults.
- *
- * @param req - Express request object
- * @returns Protocol string ('http' or 'https')
- */
-function getProtocol(req: Request): string {
-  // Check for reverse proxy header first (most reliable)
-  if (req.headers["x-forwarded-proto"]) {
-    return req.headers["x-forwarded-proto"] as string;
-  }
-
-  // Default to HTTPS in production environments
-  const isProduction =
-    process.env.NODE_ENV === "production" || process.env.VCAP_APPLICATION;
-  return isProduction ? "https" : req.protocol;
-}
-
-/**
  * Registers OAuth endpoints for XSUAA integration
  * Only called for jwt/xsuaa/ias auth types with valid credentials
  */
@@ -309,9 +291,8 @@ function registerOAuthEndpoints(
     // Client validation and redirect URI validation is handled by XSUAA
     // We delegate all client management to XSUAA's built-in OAuth server
 
-    const protocol = getProtocol(req);
-    const redirectUri =
-      redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
+    const baseUrl = buildPublicBaseUrl(req);
+    const redirectUri = redirect_uri || `${baseUrl}/oauth/callback`;
 
     const authUrl = xsuaaService.getAuthorizationUrl(
       redirectUri,
@@ -355,9 +336,8 @@ function registerOAuthEndpoints(
       }
 
       try {
-        const protocol = getProtocol(req);
-        const url =
-          redirect_uri || `${protocol}://${req.get("host")}/oauth/callback`;
+        const baseUrl = buildPublicBaseUrl(req);
+        const url = redirect_uri || `${baseUrl}/oauth/callback`;
 
         const tokenData = await xsuaaService.exchangeCodeForToken(
           code,
@@ -391,8 +371,7 @@ function registerOAuthEndpoints(
   expressApp.get(
     "/.well-known/oauth-authorization-server",
     (req: Request, res: Response): void => {
-      const protocol = getProtocol(req);
-      const baseUrl = `${protocol}://${req.get("host")}`;
+      const baseUrl = buildPublicBaseUrl(req);
 
       res.json({
         issuer: credentials.url,
@@ -409,17 +388,33 @@ function registerOAuthEndpoints(
     },
   );
 
+  // RFC 9728: OAuth 2.0 Protected Resource Metadata endpoint
+  expressApp.get(
+    "/.well-known/oauth-protected-resource",
+    (req: Request, res: Response): void => {
+      const baseUrl = buildPublicBaseUrl(req);
+
+      res.json({
+        resource: baseUrl,
+        authorization_servers: [credentials.url],
+        bearer_methods_supported: ["header"],
+        resource_documentation: `${baseUrl}/mcp/health`,
+      });
+    },
+  );
+
   // OAuth Dynamic Client Registration discovery endpoint (GET)
   expressApp.get(
     "/oauth/register",
     async (req: Request, res: Response): Promise<void> => {
+      const baseUrl = buildPublicBaseUrl(req);
+
       // IAS does not support DCR so we will respond with the pre-configured client_id
       if (kind === "ias") {
-        const protocol = getProtocol(req);
         const enhancedResponse = {
           client_id: credentials.clientid, // Add our CAP app's client ID
           redirect_uris: req.body.redirect_uris || [
-            `${protocol}://${req.get("host")}/oauth/callback`,
+            `${baseUrl}/oauth/callback`,
           ],
         };
         LOGGER.debug(
@@ -443,11 +438,10 @@ function registerOAuthEndpoints(
         const xsuaaData = await response.json();
 
         // Add missing required fields that MCP client expects
-        const protocol = getProtocol(req);
         const enhancedResponse = {
           ...xsuaaData, // Keep all XSUAA fields
           client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: [`${protocol}://${req.get("host")}/oauth/callback`], // Add our callback URL for discovery
+          redirect_uris: [`${baseUrl}/oauth/callback`], // Add our callback URL for discovery
         };
 
         res.status(response.status).json(enhancedResponse);
@@ -466,13 +460,14 @@ function registerOAuthEndpoints(
   expressApp.post(
     "/oauth/register",
     async (req: Request, res: Response): Promise<void> => {
+      const baseUrl = buildPublicBaseUrl(req);
+
       // IAS does not support DCR so we will respond with the pre-configured client_id
       if (kind === "ias") {
-        const protocol = getProtocol(req);
         const enhancedResponse = {
           client_id: credentials.clientid, // Add our CAP app's client ID
           redirect_uris: req.body.redirect_uris || [
-            `${protocol}://${req.get("host")}/oauth/callback`,
+            `${baseUrl}/oauth/callback`,
           ],
         };
         LOGGER.debug(
@@ -525,14 +520,12 @@ function registerOAuthEndpoints(
         const xsuaaData = await registrationResponse.json();
 
         // Add missing required fields that MCP client expects
-        const protocol = getProtocol(req);
         const enhancedResponse = {
           ...xsuaaData, // Keep all XSUAA fields
           client_id: credentials.clientid, // Add our CAP app's client ID
-          // client_secret: credentials.clientsecret, // CAP app's client secret
           redirect_uris: req.body.redirect_uris || [
-            `${protocol}://${req.get("host")}/oauth/callback`,
-          ], // Use client's redirect URIs
+            `${baseUrl}/oauth/callback`,
+          ],
         };
 
         LOGGER.debug("[AUTH] Register POST response", enhancedResponse);
