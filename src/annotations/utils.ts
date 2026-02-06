@@ -18,9 +18,13 @@ import { LOGGER } from "../logger";
 /**
  * Splits a definition name into service name and target
  * @param definition - The definition name to split
+ * @param serviceNames - Optional array of known service names (sorted longest-first) for accurate splitting
  * @returns Object containing serviceName and target
  */
-export function splitDefinitionName(definition: string): {
+export function splitDefinitionName(
+  definition: string,
+  serviceNames?: string[],
+): {
   serviceName: string;
   target: string;
 } {
@@ -28,6 +32,20 @@ export function splitDefinitionName(definition: string): {
     throw new Error("Invalid definition name. Cannot be split");
   }
 
+  // Use known service names for accurate splitting (handles Service.Entity.SubEntity)
+  if (serviceNames && serviceNames.length > 0) {
+    // Service names should be sorted longest-first for correct matching
+    for (const svcName of serviceNames) {
+      if (definition.startsWith(svcName + ".")) {
+        return {
+          serviceName: svcName,
+          target: definition.substring(svcName.length + 1),
+        };
+      }
+    }
+  }
+
+  // Fallback to simple split (last segment is target, rest is service)
   const splitted = definition.split(".");
   if (splitted.length <= 1) {
     return {

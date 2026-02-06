@@ -493,57 +493,140 @@ function registerGetTool(
 }
 
 /**
- * Creates a draft entity using CAP's NEW event
- * Triggers the full draft lifecycle including DraftAdministrativeData creation
- * @param svc - CAP service instance
- * @param resAnno - Resource annotation containing entity metadata
- * @param data - Entity data to create
- * @param toolName - Name of the tool for logging/error messages
- * @returns MCP tool result with created draft or error
+ * Creates a root draft entity using CAP's NEW event.
+ * Triggers the full draft lifecycle including DraftAdministrativeData creation.
  */
-async function createDraft(
+async function createRootDraft(
   svc: Service,
-  resAnno: McpResourceAnnotation,
+  draftEntityDef: any,
   data: Record<string, unknown>,
   toolName: string,
 ): Promise<any> {
-  LOGGER.debug(
-    `[MCP-DRAFT] Creating draft for ${resAnno.target} via NEW event`,
+  return withTimeout(
+    svc.send("NEW", draftEntityDef, data),
+    TIMEOUT_MS,
+    `${toolName} (draft create)`,
   );
+}
 
-  // Resolve the .drafts entity definition from the service
-  // onNew() in lean-draft.js checks req.target.isDraft — only true for .drafts entity
-  const entityDef = svc.entities[resAnno.target];
-  const draftEntityDef = entityDef?.drafts;
+/**
+ * Creates a draft composition child by inserting directly into the draft shadow table.
+ * Composition children require special handling:
+ * - They use direct INSERT instead of svc.send('NEW')
+ * - They must reference the parent's DraftAdministrativeData_DraftUUID
+ * - They use explicit columns to avoid @Core.Computed field errors
+ */
+async function createDraftCompositionChild(
+  svc: Service,
+  resAnno: McpResourceAnnotation,
+  draftEntityDef: any,
+  data: Record<string, unknown>,
+  toolName: string,
+  authEnabled: boolean,
+): Promise<any> {
+  const CDS = (global as any).cds;
+  const { INSERT, SELECT } = CDS.ql;
 
-  if (!draftEntityDef) {
-    const msg = `Draft entity definition not found for ${resAnno.target}. Entity may not be draft-enabled.`;
-    LOGGER.error(msg);
-    return toolError("DRAFT_CREATE_FAILED", msg);
+  // Auto-generate ID if not provided (UUID key)
+  if (!data.ID) {
+    data.ID = CDS.utils?.uuid?.() || require("crypto").randomUUID();
   }
 
-  try {
-    // Use svc.send('NEW', draftEntityDef, data) to trigger CAP's onNew() handler
-    // This creates both the draft record AND DraftAdministrativeData, matching OData behavior
-    // See: node_modules/@sap/cds/libx/_runtime/fiori/lean-draft.js onNew()
-    const draftResult = await withTimeout(
-      svc.send("NEW", draftEntityDef, data),
-      TIMEOUT_MS,
-      `${toolName} (draft create)`,
-    );
+  // Set draft-specific fields
+  data.HasActiveEntity = false;
+  data.IsActiveEntity = false;
 
-    LOGGER.info(
-      `[MCP-DRAFT] Draft created successfully for ${resAnno.target} via NEW event. DraftUUID: ${draftResult?.DraftAdministrativeData_DraftUUID}`,
+  // Look up parent draft's DraftAdministrativeData_DraftUUID if not provided
+  if (!data.DraftAdministrativeData_DraftUUID && data.up__ID) {
+    await resolveParentDraftUUID(svc, resAnno, data);
+  }
+
+  // Build explicit column list from provided data only
+  // This avoids CDS inserting @Core.Computed fields that may not exist in DB
+  const columns = Object.keys(data).filter((k) => data[k] !== undefined);
+  const values = columns.map((k) => data[k]);
+
+  const tx = svc.tx({ user: getAccessRights(authEnabled) });
+  try {
+    const insertResult = await withTimeout(
+      tx.run(
+        INSERT.into(draftEntityDef)
+          .columns(...columns)
+          .values(...values),
+      ),
+      TIMEOUT_MS,
+      `${toolName} (draft composition child)`,
+      async () => {
+        try {
+          await tx.rollback();
+        } catch {}
+      },
     );
-    const result = applyOmissionFilter(draftResult, resAnno);
-    return asMcpResult(result ?? {});
-  } catch (error: any) {
-    const isTimeout = String(error?.message || "").includes("timed out");
-    const msg = isTimeout
-      ? `${toolName} (draft) timed out after ${TIMEOUT_MS}ms`
-      : `DRAFT_CREATE_FAILED: ${error?.message || String(error)}`;
-    LOGGER.error(msg, error);
-    return toolError(isTimeout ? "TIMEOUT" : "DRAFT_CREATE_FAILED", msg);
+    try {
+      await tx.commit();
+    } catch {}
+
+    // Return the data as result since .columns().values() may return just count
+    if (
+      typeof insertResult === "number" ||
+      !insertResult ||
+      Object.keys(insertResult).length === 0
+    ) {
+      return { ...data };
+    }
+    return insertResult;
+  } catch (txError: any) {
+    try {
+      await tx.rollback();
+    } catch {}
+    throw txError;
+  }
+}
+
+/**
+ * Resolves the parent draft's DraftAdministrativeData_DraftUUID for composition children.
+ * Mutates the data object to add the DraftUUID if found.
+ */
+async function resolveParentDraftUUID(
+  svc: Service,
+  resAnno: McpResourceAnnotation,
+  data: Record<string, unknown>,
+): Promise<void> {
+  const CDS = (global as any).cds;
+  const { SELECT } = CDS.ql;
+
+  // Derive parent entity from target name (e.g. "ConsumptionRequests.chargeSheets" → "ConsumptionRequests")
+  const parentEntityName = resAnno.target.substring(
+    0,
+    resAnno.target.lastIndexOf("."),
+  );
+  const parentEntityDef = svc.entities?.[parentEntityName];
+  const parentDraftDef = parentEntityDef?.drafts;
+
+  if (!parentDraftDef) return;
+
+  try {
+    const parentDraft = await svc.run(
+      SELECT.one
+        .from(parentDraftDef)
+        .columns("DraftAdministrativeData_DraftUUID")
+        .where({ ID: data.up__ID, IsActiveEntity: false }),
+    );
+    if (parentDraft?.DraftAdministrativeData_DraftUUID) {
+      data.DraftAdministrativeData_DraftUUID =
+        parentDraft.DraftAdministrativeData_DraftUUID;
+      LOGGER.debug(
+        `[MCP-DRAFT] Resolved parent DraftUUID: ${data.DraftAdministrativeData_DraftUUID} from ${parentEntityName}`,
+      );
+    } else {
+      LOGGER.warn(
+        `[MCP-DRAFT] Could not find parent draft for ${parentEntityName} with ID ${data.up__ID}`,
+      );
+    }
+  } catch (lookupErr: any) {
+    LOGGER.warn(
+      `[MCP-DRAFT] Failed to lookup parent draft UUID: ${lookupErr?.message}`,
+    );
   }
 }
 
@@ -636,9 +719,52 @@ function registerCreateTool(
       }
     }
 
-    // Dispatch to draft or non-draft creation flow
-    if (resAnno.isDraftEnabled) {
-      return createDraft(svc, resAnno, data, toolName);
+    // Resolve entity definition and check for draft capability at runtime.
+    // This covers both directly draft-enabled entities (@odata.draft.enabled)
+    // AND composition children of draft-enabled entities (they inherit .drafts)
+    const entityDef = svc.entities?.[resAnno.target];
+    const draftEntityDef = entityDef?.drafts;
+    const isDraftCompositionChild = !resAnno.isDraftEnabled && !!draftEntityDef;
+    const shouldUseDraftPath =
+      resAnno.isDraftEnabled || isDraftCompositionChild;
+
+    // Handle draft-enabled entities and composition children of draft entities
+    if (shouldUseDraftPath) {
+      if (!draftEntityDef) {
+        const msg = `Draft entity definition not found for ${resAnno.target}. Entity may not be draft-enabled.`;
+        LOGGER.error(msg);
+        return toolError("DRAFT_CREATE_FAILED", msg);
+      }
+
+      LOGGER.debug(
+        `[MCP-DRAFT] Creating draft for ${resAnno.target} via ${isDraftCompositionChild ? "composition child INSERT" : "NEW event"}`,
+      );
+
+      try {
+        const draftResult = isDraftCompositionChild
+          ? await createDraftCompositionChild(
+              svc,
+              resAnno,
+              draftEntityDef,
+              data,
+              toolName,
+              authEnabled,
+            )
+          : await createRootDraft(svc, draftEntityDef, data, toolName);
+
+        LOGGER.info(
+          `[MCP-DRAFT] Draft created for ${resAnno.target}. DraftUUID: ${draftResult?.DraftAdministrativeData_DraftUUID}`,
+        );
+        const result = applyOmissionFilter(draftResult, resAnno);
+        return asMcpResult(result ?? {});
+      } catch (error: any) {
+        const isTimeout = String(error?.message || "").includes("timed out");
+        const msg = isTimeout
+          ? `${toolName} (draft) timed out after ${TIMEOUT_MS}ms`
+          : `DRAFT_CREATE_FAILED: ${error?.message || String(error)}`;
+        LOGGER.error(msg, error);
+        return toolError(isTimeout ? "TIMEOUT" : "DRAFT_CREATE_FAILED", msg);
+      }
     }
 
     // Non-draft flow: use transaction-based INSERT
