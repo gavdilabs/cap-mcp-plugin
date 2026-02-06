@@ -1,12 +1,12 @@
 import { Request } from "express";
 import {
-  resolveEffectiveHost,
   buildPublicBaseUrl,
-  getProtocol,
-  normalizeHost,
   extractSubdomain,
-  isProductionEnv,
+  getProtocol,
   HostResolverEnv,
+  isProductionEnv,
+  normalizeHost,
+  resolveEffectiveHost,
 } from "../../../src/auth/host-resolver";
 
 // Mock the logger
@@ -55,8 +55,8 @@ describe("Host Resolver", () => {
       expect(normalizeHost("")).toBe("");
     });
 
-    it("should strip port from host", () => {
-      expect(normalizeHost("example.com:8080")).toBe("example.com");
+    it("should preserve port from host", () => {
+      expect(normalizeHost("example.com:8080")).toBe("example.com:8080");
     });
 
     it("should handle host without port", () => {
@@ -75,7 +75,7 @@ describe("Host Resolver", () => {
 
     it("should handle comma-separated with ports", () => {
       expect(normalizeHost("public.example.com:443, proxy.internal:8080")).toBe(
-        "public.example.com",
+        "public.example.com:443",
       );
     });
   });
@@ -133,14 +133,14 @@ describe("Host Resolver", () => {
         expect(result).toBe("public.example.com");
       });
 
-      it("should strip port from x-forwarded-host", () => {
+      it("should preserve port from x-forwarded-host", () => {
         const req = mockRequest({
           "x-forwarded-host": "public.example.com:443",
         });
 
         const result = resolveEffectiveHost(req, prodEnv);
 
-        expect(result).toBe("public.example.com");
+        expect(result).toBe("public.example.com:443");
       });
 
       it("should take first value from comma-separated x-forwarded-host", () => {
@@ -236,10 +236,10 @@ describe("Host Resolver", () => {
           appDomain: "myapp.cloud",
         };
 
-        const result = resolveEffectiveHost(req, env);
+        const result = resolveEffectiveHost(req, localDevEnv);
 
-        // In local dev, should use raw host, not APP_DOMAIN
-        expect(result).toBe("localhost");
+        // In local dev, should use raw host with port preserved
+        expect(result).toBe("localhost:4004");
       });
     });
 
@@ -251,7 +251,17 @@ describe("Host Resolver", () => {
 
         const result = resolveEffectiveHost(req, localDevEnv);
 
-        expect(result).toBe("localhost");
+        expect(result).toBe("localhost:4004");
+      });
+
+      it("should preserve port in hybrid mode with subdomain", () => {
+        const req = mockRequest({
+          host: "tenant-app.localhost:5002",
+        });
+
+        const result = resolveEffectiveHost(req, localDevEnv);
+
+        expect(result).toBe("tenant-app.localhost:5002");
       });
 
       it("should default to localhost when no host header", () => {
@@ -350,7 +360,15 @@ describe("Host Resolver", () => {
 
       const result = buildPublicBaseUrl(req, localDevEnv);
 
-      expect(result).toBe("http://localhost");
+      expect(result).toBe("http://localhost:4004");
+    });
+
+    it("should build correct URL for hybrid mode with subdomain and port", () => {
+      const req = mockRequest({ host: "tenant-app.localhost:5002" }, "https");
+
+      const result = buildPublicBaseUrl(req, localDevEnv);
+
+      expect(result).toBe("https://tenant-app.localhost:5002");
     });
 
     it("should build correct URL for CF without x-forwarded headers", () => {
