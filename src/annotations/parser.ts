@@ -260,6 +260,12 @@ function constructResourceAnnotation(
     }
   }
 
+  // Detect draft-enabled entities
+  const isDraftEnabled = (entityDef as any)?.["@odata.draft.enabled"] === true;
+  LOGGER.debug(
+    `[MCP-DRAFT] Entity ${entityTarget}: isDraftEnabled=${isDraftEnabled}`,
+  );
+
   return new McpResourceAnnotation(
     annotations.name as string,
     annotations.description as string,
@@ -276,6 +282,7 @@ function constructResourceAnnotation(
     omittedFields,
     deepInsertRefs,
     associationSafeColumns,
+    isDraftEnabled,
   );
 }
 

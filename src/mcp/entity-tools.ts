@@ -493,6 +493,61 @@ function registerGetTool(
 }
 
 /**
+ * Creates a draft entity using CAP's NEW event
+ * Triggers the full draft lifecycle including DraftAdministrativeData creation
+ * @param svc - CAP service instance
+ * @param resAnno - Resource annotation containing entity metadata
+ * @param data - Entity data to create
+ * @param toolName - Name of the tool for logging/error messages
+ * @returns MCP tool result with created draft or error
+ */
+async function createDraft(
+  svc: Service,
+  resAnno: McpResourceAnnotation,
+  data: Record<string, unknown>,
+  toolName: string,
+): Promise<any> {
+  LOGGER.debug(
+    `[MCP-DRAFT] Creating draft for ${resAnno.target} via NEW event`,
+  );
+
+  // Resolve the .drafts entity definition from the service
+  // onNew() in lean-draft.js checks req.target.isDraft — only true for .drafts entity
+  const entityDef = svc.entities[resAnno.target];
+  const draftEntityDef = entityDef?.drafts;
+
+  if (!draftEntityDef) {
+    const msg = `Draft entity definition not found for ${resAnno.target}. Entity may not be draft-enabled.`;
+    LOGGER.error(msg);
+    return toolError("DRAFT_CREATE_FAILED", msg);
+  }
+
+  try {
+    // Use svc.send('NEW', draftEntityDef, data) to trigger CAP's onNew() handler
+    // This creates both the draft record AND DraftAdministrativeData, matching OData behavior
+    // See: node_modules/@sap/cds/libx/_runtime/fiori/lean-draft.js onNew()
+    const draftResult = await withTimeout(
+      svc.send("NEW", draftEntityDef, data),
+      TIMEOUT_MS,
+      `${toolName} (draft create)`,
+    );
+
+    LOGGER.info(
+      `[MCP-DRAFT] Draft created successfully for ${resAnno.target} via NEW event. DraftUUID: ${draftResult?.DraftAdministrativeData_DraftUUID}`,
+    );
+    const result = applyOmissionFilter(draftResult, resAnno);
+    return asMcpResult(result ?? {});
+  } catch (error: any) {
+    const isTimeout = String(error?.message || "").includes("timed out");
+    const msg = isTimeout
+      ? `${toolName} (draft) timed out after ${TIMEOUT_MS}ms`
+      : `DRAFT_CREATE_FAILED: ${error?.message || String(error)}`;
+    LOGGER.error(msg, error);
+    return toolError(isTimeout ? "TIMEOUT" : "DRAFT_CREATE_FAILED", msg);
+  }
+}
+
+/**
  * Registers the create tool for an entity.
  * Associations are exposed via <assoc>_ID fields for simplicity.
  */
@@ -581,6 +636,12 @@ function registerCreateTool(
       }
     }
 
+    // Dispatch to draft or non-draft creation flow
+    if (resAnno.isDraftEnabled) {
+      return createDraft(svc, resAnno, data, toolName);
+    }
+
+    // Non-draft flow: use transaction-based INSERT
     const tx = svc.tx({ user: getAccessRights(authEnabled) });
     try {
       const response = await withTimeout(
