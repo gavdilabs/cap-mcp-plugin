@@ -8,11 +8,7 @@ import { McpRestriction } from "../annotations/types";
 import { XSUAAService, AuthCredentials } from "./xsuaa-service";
 import { handleTokenRequest } from "./handlers";
 import { LOGGER } from "../logger";
-import {
-  resolveEffectiveHost,
-  buildPublicBaseUrl,
-  getProtocol as getProtocolFromResolver,
-} from "./host-resolver";
+import { buildPublicBaseUrl } from "./host-resolver";
 
 /**
  * @fileoverview Authentication utilities for MCP-CAP integration.
@@ -254,68 +250,6 @@ export { resolveEffectiveHost as getEffectiveHost } from "./host-resolver";
 export { getProtocol } from "./host-resolver";
 
 /**
- * Builds subscriber-specific XSUAA URL for multi-tenant OAuth flows.
- *
- * CRITICAL: In multi-tenant SaaS apps, OAuth flows must use the SUBSCRIBER's
- * XSUAA, not the provider's. This function extracts the subscriber subdomain
- * from the request and constructs the correct XSUAA URL.
- *
- * @param req - Express request object
- * @param credentials - XSUAA credentials
- * @param urlPath - Path to append to XSUAA URL (e.g., '/oauth/authorize')
- * @returns Subscriber-specific XSUAA URL
- */
-function getSubscriberXsuaaUrl(
-  req: Request,
-  credentials: AuthCredentials,
-  urlPath: string,
-): string {
-  let subdomain = resolveEffectiveHost(req).split(".")[0];
-  const originalSubdomain = subdomain;
-
-  // Check if subdomain looks like localhost (local development)
-  const isLocalDev =
-    subdomain.includes(":") ||
-    subdomain === "localhost" ||
-    subdomain.startsWith("127");
-
-  if (isLocalDev) {
-    subdomain = credentials.identityzone || credentials.zid || subdomain;
-    LOGGER.debug(
-      "[MCP-XSUAA] Local development detected - using identity zone as subdomain",
-      {
-        originalSubdomain,
-        identityZone: subdomain,
-        source: credentials.identityzone
-          ? "identityzone"
-          : credentials.zid
-            ? "zid"
-            : "fallback",
-      },
-    );
-  }
-
-  const domain =
-    credentials.uaadomain || "authentication.eu10.hana.ondemand.com";
-  const xsuaaUrl = `https://${subdomain}.${domain}${urlPath}`;
-
-  LOGGER.info("[MCP-XSUAA] Built subscriber XSUAA URL", {
-    xsuaaUrl,
-    subdomain,
-    domain,
-    urlPath,
-    isLocalDev,
-    purpose: urlPath.includes("authorize")
-      ? "authorization"
-      : urlPath.includes("token")
-        ? "token-exchange"
-        : "other",
-  });
-
-  return xsuaaUrl;
-}
-
-/**
  * Registers OAuth endpoints for XSUAA integration
  * Only called for jwt/xsuaa/ias auth types with valid credentials
  */
@@ -362,28 +296,18 @@ function registerOAuthEndpoints(
     // Client validation and redirect URI validation is handled by XSUAA
     // We delegate all client management to XSUAA's built-in OAuth server
 
-    const redirectUri =
-      redirect_uri || `${buildPublicBaseUrl(req)}/oauth/callback`;
+    const baseUrl = buildPublicBaseUrl(req);
+    const redirectUri = redirect_uri || `${baseUrl}/oauth/callback`;
 
-    // Build subscriber-specific XSUAA authorization URL
-    const params = new URLSearchParams({
-      client_id: client_id || credentials.clientid,
-      response_type: "code",
-      redirect_uri: redirectUri,
-    });
-    if (code_challenge) params.set("code_challenge", code_challenge);
-    if (code_challenge_method)
-      params.set("code_challenge_method", code_challenge_method);
-    if (scope) params.set("scope", scope);
-    if (state) params.set("state", state);
-
-    const xsuaaUrl = `${getSubscriberXsuaaUrl(req, credentials, "/oauth/authorize")}?${params}`;
-
-    LOGGER.debug("[MCP-OAUTH] Redirecting to XSUAA", {
-      subdomain: resolveEffectiveHost(req).split(".")[0],
-    });
-
-    res.redirect(xsuaaUrl);
+    const authUrl = xsuaaService.getAuthorizationUrl(
+      redirectUri,
+      client_id ?? "",
+      state,
+      code_challenge,
+      code_challenge_method,
+      scope,
+    );
+    res.redirect(authUrl);
   });
 
   // OAuth Callback endpoint - stateless token exchange
@@ -417,7 +341,8 @@ function registerOAuthEndpoints(
       }
 
       try {
-        const url = redirect_uri || `${buildPublicBaseUrl(req)}/oauth/callback`;
+        const baseUrl = buildPublicBaseUrl(req);
+        const url = redirect_uri || `${baseUrl}/oauth/callback`;
 
         const tokenData = await xsuaaService.exchangeCodeForToken(
           code,
@@ -451,13 +376,7 @@ function registerOAuthEndpoints(
   expressApp.get(
     "/.well-known/oauth-authorization-server",
     (req: Request, res: Response): void => {
-      const base = buildPublicBaseUrl(req);
-      const issuer = getSubscriberXsuaaUrl(req, credentials, "");
-
-      LOGGER.debug("[MCP-OAUTH] Authorization server metadata requested", {
-        baseUrl: base,
-        issuer,
-      });
+      const baseUrl = buildPublicBaseUrl(req);
 
       res.json({
         issuer,
@@ -474,23 +393,34 @@ function registerOAuthEndpoints(
     },
   );
 
+  // RFC 9728: OAuth 2.0 Protected Resource Metadata endpoint
+  expressApp.get(
+    "/.well-known/oauth-protected-resource",
+    (req: Request, res: Response): void => {
+      const baseUrl = buildPublicBaseUrl(req);
+
+      res.json({
+        resource: baseUrl,
+        authorization_servers: [credentials.url],
+        bearer_methods_supported: ["header"],
+        resource_documentation: `${baseUrl}/mcp/health`,
+      });
+    },
+  );
+
   // OAuth Dynamic Client Registration discovery endpoint (GET)
   expressApp.get(
     "/oauth/register",
     async (req: Request, res: Response): Promise<void> => {
+      const baseUrl = buildPublicBaseUrl(req);
+
       // IAS does not support DCR so we will respond with the pre-configured client_id
       if (kind === "ias") {
-        const callback = `${buildPublicBaseUrl(req)}/oauth/callback`;
-        LOGGER.debug("[MCP-OAUTH] Client registration discovery requested", {
-          callback,
-        });
         const enhancedResponse = {
-          client_id: credentials.clientid,
-          client_name: "MCP Server",
-          redirect_uris: [callback],
-          token_endpoint_auth_method: "none",
-          grant_types: ["authorization_code", "refresh_token"],
-          response_types: ["code"],
+          client_id: credentials.clientid, // Add our CAP app's client ID
+          redirect_uris: req.body.redirect_uris || [
+            `${baseUrl}/oauth/callback`,
+          ],
         };
         LOGGER.debug(
           "Provided static client_id during DCR registration process",
@@ -513,11 +443,10 @@ function registerOAuthEndpoints(
         const xsuaaData = await response.json();
 
         // Add missing required fields that MCP client expects
-        const callback = `${buildPublicBaseUrl(req)}/oauth/callback`;
         const enhancedResponse = {
           ...xsuaaData, // Keep all XSUAA fields
           client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: [callback], // Add our callback URL for discovery
+          redirect_uris: [`${baseUrl}/oauth/callback`], // Add our callback URL for discovery
         };
 
         res.status(response.status).json(enhancedResponse);
@@ -536,13 +465,14 @@ function registerOAuthEndpoints(
   expressApp.post(
     "/oauth/register",
     async (req: Request, res: Response): Promise<void> => {
+      const baseUrl = buildPublicBaseUrl(req);
+
       // IAS does not support DCR so we will respond with the pre-configured client_id
       if (kind === "ias") {
-        const protocol = getProtocolFromResolver(req);
         const enhancedResponse = {
           client_id: credentials.clientid, // Add our CAP app's client ID
           redirect_uris: req.body.redirect_uris || [
-            `${protocol}://${req.get("host")}/oauth/callback`,
+            `${baseUrl}/oauth/callback`,
           ],
         };
         LOGGER.debug(
@@ -595,19 +525,12 @@ function registerOAuthEndpoints(
         const xsuaaData = await registrationResponse.json();
 
         // Add missing required fields that MCP client expects
-        const callback = `${buildPublicBaseUrl(req)}/oauth/callback`;
-        const requestedUris = req.body?.redirect_uris;
         const enhancedResponse = {
           ...xsuaaData, // Keep all XSUAA fields
           client_id: credentials.clientid, // Add our CAP app's client ID
-          client_name: req.body?.client_name || "MCP Client",
-          redirect_uris:
-            Array.isArray(requestedUris) && requestedUris.length > 0
-              ? requestedUris
-              : [callback],
-          token_endpoint_auth_method: "none",
-          grant_types: ["authorization_code", "refresh_token"],
-          response_types: ["code"],
+          redirect_uris: req.body.redirect_uris || [
+            `${baseUrl}/oauth/callback`,
+          ],
         };
 
         LOGGER.debug("[AUTH] Register POST response", enhancedResponse);

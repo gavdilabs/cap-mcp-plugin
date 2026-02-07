@@ -130,6 +130,8 @@ export type McpAnnotationWrap = {
   tools?: boolean;
   /** Tool modes to create; defaults are provided via configuration */
   modes?: EntityOperationMode[];
+  /** Custom name prefix for generated tools (e.g., 'BookCatalog' generates 'BookCatalog_query') */
+  name?: string;
   /** Additional description hint appended to tool descriptions */
   hint?: string | McpDetailedHint;
 };

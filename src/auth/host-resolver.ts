@@ -82,17 +82,13 @@ function getHostHeader(req: Request): string {
 /**
  * Normalizes a host header value.
  * - Takes first value if comma-separated (proxy chain)
- * - Strips port number
  * - Trims whitespace
  */
 export function normalizeHost(headerValue: string | undefined): string {
   if (!headerValue) return "";
 
   // Take first host if comma-separated (multiple proxies)
-  const first = headerValue.split(",")[0].trim();
-
-  // Strip port if present
-  return first.split(":")[0];
+  return headerValue.split(",")[0].trim();
 }
 
 /**
