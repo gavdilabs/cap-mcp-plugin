@@ -244,6 +244,11 @@ function configureOAuthProxy(expressApp: Application): void {
   registerOAuthEndpoints(expressApp, credentials, kind);
 }
 
+// Host resolution functions moved to host-resolver.ts
+// Re-export for backward compatibility
+export { resolveEffectiveHost as getEffectiveHost } from "./host-resolver";
+export { getProtocol } from "./host-resolver";
+
 /**
  * Registers OAuth endpoints for XSUAA integration
  * Only called for jwt/xsuaa/ias auth types with valid credentials

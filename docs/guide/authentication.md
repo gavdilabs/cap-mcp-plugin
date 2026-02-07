@@ -393,6 +393,105 @@ sequenceDiagram
     MCP-->>Client: Session established
 ```
 
+## Multi-Tenant OAuth Configuration
+
+For multi-tenant SAP BTP applications, OAuth token exchange must occur at the **subscriber's XSUAA**, not the provider's. This is critical for:
+
+- Correct tenant context (zid/zdn in JWT)
+- Destination service lookups
+- Proper authorization scopes
+
+### How Multi-Tenant URL Resolution Works
+
+When a subscriber accesses your application through their approuter URL (e.g., `subscriber-tenant.myapp.cfapps.eu10.hana.ondemand.com`), the plugin automatically:
+
+1. **Extracts the subscriber subdomain** from the request host
+2. **Builds the subscriber's XSUAA URL** using that subdomain
+3. **Exchanges tokens at the subscriber's XSUAA** to maintain correct tenant context
+
+```mermaid
+sequenceDiagram
+    participant Client as MCP Client
+    participant Approuter as Subscriber Approuter
+    participant MCP as MCP Server
+    participant XSUAA as Subscriber XSUAA
+
+    Client->>Approuter: Connect via subscriber URL
+    Approuter->>MCP: Forward with x-forwarded-host
+    MCP->>MCP: Extract subscriber subdomain
+    MCP->>XSUAA: Exchange token at subscriber XSUAA
+    XSUAA-->>MCP: Token with subscriber context
+    MCP-->>Client: Session with correct tenant
+```
+
+### Required Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `appDomain` | Application domain for tenant routing | `cfapps.eu10.hana.ondemand.com` |
+| `tenantSeparator` | Separator between subdomain and domain | `.` (default) |
+| `XSAPPNAME` | XSUAA app name (used for subdomain stripping) | `myapp-dev!t12345` |
+
+### Multi-Tenant Configuration Example
+
+```json
+{
+  "cds": {
+    "mcp": {
+      "auth": "inherit"
+    },
+    "requires": {
+      "auth": {
+        "kind": "xsuaa",
+        "credentials": {
+          "xsappname": "myapp-dev!t12345",
+          "tenant-mode": "shared"
+        }
+      }
+    }
+  }
+}
+```
+
+### Multi-Tenant Troubleshooting
+
+#### OAuth Callbacks Use Internal CF URL
+
+**Problem**: OAuth callbacks route to internal Cloud Foundry URLs instead of the subscriber's approuter.
+
+**Solution**: Set the `appDomain` environment variable in your MTA or manifest:
+
+```yaml
+# mta.yaml
+modules:
+  - name: myapp-srv
+    parameters:
+      env:
+        appDomain: cfapps.eu10.hana.ondemand.com
+```
+
+#### Token Issued at Wrong Tenant
+
+**Problem**: JWT contains provider's zid instead of subscriber's zid.
+
+**Cause**: Token exchange happening at provider's XSUAA instead of subscriber's.
+
+**Solution**: Verify the `x-forwarded-host` header is being passed by the approuter. Check logs for:
+```
+[MCP-TOKEN] Built subscriber XSUAA token URL
+```
+
+#### Destination Lookups Fail
+
+**Problem**: Destination service returns 404 or "destination not found".
+
+**Cause**: Token has wrong tenant context (zid/zdn mismatch).
+
+**Solution**: 
+1. Verify token exchange logs show correct subscriber subdomain
+2. Check `zdn` claim in JWT matches subscriber's identity zone
+3. Ensure destinations are configured in subscriber's subaccount
+
 ## Common Issues
 
 ### "401 Unauthorized" in Development
