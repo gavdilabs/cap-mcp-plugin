@@ -37,6 +37,7 @@ export function loadConfiguration(): CAPConfiguration {
       "update",
     ],
     instructions: cdsEnv?.instructions,
+    enable_model_description: cdsEnv?.enable_model_description ?? true,
   };
 }
 

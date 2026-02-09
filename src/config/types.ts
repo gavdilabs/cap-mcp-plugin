@@ -53,6 +53,11 @@ export interface CAPConfiguration {
    * Instructions for the MCP server
    */
   instructions?: string | { file?: string };
+  /**
+   * Whether or not the describe model tool should be enabled on the MCP server
+   * By default this should always be true, for backwards compatability
+   */
+  enable_model_description?: boolean;
 }
 
 /**
