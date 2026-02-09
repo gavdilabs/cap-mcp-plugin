@@ -1,7 +1,6 @@
 # CAP MCP Plugin - AI With Ease
+
 ![NPM Version](https://img.shields.io/npm/v/%40gavdi%2Fcap-mcp) ![NPM License](https://img.shields.io/npm/l/%40gavdi%2Fcap-mcp) ![NPM Downloads](https://img.shields.io/npm/dm/%40gavdi%2Fcap-mcp) ![GitHub commits since latest release](https://img.shields.io/github/commits-since/gavdilabs/cap-mcp-plugin/latest)
-
-
 
 > This implementation is based on the Model Context Protocol (MCP) put forward by Anthropic.
 > For more information on MCP, please have a look at their [official documentation.](https://modelcontextprotocol.io/introduction)
@@ -99,6 +98,7 @@ cds serve
 ```
 
 The MCP server will be available at:
+
 - **MCP Endpoint**: `http://localhost:4004/mcp`
 - **Health Check**: `http://localhost:4004/mcp/health`
 
@@ -176,6 +176,7 @@ service CatalogService {
 ```
 
 **Generated MCP Resource Capabilities:**
+
 - **OData v4 Query Support**: `$filter`, `$orderby`, `$top`, `$skip`, `$select`, `$expand`
 - **Natural Language Queries**: "Find books by Stephen King with stock > 20"
 - **Dynamic Filtering**: Complex filter expressions using OData syntax
@@ -236,23 +237,27 @@ entity Users {
 ```
 
 **How It Works:**
+
 - Fields marked with `@mcp.omit` are automatically filtered from all MCP responses
 - Applies to:
   - **Resources**: Field will not appear in resource read operations
   - **Wrapped Entities**: Omission applies to all entity wrapper operations
 
 **Common Use Cases:**
+
 - **Security**: Hide information sensitive to functionality or business operations
 - **Privacy**: Protect personal identifiers
 - **Internal Data**: Exclude internal notes, audit logs, or system-only fields
 - **Compliance**: Ensure GDPR/CCPA compliance by hiding sensitive personal data
 
 **Important Notes:**
+
 - Omitted fields are **only excluded from outputs** - they can still be provided as inputs for create/update operations
 - The annotation works alongside the CAP standard annotation `@Core.Computed` for comprehensive field control
 - Omitted fields remain queryable in the CAP service - only MCP responses are filtered
 
 **Example with Multiple Annotations:**
+
 ```cds
 entity Products {
   key ID          : Integer;
@@ -325,11 +330,13 @@ function getBooksByAuthor(authorName: String) returns array of String;
 > NOTE: Elicitation is only available for direct tools at this moment. Wrapped entities are not covered by this.
 
 **Elicit Types:**
+
 - **`confirm`**: Requests user confirmation before executing the tool with a yes/no prompt
 - **`input`**: Prompts the user to provide values for the tool's parameters
 - **Combined**: Use both `['input', 'confirm']` to first collect parameters, then ask for confirmation
 
 **User Experience:**
+
 - **Confirmation**: "Please confirm that you want to perform action 'Get a random book recommendation'"
 - **Input**: "Please fill out the required parameters" with a form for each parameter
 - **User Actions**: Accept, decline, or cancel the elicitation request
@@ -342,6 +349,7 @@ Provide contextual descriptions for individual properties and parameters using t
 #### Where to Use Hints
 
 **Resource Entity Properties**
+
 ```cds
 entity Books {
   key ID    : Integer @mcp.hint: 'Must be a unique number not already in the system';
@@ -351,6 +359,7 @@ entity Books {
 ```
 
 **Array Elements**
+
 ```cds
 entity Authors {
   key ID          : Integer;
@@ -360,6 +369,7 @@ entity Authors {
 ```
 
 **Function/Action Parameters**
+
 ```cds
 @mcp: {
   name       : 'books-by-author',
@@ -372,6 +382,7 @@ function getBooksByAuthor(
 ```
 
 **Complex Type Fields**
+
 ```cds
 type TValidQuantities {
   positiveOnly : Integer @mcp.hint: 'Only takes in positive numbers, i.e. no negative values such as -1'
@@ -381,6 +392,7 @@ type TValidQuantities {
 #### How Hints Are Used
 
 Hints are automatically incorporated into:
+
 - **Resource Descriptions**: Field-level guidance in entity wrapper tools (query/get/create/update/delete)
 - **Tool Parameter Schemas**: Enhanced parameter descriptions visible to AI agents
 - **Input Validation**: Context for AI agents when constructing function calls
@@ -388,6 +400,7 @@ Hints are automatically incorporated into:
 #### Example: Enhanced Tool Experience
 
 Without `@mcp.hint`:
+
 ```json
 {
   "tool": "CatalogService_Books_create",
@@ -399,6 +412,7 @@ Without `@mcp.hint`:
 ```
 
 With `@mcp.hint`:
+
 ```json
 {
   "tool": "CatalogService_Books_create",
@@ -418,16 +432,20 @@ With `@mcp.hint`:
 #### Best Practices
 
 1. **Be Specific**: Provide concrete examples and constraints
+
    - ❌ Bad: `@mcp.hint: 'Author name'`
    - ✅ Good: `@mcp.hint: 'Full name of the author (e.g., "Ernest Hemingway")'`
 
 2. **Include Constraints**: Document validation rules and business logic
+
    - ✅ `@mcp.hint: 'Must be between 0 and 999, representing quantity in stock'`
 
 3. **Clarify Foreign Keys**: Help AI agents understand associations
+
    - ✅ `@mcp.hint: 'Foreign key reference to Authors.ID'`
 
 4. **Explain Business Context**: Add domain-specific information
+
    - ✅ `@mcp.hint: 'ISBN-13 format, used for unique book identification'`
 
 5. **Avoid Redundancy**: Don't repeat what's obvious from the field name and type
@@ -492,22 +510,24 @@ Configure the MCP plugin through your CAP application's `package.json` or `.cdsr
 
 ### Configuration Options
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `name` | string | package.json name | MCP server name |
-| `version` | string | package.json version | MCP server version |
-| `auth` | `"inherit"` \| `"none"` | `"inherit"` | Authentication mode |
-| `instructions` | string | `null` | MCP server instructions for agents |
-| `capabilities.resources.listChanged` | boolean | `true` | Enable resource list change notifications |
-| `capabilities.resources.subscribe` | boolean | `false` | Enable resource subscriptions |
-| `capabilities.tools.listChanged` | boolean | `true` | Enable tool list change notifications |
-| `capabilities.prompts.listChanged` | boolean | `true` | Enable prompt list change notifications |
+| Option                               | Type                    | Default              | Description                                                                 |
+| ------------------------------------ | ----------------------- | -------------------- | --------------------------------------------------------------------------- |
+| `name`                               | string                  | package.json name    | MCP server name                                                             |
+| `version`                            | string                  | package.json version | MCP server version                                                          |
+| `auth`                               | `"inherit"` \| `"none"` | `"inherit"`          | Authentication mode                                                         |
+| `instructions`                       | string                  | `null`               | MCP server instructions for agents                                          |
+| `enable_model_description`           | boolean                 | `true`               | Determines whether the MCP server should include the model description tool |
+| `capabilities.resources.listChanged` | boolean                 | `true`               | Enable resource list change notifications                                   |
+| `capabilities.resources.subscribe`   | boolean                 | `false`              | Enable resource subscriptions                                               |
+| `capabilities.tools.listChanged`     | boolean                 | `true`               | Enable tool list change notifications                                       |
+| `capabilities.prompts.listChanged`   | boolean                 | `true`               | Enable prompt list change notifications                                     |
 
 ### Authentication Configuration
 
 The plugin supports two authentication modes:
 
 #### `"inherit"` Mode (Default)
+
 Uses your CAP application's existing authentication system:
 
 ```json
@@ -526,6 +546,7 @@ Uses your CAP application's existing authentication system:
 ```
 
 #### `"none"` Mode (Development/Testing)
+
 Disables authentication completely:
 
 ```json
@@ -541,6 +562,7 @@ Disables authentication completely:
 **⚠️ Security Warning**: Only use `"none"` mode in development environments. Never deploy to production without proper authentication.
 
 #### Authentication Flow
+
 1. MCP client connects to `/mcp` endpoint
 2. If the authentication style used is OAuth, the OAuth flow will be executed
 3. CAP authentication middleware validates credentials (if `auth: "inherit"`)
@@ -550,6 +572,7 @@ Disables authentication completely:
 ### Automatic Features
 
 The plugin automatically:
+
 - Scans your CAP service definitions for `@mcp` annotations
 - Generates appropriate MCP resources, tools, and prompts
 - Creates ResourceTemplates with proper OData v4 query parameter support
@@ -570,6 +593,7 @@ While this shows how this example CDS annotation works, the possibilities are en
 ## 📋 Business Case Example: Workflow Approval Management
 
 ### The Setup
+
 Your CAP service includes a workflow management system with MCP integration:
 
 ```cds
@@ -587,16 +611,19 @@ service WorkflowService {
 ### The Interaction Flow
 
 **1. User Query**
+
 ```
 User: "Hey <Agent>, do I have any workflows pending approval?"
 ```
 
 **2. AI Agent Processing**
+
 - Agent recognizes this as a request for pending approval information
 - Identifies the `get-my-pending-approval` tool as the appropriate method
 - Determines the user's ID from context (session, authentication, etc.)
 
 **3. MCP Tool Execution**
+
 ```javascript
 // Agent calls the MCP tool
 {
@@ -608,12 +635,14 @@ User: "Hey <Agent>, do I have any workflows pending approval?"
 ```
 
 **4. CAP Service Processing**
+
 - Your CAP service receives the tool call
 - Executes `getPendingApproval("john.doe@company.com")`
 - Queries your workflow database/system
 - Returns structured workflow data
 
 **5. AI Response**
+
 ```
 Agent: "You have 3 workflows pending your approval:
 
@@ -636,6 +665,7 @@ Would you like me to help you review any of these in detail?"
 ```
 
 ### Business Value
+
 - **Instant Access**: No need to log into workflow systems or navigate complex UIs
 - **Contextual Intelligence**: AI can prioritize based on urgency, amounts, or business rules
 - **Natural Interaction**: Users can ask follow-up questions in plain language
@@ -702,11 +732,13 @@ This project is licensed under the Apache-2.0 License - see the [LICENSE.md](LIC
 ### Common Issues
 
 #### MCP Server Not Starting
+
 - **Check Port Availability**: Ensure port 4004 is not in use by another process
 - **Verify CAP Service**: Make sure your CAP application starts successfully with `cds serve`
 - **Authentication Issues**: If using `auth: "inherit"`, ensure your CAP authentication is properly configured
 
 #### MCP Client Connection Failures
+
 ```bash
 # Check if MCP endpoint is accessible
 curl http://localhost:4004/mcp/health
@@ -716,21 +748,25 @@ curl http://localhost:4004/mcp/health
 ```
 
 #### Annotation Not Working
+
 - **Syntax Check**: Verify your `@mcp` annotation syntax matches the examples
 - **Service Deployment**: Ensure annotated entities/functions are properly deployed
 - **Case Sensitivity**: Check that annotation properties use correct casing (`resource`, `tool`, `prompts`)
 
 #### OData Query Issues
+
 - **SDK Bug Workaround**: Due to the known `@modelcontextprotocol/sdk` bug, provide all query parameters when using dynamic queries
 - **Parameter Validation**: Ensure query parameters match OData v4 syntax
 
 #### Performance Issues
+
 - **Resource Filtering**: Use specific `resource` arrays instead of `true` for large datasets
 - **Query Optimization**: Implement proper database indexes for frequently queried fields
 
 ### Debugging
 
 #### Enable Debug Logging
+
 ```json
 {
   "cds": {
@@ -744,6 +780,7 @@ curl http://localhost:4004/mcp/health
 ```
 
 #### Test MCP Implementation
+
 ```bash
 # Use MCP Inspector for interactive testing
 npm run inspect
@@ -761,14 +798,17 @@ npm test -- --testPathPattern=integration
 ## 🚨 Performance & Limitations
 
 ### Known Limitations
+
 - **SDK Bug**: Dynamic resource queries require all query parameters due to `@modelcontextprotocol/sdk` RFC template string issue
 
 ### Performance Considerations
+
 - **Large Datasets**: Use `resource: ['top']` or similar constraints for entities with many records
 - **Complex Queries**: OData query parsing adds overhead - consider caching for frequently accessed data
 - **Concurrent Sessions**: Each MCP client creates a separate session - monitor memory usage with many clients
 
 ### Scale Recommendations
+
 - **Development**: No specific limits
 - **Production**: Test with expected concurrent MCP client count
 - **Enterprise**: Consider load balancing for high-availability scenarios
@@ -781,6 +821,7 @@ npm test -- --testPathPattern=integration
 - [MCP Inspector Tool](https://github.com/modelcontextprotocol/inspector)
 
 ---
+
 (c) Copyright by Gavdi Labs 2025 - All Rights Reserved
 
 **Transform your CAP applications into AI-ready systems with the power of the Model Context Protocol.**
