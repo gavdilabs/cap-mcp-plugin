@@ -52,10 +52,12 @@ export function createMcpServer(
   LOGGER.debug("Annotations found for server: ", annotations);
   const authEnabled = isAuthEnabled(config.auth);
 
-  // Always register discovery tool for better model planning
-  registerDescribeModelTool(server);
-  const accessRights = getAccessRights(authEnabled);
+  // Always register discovery tool for better model planning unless specifically turned off in configuration
+  if (config.enable_model_description) {
+    registerDescribeModelTool(server);
+  }
 
+  const accessRights = getAccessRights(authEnabled);
   for (const entry of annotations.values()) {
     if (entry instanceof McpToolAnnotation) {
       if (!hasToolOperationAccess(accessRights, entry.restrictions)) continue;
