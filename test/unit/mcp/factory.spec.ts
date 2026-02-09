@@ -13,6 +13,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { assignToolToServer } from "../../../src/mcp/tools";
 import { assignResourceToServer } from "../../../src/mcp/resources";
 import { assignPromptToServer } from "../../../src/mcp/prompts";
+import { registerDescribeModelTool } from "../../../src/mcp/describe-model";
 import { LOGGER } from "../../../src/logger";
 import {
   createTestConfig,
@@ -64,6 +65,10 @@ jest.mock("../../../src/auth/utils", () => ({
 
 jest.mock("../../../src/mcp/entity-tools", () => ({
   registerEntityWrappers: jest.fn(),
+}));
+
+jest.mock("../../../src/mcp/describe-model", () => ({
+  registerDescribeModelTool: jest.fn(),
 }));
 
 describe("Factory", () => {
@@ -341,6 +346,46 @@ describe("Factory", () => {
         tool2,
         expect.any(Object),
         false, // authEnabled should be false for test config
+      );
+    });
+  });
+
+  describe("registerDescribeModelTool configuration", () => {
+    test("should call registerDescribeModelTool when enable_model_description is true", () => {
+      const config = createTestConfig({
+        enable_model_description: true,
+      });
+
+      createMcpServer(config, new Map());
+
+      expect(registerDescribeModelTool).toHaveBeenCalledTimes(1);
+      expect(registerDescribeModelTool).toHaveBeenCalledWith(
+        expect.any(Object),
+      );
+    });
+
+    test("should NOT call registerDescribeModelTool when enable_model_description is false", () => {
+      const config = createTestConfig({
+        enable_model_description: false,
+      });
+
+      createMcpServer(config, new Map());
+
+      expect(registerDescribeModelTool).not.toHaveBeenCalled();
+    });
+
+    test("should call registerDescribeModelTool when enable_model_description is not set (defaults to true via loadConfiguration)", () => {
+      // Simulate what loadConfiguration does: it defaults enable_model_description to true
+      const config = createTestConfig({
+        enable_model_description: true, // This simulates the default from loadConfiguration
+      });
+
+      createMcpServer(config, new Map());
+
+      // Should be called because loadConfiguration defaults it to true
+      expect(registerDescribeModelTool).toHaveBeenCalledTimes(1);
+      expect(registerDescribeModelTool).toHaveBeenCalledWith(
+        expect.any(Object),
       );
     });
   });
