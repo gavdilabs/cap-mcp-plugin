@@ -18,9 +18,13 @@ import { LOGGER } from "../logger";
 /**
  * Splits a definition name into service name and target
  * @param definition - The definition name to split
+ * @param serviceNames - Optional array of known service names (sorted longest-first) for accurate splitting
  * @returns Object containing serviceName and target
  */
-export function splitDefinitionName(definition: string): {
+export function splitDefinitionName(
+  definition: string,
+  serviceNames?: string[],
+): {
   serviceName: string;
   target: string;
 } {
@@ -28,6 +32,20 @@ export function splitDefinitionName(definition: string): {
     throw new Error("Invalid definition name. Cannot be split");
   }
 
+  // Use known service names for accurate splitting (handles Service.Entity.SubEntity)
+  if (serviceNames && serviceNames.length > 0) {
+    // Service names should be sorted longest-first for correct matching
+    for (const svcName of serviceNames) {
+      if (definition.startsWith(svcName + ".")) {
+        return {
+          serviceName: svcName,
+          target: definition.substring(svcName.length + 1),
+        };
+      }
+    }
+  }
+
+  // Fallback to simple split (last segment is target, rest is service)
   const splitted = definition.split(".");
   if (splitted.length <= 1) {
     return {
@@ -511,4 +529,60 @@ export function parseDeepInsertRefs(
   }
 
   return deepInsertRefs;
+}
+
+/**
+ * Type guard to check if an entity definition has draft support enabled.
+ * Safely checks for the @odata.draft.enabled annotation without using 'as any'.
+ *
+ * @param entity - The entity definition to check
+ * @returns True if the entity has @odata.draft.enabled === true
+ */
+export function isDraftEnabledEntity(
+  entity: unknown,
+): entity is { "@odata.draft.enabled": true } {
+  return (
+    typeof entity === "object" &&
+    entity !== null &&
+    "@odata.draft.enabled" in entity &&
+    (entity as Record<string, unknown>)["@odata.draft.enabled"] === true
+  );
+}
+
+/**
+ * Safely retrieves the draft definition (.drafts property) from an entity.
+ * Composition children of draft entities have a .drafts property pointing to their shadow table.
+ *
+ * @param entity - The entity definition to check
+ * @returns The draft definition if it exists, undefined otherwise
+ */
+export function getDraftDefinition(
+  entity: unknown,
+): csn.Definition | undefined {
+  if (typeof entity === "object" && entity !== null && "drafts" in entity) {
+    const draftsProp = (entity as Record<string, unknown>).drafts;
+    // Validate that drafts is actually a Definition-like object
+    if (typeof draftsProp === "object" && draftsProp !== null) {
+      return draftsProp as csn.Definition;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Safely extracts error message from unknown error types.
+ * Use this instead of (error as any).message in catch blocks.
+ *
+ * @param error - The error object (unknown type from catch)
+ * @returns Error message string
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const msg = (error as Record<string, unknown>).message;
+    return typeof msg === "string" ? msg : String(error);
+  }
+  return String(error);
 }

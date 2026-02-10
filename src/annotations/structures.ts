@@ -121,6 +121,8 @@ export class McpResourceAnnotation extends McpAnnotation {
   private readonly _deepInsertRefs: Map<string, string>;
   /** Map of association name → target entity's safe columns (excluding omitted) */
   private readonly _associationSafeColumns?: Map<string, string[]>;
+  /** Whether entity has @odata.draft.enabled: true */
+  private readonly _isDraftEnabled: boolean;
 
   /**
    * Creates a new MCP resource annotation
@@ -139,6 +141,7 @@ export class McpResourceAnnotation extends McpAnnotation {
    * @param omittedFields - Optional set of fields that should be omitted from MCP entity
    * @param deepInsertRefs - Optional map of association property names to target entity names for deep insert
    * @param associationSafeColumns - Optional map of association names to their safe columns (pre-computed)
+   * @param isDraftEnabled - Optional boolean indicating if entity has @odata.draft.enabled
    */
   constructor(
     name: string,
@@ -156,6 +159,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     omittedFields?: Set<string>,
     deepInsertRefs?: Map<string, string>,
     associationSafeColumns?: Map<string, string[]>,
+    isDraftEnabled?: boolean,
   ) {
     super(
       name,
@@ -175,6 +179,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     this._omittedFields = omittedFields;
     this._deepInsertRefs = deepInsertRefs ?? new Map();
     this._associationSafeColumns = associationSafeColumns;
+    this._isDraftEnabled = isDraftEnabled ?? false;
   }
 
   /**
@@ -258,6 +263,14 @@ export class McpResourceAnnotation extends McpAnnotation {
    */
   getAssociationSafeColumns(assocName: string): string[] | undefined {
     return this._associationSafeColumns?.get(assocName);
+  }
+
+  /**
+   * Gets whether this entity is draft-enabled
+   * @returns true if entity has @odata.draft.enabled: true
+   */
+  get isDraftEnabled(): boolean {
+    return this._isDraftEnabled;
   }
 }
 

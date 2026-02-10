@@ -26,6 +26,7 @@ import {
   parseResourceElements,
   splitDefinitionName,
   parseDeepInsertRefs,
+  isDraftEnabledEntity,
 } from "./utils";
 import { MCP_ANNOTATION_MAPPING, MCP_OMIT_PROP_KEY } from "./constants";
 
@@ -41,6 +42,17 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
     throw new Error("Cannot parse model without valid definitions");
   }
 
+  // First pass: collect known service names (sorted longest-first for accurate matching)
+  const serviceNames = Object.entries(model.definitions)
+    .filter(([_, def]) => (def as csn.Definition).kind === "service")
+    .map(([key]) => key)
+    .sort((a, b) => b.length - a.length);
+
+  LOGGER.debug(
+    `[MCP-PARSER] Found ${serviceNames.length} services for entity splitting:`,
+    serviceNames,
+  );
+
   const result: ParsedAnnotations = new Map<string, AnnotatedMcpEntry>();
   for (const [key, value] of Object.entries(
     model.definitions as Record<string, unknown>,
@@ -48,7 +60,7 @@ export function parseDefinitions(model: csn.CSN): ParsedAnnotations {
     // Narrow unknown to csn.Definition with a runtime check
     const def = value as csn.Definition;
     const parsedAnnotations = parseAnnotations(def);
-    const { serviceName, target } = splitDefinitionName(key);
+    const { serviceName, target } = splitDefinitionName(key, serviceNames);
     parseBoundOperations(model, serviceName, target, def, result); // Mutates result map with bound operations
 
     if (!parsedAnnotations || !containsRequiredAnnotations(parsedAnnotations)) {
@@ -260,6 +272,12 @@ function constructResourceAnnotation(
     }
   }
 
+  // Detect draft-enabled entities
+  const isDraftEnabled = isDraftEnabledEntity(entityDef);
+  LOGGER.debug(
+    `[MCP-DRAFT] Entity ${entityTarget}: isDraftEnabled=${isDraftEnabled}`,
+  );
+
   return new McpResourceAnnotation(
     annotations.name as string,
     annotations.description as string,
@@ -276,6 +294,7 @@ function constructResourceAnnotation(
     omittedFields,
     deepInsertRefs,
     associationSafeColumns,
+    isDraftEnabled,
   );
 }
 
