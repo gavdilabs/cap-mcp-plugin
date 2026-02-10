@@ -1,6 +1,7 @@
-import { Request } from "express";
 import * as xssec from "@sap/xssec";
+import { Request } from "express";
 import { LOGGER } from "../logger";
+import { resolveEffectiveHost, isLocalDevelopmentHost } from "./host-resolver";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds");
@@ -25,6 +26,7 @@ export interface AuthCredentials {
   verificationkey?: string;
   identityzone?: string;
   tenantid?: string;
+  xsappname?: string;
 }
 
 /**
@@ -98,6 +100,37 @@ export class XSUAAService {
   }
 
   /**
+   * Resolves the XSUAA token endpoint dynamically from the incoming request context.
+   *
+   * Derives the tenant subdomain from the request host (or `x-forwarded-host` behind
+   * a reverse proxy) and constructs the matching XSUAA token URL. This ensures the
+   * token exchange always targets the XSUAA instance that issued the authorization
+   * code, regardless of whether the deployment is single-tenant or multi-tenant.
+   *
+   * In local development the host is typically `localhost`, so the subdomain is
+   * resolved from the service binding credentials (`identityzone` / `tenantid`).
+   *
+   * @param req - Express request carrying the tenant context
+   * @returns Fully-qualified XSUAA token endpoint URL for the current tenant
+   */
+  resolveTokenEndpoint(req: Request): string {
+    const effectiveHost = resolveEffectiveHost(req);
+    let subdomain = effectiveHost.split(".")[0];
+
+    if (isLocalDevelopmentHost(effectiveHost)) {
+      subdomain =
+        this.credentials.authProvider?.identityzone ||
+        this.credentials.authProvider?.tenantid ||
+        subdomain;
+    }
+
+    const domain =
+      this.credentials.authProvider?.uaadomain ||
+      "authentication.eu10.hana.ondemand.com";
+    return `https://${subdomain}.${domain}/oauth/token`;
+  }
+
+  /**
    * Fetch oauth endpoints from the OIDC discovery endpoints from both XSUAA (and IAS).
    * If none found than the default will be used.
    */
@@ -139,9 +172,11 @@ export class XSUAAService {
   }
 
   /**
-   * Generates authorization URL using @sap/xssec
+   * Generates authorization URL for subscriber-based authentication
+   * @param baseUrl - Subscriber's base URL (e.g., https://tenant.app.com)
    */
   getAuthorizationUrl(
+    baseUrl: string,
     redirectUri: string,
     client_id: string,
     state?: string,
@@ -163,18 +198,30 @@ export class XSUAAService {
       params.append("state", state);
     }
 
-    return `${this.endpoints.authProvider.authorization_endpoint}?${params.toString()}`;
+    // Use subscriber's base URL for authorization endpoint instead of provider XSUAA
+    return `${baseUrl}/oauth/authorize?${params.toString()}`;
   }
 
   /**
-   * Exchange authorization code for token using @sap/xssec
+   * Exchange authorization code for token.
+   *
+   * @param code - The authorization code from XSUAA
+   * @param redirectUri - The redirect URI used during authorization
+   * @param code_verifier - PKCE code verifier (optional)
+   * @param tokenEndpoint - Override for the XSUAA token endpoint (typically
+   *   obtained via {@link resolveTokenEndpoint}). Falls back to the configured
+   *   (static) endpoint when omitted.
    */
   async exchangeCodeForToken(
     code: string,
     redirectUri: string,
     code_verifier?: string,
+    tokenEndpoint?: string,
   ): Promise<TokenResponse> {
     try {
+      const endpoint =
+        tokenEndpoint || this.endpoints.authProvider.token_endpoint;
+
       const tokenOptions = {
         grant_type: "authorization_code",
         code,
@@ -182,8 +229,7 @@ export class XSUAAService {
         ...(!!code_verifier ? { code_verifier } : {}),
       };
 
-      // Use direct XSUAA/IAS token endpoint for authorization code exchange
-      const response = await fetch(this.endpoints.authProvider.token_endpoint, {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -209,17 +255,28 @@ export class XSUAAService {
   }
 
   /**
-   * Convert access_token from authorization code into access_token with application scopes
+   * Exchange an access token for one that carries application-level scopes
+   * (jwt-bearer grant).
+   *
+   * @param token - The token from the initial authorization code exchange
+   * @param tokenEndpoint - Override for the XSUAA token endpoint (typically
+   *   obtained via {@link resolveTokenEndpoint}). Falls back to the configured
+   *   (static) endpoint when omitted.
    */
-  async getApplicationScopes(token: TokenResponse): Promise<TokenResponse> {
+  async getApplicationScopes(
+    token: TokenResponse,
+    tokenEndpoint?: string,
+  ): Promise<TokenResponse> {
     try {
+      const endpoint = tokenEndpoint || this.endpoints.xsuaa.token_endpoint;
+
       const tokenOptions = {
         grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
         reponse_type: "token+id_token",
         assertion: token.access_token,
       };
 
-      const response = await fetch(this.endpoints.xsuaa.token_endpoint, {
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -324,13 +381,12 @@ export class XSUAAService {
         { req, token: token as any },
       );
 
+      LOGGER.debug("[XSUAA] Security context created successfully");
       return securityContext;
-    } catch (error) {
-      if (error instanceof xssec.errors.TokenValidationError) {
-        LOGGER.warn("Security context creation failed:", error.message);
-      } else if (error instanceof Error) {
-        LOGGER.warn("Security context creation failed:", error.message);
-      }
+    } catch (error: any) {
+      LOGGER.error("[XSUAA] Security context creation failed", {
+        error: error?.message,
+      });
       return null;
     }
   }
@@ -340,5 +396,12 @@ export class XSUAAService {
    */
   getXsuaaService(): xssec.XsuaaService {
     return this.xsuaaService;
+  }
+
+  /**
+   * Get xsappname for role mapping
+   */
+  getXsappname(): string | undefined {
+    return this.credentials.xsuaa?.xsappname;
   }
 }

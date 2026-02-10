@@ -69,7 +69,7 @@ export default class McpPlugin {
     );
 
     if (this.config.auth === "inherit") {
-      registerAuthMiddleware(this.expressApp);
+      await registerAuthMiddleware(this.expressApp);
     }
 
     await this.registerApiEndpoints();

@@ -1,14 +1,37 @@
 import { User } from "@sap/cds";
-import { Application, Request, Response } from "express";
-import express from "express";
+import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
-import { authHandlerFactory, errorHandlerFactory } from "./factory";
-import { McpAuthType } from "../config/types";
 import { McpRestriction } from "../annotations/types";
-import { XSUAAService, AuthCredentials } from "./xsuaa-service";
-import { handleTokenRequest } from "./handlers";
+import { McpAuthType } from "../config/types";
 import { LOGGER } from "../logger";
-import { buildPublicBaseUrl } from "./host-resolver";
+import { authHandlerFactory, errorHandlerFactory } from "./factory";
+import { handleTokenRequest } from "./handlers";
+import {
+  buildPublicBaseUrl,
+  resolveEffectiveHost,
+  isLocalDevelopmentHost,
+} from "./host-resolver";
+import { AuthCredentials, XSUAAService } from "./xsuaa-service";
+
+/**
+ * Allowed custom URI schemes for OAuth redirection in IDE extensions/apps.
+ *
+ * NOTE: The MCP specification (2025-03-26 / 2025-11-25) mandates that redirect
+ * URIs MUST be either localhost URLs or HTTPS URLs. Custom URI schemes are NOT
+ * part of the MCP standard. This list exists as a pragmatic fallback per
+ * RFC 8252 (OAuth 2.0 for Native Apps) in case a future client uses private-use
+ * URI schemes instead of the spec-mandated localhost loopback redirect.
+ *
+ * @see https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization
+ * @see https://datatracker.ietf.org/doc/html/rfc8252
+ */
+const ALLOWED_SCHEMES = [
+  "cursor",
+  "vscode",
+  "claude",
+  "code-insiders",
+  "vscodium",
+];
 
 /**
  * @fileoverview Authentication utilities for MCP-CAP integration.
@@ -162,7 +185,9 @@ export function getAccessRights(authEnabled: boolean): User {
  * @throws {Error} When CAP middleware chain is not properly initialized
  * @since 1.0.0
  */
-export function registerAuthMiddleware(expressApp: Application): void {
+export async function registerAuthMiddleware(
+  expressApp: Application,
+): Promise<void> {
   const middlewares = cds.middlewares.before as any[]; // No types exists for this part of the CDS library
 
   // Build array of auth middleware to apply
@@ -181,7 +206,7 @@ export function registerAuthMiddleware(expressApp: Application): void {
   authMiddleware.push(authHandlerFactory());
 
   // If we require OAuth then we should also apply for that
-  configureOAuthProxy(expressApp);
+  await configureOAuthProxy(expressApp);
 
   // Apply auth middleware to all /mcp routes EXCEPT health
   expressApp?.use(/^\/mcp(?!\/health).*/, ...authMiddleware);
@@ -223,7 +248,7 @@ export function registerAuthMiddleware(expressApp: Application): void {
  * @internal This function is called internally by registerAuthMiddleware()
  * @since 1.0.0
  */
-function configureOAuthProxy(expressApp: Application): void {
+async function configureOAuthProxy(expressApp: Application): Promise<void> {
   const config = cds.env.requires.auth;
   const kind = config.kind as AuthTypes;
   const credentials = config.credentials as AuthCredentials;
@@ -241,22 +266,164 @@ function configureOAuthProxy(expressApp: Application): void {
     throw new Error("Invalid security credentials");
   }
 
-  registerOAuthEndpoints(expressApp, credentials, kind);
+  await registerOAuthEndpoints(expressApp, credentials, kind);
+}
+
+/**
+ * Resolves the tenant-specific XSUAA authentication URL from the incoming request context.
+ *
+ * In multi-tenant deployments, extracts the tenant subdomain from the request host.
+ * In single-tenant deployments, uses the configured identity zone.
+ * For local development, falls back to `identityzone` or `tenantid` from credentials.
+ *
+ * @param req - Express request containing tenant context (via host header)
+ * @param credentials - XSUAA credentials from CAP configuration
+ * @param urlPath - The XSUAA endpoint path (e.g., "/oauth/authorize", "/oauth/token")
+ * @returns Fully qualified tenant-specific XSUAA URL
+ *
+ * @example
+ * // Multi-tenant production
+ * resolveTenantAuthUrl(req, creds, "/oauth/authorize")
+ * // → "https://tenant-abc.authentication.eu10.hana.ondemand.com/oauth/authorize"
+ *
+ * // Local development
+ * resolveTenantAuthUrl(req, creds, "/oauth/token")
+ * // → "https://my-dev-zone.authentication.eu10.hana.ondemand.com/oauth/token"
+ */
+export function resolveTenantAuthUrl(
+  req: Request,
+  credentials: AuthCredentials,
+  urlPath: string,
+): string {
+  const effectiveHost = resolveEffectiveHost(req);
+  let subdomain = effectiveHost.split(".")[0];
+  const originalSubdomain = subdomain;
+
+  // Check if we're in local development
+  const isLocalDev = isLocalDevelopmentHost(effectiveHost);
+  if (isLocalDev) {
+    subdomain = credentials.identityzone || credentials.tenantid || subdomain;
+    LOGGER.debug(
+      "[MCP-XSUAA] Local development detected - using identity zone as subdomain",
+      {
+        originalSubdomain,
+        identityZone: subdomain,
+        source: credentials.identityzone ? "identityzone" : "tenantid-fallback",
+      },
+    );
+  }
+
+  const domain =
+    credentials.uaadomain || "authentication.eu10.hana.ondemand.com";
+  const xsuaaUrl = `https://${subdomain}.${domain}${urlPath}`;
+
+  LOGGER.info("[MCP-XSUAA] Built subscriber XSUAA URL", {
+    xsuaaUrl,
+    subdomain,
+    domain,
+    urlPath,
+    isLocalDev,
+  });
+
+  return xsuaaUrl;
+}
+
+/**
+ * Determines if a URI uses a custom scheme (not http/https).
+ */
+export function isCustomScheme(uri: string): boolean {
+  return !!uri && !uri.startsWith("http://") && !uri.startsWith("https://");
+}
+
+/**
+ * Validates if the custom scheme is in the allowed list and not a dangerous one.
+ */
+export function isValidCustomScheme(uri: string): boolean {
+  if (!isCustomScheme(uri)) return false;
+  if (/^(javascript|data|file|about):/i.test(uri)) return false;
+  const match = uri.match(/^([a-z0-9-]+):/i);
+  return !!match && ALLOWED_SCHEMES.includes(match[1].toLowerCase());
+}
+
+/**
+ * Escapes HTML characters for safe rendering in status pages.
+ */
+export function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+/**
+ * Encodes proxy state for custom scheme redirection.
+ */
+export function encodeProxyState(
+  originalState: string,
+  customUri: string,
+): string {
+  return Buffer.from(
+    JSON.stringify({ s: originalState, r: customUri }),
+  ).toString("base64url");
+}
+
+/**
+ * Decodes proxy state to recover original state and custom redirect URI.
+ */
+export function decodeProxyState(
+  state: any,
+): { customUri: string; originalState: string } | null {
+  if (!state || typeof state !== "string") return null;
+  try {
+    const d = JSON.parse(Buffer.from(state, "base64url").toString());
+    return d.r ? { customUri: d.r, originalState: d.s } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Renders a fallback redirect page for custom scheme URIs.
+ * Auto-redirects for all schemes in {@link ALLOWED_SCHEMES}.
+ */
+export function renderCustomSchemeRedirect(url: string): string {
+  const safeUrl = escapeHtml(url);
+  // Build JS condition from ALLOWED_SCHEMES so it stays in sync automatically
+  const schemeChecks = ALLOWED_SCHEMES.map(
+    (s) => `url.indexOf('${s}:')===0`,
+  ).join("||");
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Redirecting...</title></head>
+<body style="font-family:system-ui;text-align:center;padding:50px" data-url="${safeUrl}">
+<h2>Authorization Complete</h2>
+<p><a href="${safeUrl}" style="display:inline-block;padding:12px 24px;background:#0066cc;color:#fff;text-decoration:none;border-radius:6px">Open Application</a></p>
+<p style="font-size:12px;color:#666">Or copy: <code style="background:#f5f5f5;padding:4px 8px">${safeUrl}</code></p>
+<script>
+  (function() {
+    var url = document.body.getAttribute('data-url');
+    if (url && (${schemeChecks})) {
+      location.href = url;
+    }
+  })();
+</script>
+</body></html>`;
 }
 
 /**
  * Registers OAuth endpoints for XSUAA integration
  * Only called for jwt/xsuaa/ias auth types with valid credentials
  */
-function registerOAuthEndpoints(
+export async function registerOAuthEndpoints(
   expressApp: Application,
   credentials: AuthCredentials,
   kind: AuthTypes,
-): void {
+): Promise<void> {
   const xsuaaService = new XSUAAService();
 
-  // Fetch endpoints from OIDC configuration
-  xsuaaService.discoverOAuthEndpoints();
+  // Fetch endpoints from OIDC configuration (awaited to ensure endpoints are ready)
+  await xsuaaService.discoverOAuthEndpoints();
 
   // Add JSON and URL-encoded body parsing for OAuth endpoints
   expressApp.use("/oauth", express.json());
@@ -270,7 +437,7 @@ function registerOAuthEndpoints(
         directives: {
           defaultSrc: ["'self'"],
           styleSrc: ["'self'", "'unsafe-inline'"],
-          scriptSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
           imgSrc: ["'self'", "data:", "https:"],
         },
       },
@@ -292,34 +459,102 @@ function registerOAuthEndpoints(
     // We delegate all client management to XSUAA's built-in OAuth server
 
     const baseUrl = buildPublicBaseUrl(req);
-    const redirectUri = redirect_uri || `${baseUrl}/oauth/callback`;
+    LOGGER.debug("[MCP-OAUTH] Authorization request received", { baseUrl });
 
-    const authUrl = xsuaaService.getAuthorizationUrl(
-      redirectUri,
-      client_id ?? "",
-      state,
-      code_challenge,
-      code_challenge_method,
-      scope,
-    );
-    res.redirect(authUrl);
+    let redirectUri = redirect_uri || `${baseUrl}/oauth/callback`;
+    let proxyState = state;
+
+    if (isCustomScheme(redirectUri)) {
+      if (!isValidCustomScheme(redirectUri)) {
+        LOGGER.warn("[MCP-OAUTH] Invalid custom scheme rejected", {
+          scheme: redirectUri?.split(":")[0],
+        });
+        res.status(400).json({
+          error: "invalid_request",
+          error_description: "Invalid redirect URI scheme",
+        });
+        return;
+      }
+      LOGGER.warn(
+        "[MCP-OAUTH] Custom scheme redirect URI received. " +
+          "Note: MCP spec mandates localhost or HTTPS redirect URIs. " +
+          "Custom schemes are supported as an RFC 8252 fallback.",
+        { scheme: redirectUri.split(":")[0] },
+      );
+      proxyState = encodeProxyState(state || "", redirectUri);
+      redirectUri = `${baseUrl}/oauth/callback`;
+    }
+
+    const params = new URLSearchParams({
+      response_type: "code",
+      redirect_uri: redirectUri,
+      client_id: client_id ?? credentials.clientid,
+    });
+    if (code_challenge) params.set("code_challenge", code_challenge);
+    if (code_challenge_method)
+      params.set("code_challenge_method", code_challenge_method);
+    if (scope) params.set("scope", scope);
+    if (proxyState) params.set("state", proxyState);
+
+    const xsuaaUrl = `${resolveTenantAuthUrl(req, credentials, "/oauth/authorize")}?${params}`;
+
+    LOGGER.debug("[MCP-OAUTH] Redirecting to XSUAA", {
+      subdomain: resolveEffectiveHost(req).split(".")[0],
+    });
+
+    res.redirect(xsuaaUrl);
   });
 
-  // OAuth Callback endpoint - stateless token exchange
+  // OAuth Callback endpoint
   expressApp.get(
     "/oauth/callback",
     async (req: Request, res: Response): Promise<void> => {
-      const {
-        code,
-        state,
-        error,
-        error_description,
-        redirect_uri,
-        code_verifier,
-      } = req.query as CallbackQuery;
-      LOGGER.debug("[AUTH] Callback received", code, state);
+      const { code, state, error, error_description } =
+        req.query as CallbackQuery;
+      const proxy = decodeProxyState(state);
+
+      LOGGER.debug("[MCP-OAUTH] Callback received from XSUAA", {
+        hasCode: !!code,
+        hasError: !!error,
+        hasProxyState: !!proxy,
+      });
+
+      // Custom scheme: redirect back to client
+      if (proxy) {
+        if (!isValidCustomScheme(proxy.customUri)) {
+          LOGGER.warn("[MCP-OAUTH] Invalid custom scheme in callback state", {
+            scheme: proxy.customUri?.split(":")[0],
+          });
+          res.status(400).json({
+            error: "invalid_request",
+            error_description: "Invalid scheme",
+          });
+          return;
+        }
+
+        LOGGER.info("[MCP-OAUTH] Redirecting to custom scheme client", {
+          scheme: proxy.customUri.split(":")[0],
+          hasCode: !!code,
+          hasError: !!error,
+        });
+
+        const params = new URLSearchParams();
+        if (code) params.set("code", code);
+        if (error) params.set("error", error);
+        if (error_description)
+          params.set("error_description", error_description);
+        if (proxy.originalState) params.set("state", proxy.originalState);
+
+        res.set({ "Cache-Control": "no-store", "X-Frame-Options": "DENY" });
+        res.send(renderCustomSchemeRedirect(`${proxy.customUri}?${params}`));
+        return;
+      }
 
       if (error) {
+        LOGGER.warn("[MCP-OAUTH] Authorization error from XSUAA", {
+          error,
+          errorDescription: error_description,
+        });
         res.status(400).json({
           error: "authorization_failed",
           error_description: error_description || error,
@@ -328,34 +563,21 @@ function registerOAuthEndpoints(
       }
 
       if (!code) {
+        LOGGER.warn("[MCP-OAUTH] Callback missing authorization code");
         res.status(400).json({
           error: "invalid_request",
-          error_description: "Missing authorization code",
+          error_description: "Missing code",
         });
         return;
       }
 
-      try {
-        const baseUrl = buildPublicBaseUrl(req);
-        const url = redirect_uri || `${baseUrl}/oauth/callback`;
-
-        const tokenData = await xsuaaService.exchangeCodeForToken(
-          code,
-          url,
-          code_verifier,
-        );
-        const scopedToken = await xsuaaService.getApplicationScopes(tokenData);
-        LOGGER.debug("Scopes in token:", scopedToken.scope);
-        res.json(scopedToken);
-      } catch (error) {
-        LOGGER.error("OAuth callback error:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-        res.status(400).json({
-          error: "token_exchange_failed",
-          error_description: errorMessage,
-        });
-      }
+      LOGGER.warn(
+        "[MCP-OAUTH] Invalid callback - no proxy state and no custom scheme handling",
+      );
+      res.status(400).json({
+        error: "invalid_request",
+        error_description: "Invalid callback",
+      });
     },
   );
 
@@ -367,17 +589,22 @@ function registerOAuthEndpoints(
     },
   );
 
-  // OAuth Discovery endpoint
   expressApp.get(
     "/.well-known/oauth-authorization-server",
     (req: Request, res: Response): void => {
-      const baseUrl = buildPublicBaseUrl(req);
+      const base = buildPublicBaseUrl(req);
+      const issuer = resolveTenantAuthUrl(req, credentials, "");
+
+      LOGGER.debug("[MCP-OAUTH] Authorization server metadata requested", {
+        baseUrl: base,
+        issuer,
+      });
 
       res.json({
-        issuer: credentials.url,
-        authorization_endpoint: `${baseUrl}/oauth/authorize`,
-        token_endpoint: `${baseUrl}/oauth/token`,
-        registration_endpoint: `${baseUrl}/oauth/register`,
+        issuer,
+        authorization_endpoint: `${base}/oauth/authorize`,
+        token_endpoint: `${base}/oauth/token`,
+        registration_endpoint: `${base}/oauth/register`,
         response_types_supported: ["code"],
         grant_types_supported: ["authorization_code", "refresh_token"],
         code_challenge_methods_supported: ["S256"],
@@ -394,167 +621,73 @@ function registerOAuthEndpoints(
     (req: Request, res: Response): void => {
       const baseUrl = buildPublicBaseUrl(req);
 
+      LOGGER.debug("[MCP-OAUTH] Protected resource metadata requested", {
+        baseUrl,
+      });
+
       res.json({
         resource: baseUrl,
-        authorization_servers: [credentials.url],
+        authorization_servers: [baseUrl],
         bearer_methods_supported: ["header"],
         resource_documentation: `${baseUrl}/mcp/health`,
+        scopes_supported: ["openid"],
       });
     },
   );
 
-  // OAuth Dynamic Client Registration discovery endpoint (GET)
+  // OAuth Client Registration (GET)
   expressApp.get(
     "/oauth/register",
     async (req: Request, res: Response): Promise<void> => {
-      const baseUrl = buildPublicBaseUrl(req);
-
-      // IAS does not support DCR so we will respond with the pre-configured client_id
-      if (kind === "ias") {
-        const enhancedResponse = {
-          client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: req.body.redirect_uris || [
-            `${baseUrl}/oauth/callback`,
-          ],
-        };
-        LOGGER.debug(
-          "Provided static client_id during DCR registration process",
-        );
-        res.json(enhancedResponse);
-        return;
-      }
-
-      // Keep original implementation for XSUAA
-      try {
-        // Simple proxy for discovery - no CSRF needed
-        const response = await fetch(`${credentials.url}/oauth/register`, {
-          method: "GET",
-          headers: {
-            Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
-            Accept: "application/json",
-          },
-        });
-
-        const xsuaaData = await response.json();
-
-        // Add missing required fields that MCP client expects
-        const enhancedResponse = {
-          ...xsuaaData, // Keep all XSUAA fields
-          client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: [`${baseUrl}/oauth/callback`], // Add our callback URL for discovery
-        };
-
-        res.status(response.status).json(enhancedResponse);
-      } catch (error) {
-        LOGGER.error("OAuth registration discovery error:", error);
-        res.status(500).json({
-          error: "server_error",
-          error_description:
-            error instanceof Error ? error.message : "Unknown error",
-        });
-      }
+      const callback = `${buildPublicBaseUrl(req)}/oauth/callback`;
+      LOGGER.debug("[MCP-OAUTH] Client registration discovery requested", {
+        callback,
+      });
+      res.json({
+        client_id: credentials.clientid,
+        client_name: "MCP Server",
+        redirect_uris: [callback],
+        token_endpoint_auth_method: "none",
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+      });
     },
   );
 
-  // OAuth Dynamic Client Registration endpoint (POST) with CSRF handling
+  // OAuth Client Registration (POST)
   expressApp.post(
     "/oauth/register",
     async (req: Request, res: Response): Promise<void> => {
-      const baseUrl = buildPublicBaseUrl(req);
-
-      // IAS does not support DCR so we will respond with the pre-configured client_id
-      if (kind === "ias") {
-        const enhancedResponse = {
-          client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: req.body.redirect_uris || [
-            `${baseUrl}/oauth/callback`,
-          ],
-        };
-        LOGGER.debug(
-          "Provided static client_id during DCR registration process",
-        );
-        res.json(enhancedResponse);
-        return;
-      }
-
-      // Keep original implementation for XSUAA
-      try {
-        // Step 1: Fetch CSRF token from XSUAA
-        const csrfResponse = await fetch(`${credentials.url}/oauth/register`, {
-          method: "GET",
-          headers: {
-            "X-CSRF-Token": "Fetch",
-            Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
-            Accept: "application/json",
-          },
-        });
-
-        if (!csrfResponse.ok) {
-          throw new Error(`CSRF fetch failed: ${csrfResponse.status}`);
-        }
-
-        // Step 2: Extract CSRF token and session cookie
-        const setCookieHeader = csrfResponse.headers.get("set-cookie") || "";
-        const csrfToken = extractCsrfFromCookie(setCookieHeader);
-
-        if (!csrfToken) {
-          throw new Error("Could not extract CSRF token from XSUAA response");
-        }
-
-        // Step 3: Make actual registration POST with CSRF token
-        const registrationResponse = await fetch(
-          `${credentials.url}/oauth/register`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRF-Token": csrfToken,
-              Cookie: setCookieHeader,
-              Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
-              Accept: "application/json",
-            },
-            body: JSON.stringify(req.body),
-          },
-        );
-
-        const xsuaaData = await registrationResponse.json();
-
-        // Add missing required fields that MCP client expects
-        const enhancedResponse = {
-          ...xsuaaData, // Keep all XSUAA fields
-          client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: req.body.redirect_uris || [
-            `${baseUrl}/oauth/callback`,
-          ],
-        };
-
-        LOGGER.debug("[AUTH] Register POST response", enhancedResponse);
-
-        res.status(registrationResponse.status).json(enhancedResponse);
-      } catch (error) {
-        LOGGER.error("OAuth registration error:", error);
-        res.status(500).json({
-          error: "server_error",
-          error_description:
-            error instanceof Error ? error.message : "Unknown error",
-        });
-      }
+      const callback = `${buildPublicBaseUrl(req)}/oauth/callback`;
+      const requestedUris = req.body?.redirect_uris;
+      LOGGER.debug("[MCP-OAUTH] Client registration POST received", {
+        clientName: req.body?.client_name,
+        requestedUris,
+      });
+      res.status(201).json({
+        client_id: credentials.clientid,
+        client_name: req.body?.client_name || "MCP Client",
+        redirect_uris:
+          Array.isArray(requestedUris) && requestedUris.length > 0
+            ? requestedUris
+            : [callback],
+        token_endpoint_auth_method: "none",
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+      });
     },
   );
 
-  LOGGER.debug("OAuth endpoints registered for XSUAA integration");
-}
-
-/**
- * Extracts CSRF token from XSUAA Set-Cookie header
- * Looks for "X-Uaa-Csrf=<token>" pattern in the cookie string
- */
-function extractCsrfFromCookie(setCookieHeader: string): string | null {
-  if (!setCookieHeader) return null;
-
-  // Match X-Uaa-Csrf=<token> pattern
-  const csrfMatch = setCookieHeader.match(/X-Uaa-Csrf=([^;,]+)/i);
-  return csrfMatch ? csrfMatch[1] : null;
+  LOGGER.info("[MCP-OAUTH] OAuth endpoints registered successfully", {
+    endpoints: [
+      "/.well-known/oauth-protected-resource",
+      "/.well-known/oauth-authorization-server",
+      "/oauth/authorize",
+      "/oauth/callback",
+      "/oauth/token",
+      "/oauth/register",
+    ],
+  });
 }
 
 /**

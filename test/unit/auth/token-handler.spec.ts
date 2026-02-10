@@ -16,6 +16,9 @@ jest.mock("../../../src/auth/xsuaa-service", () => ({
     exchangeCodeForToken: jest.fn(),
     refreshAccessToken: jest.fn(),
     isConfigured: jest.fn().mockReturnValue(true),
+    resolveTokenEndpoint: jest
+      .fn()
+      .mockReturnValue("https://tenant.authentication.eu10.hana.ondemand.com"),
   })),
 }));
 
@@ -42,6 +45,9 @@ describe("OAuth Token Handler", () => {
     mockXsuaaService.exchangeCodeForToken = jest.fn();
     mockXsuaaService.getApplicationScopes = jest.fn();
     mockXsuaaService.refreshAccessToken = jest.fn();
+    mockXsuaaService.resolveTokenEndpoint = jest
+      .fn()
+      .mockReturnValue("https://tenant.authentication.eu10.hana.ondemand.com");
   });
 
   describe("Authorization Code Grant", () => {
@@ -80,6 +86,7 @@ describe("OAuth Token Handler", () => {
         "auth-code-123",
         "http://localhost:62723/callback",
         undefined, // code_verifier
+        "https://tenant.authentication.eu10.hana.ondemand.com", // tokenEndpoint
       );
 
       expect(mockRes.json).toHaveBeenCalledWith(mockScopeData);
@@ -120,6 +127,7 @@ describe("OAuth Token Handler", () => {
         "auth-code-456",
         "https://myapp.example.com/callback",
         undefined, // code_verifier
+        "https://tenant.authentication.eu10.hana.ondemand.com", // tokenEndpoint
       );
 
       expect(mockRes.json).toHaveBeenCalledWith(mockScopeData);
@@ -158,6 +166,7 @@ describe("OAuth Token Handler", () => {
         "auth-code-789",
         "http://localhost:4004/callback",
         undefined, // code_verifier
+        "https://tenant.authentication.eu10.hana.ondemand.com", // tokenEndpoint
       );
 
       expect(mockRes.json).toHaveBeenCalledWith(mockScopeData);
@@ -380,6 +389,7 @@ describe("OAuth Token Handler", () => {
         "body-code",
         "http://localhost:62723/callback",
         undefined, // code_verifier
+        "https://tenant.authentication.eu10.hana.ondemand.com", // tokenEndpoint
       );
     });
 
@@ -408,6 +418,7 @@ describe("OAuth Token Handler", () => {
         "mixed-code",
         "http://localhost:62723/callback",
         undefined, // code_verifier
+        "https://tenant.authentication.eu10.hana.ondemand.com", // tokenEndpoint
       );
     });
   });
