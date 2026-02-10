@@ -530,3 +530,59 @@ export function parseDeepInsertRefs(
 
   return deepInsertRefs;
 }
+
+/**
+ * Type guard to check if an entity definition has draft support enabled.
+ * Safely checks for the @odata.draft.enabled annotation without using 'as any'.
+ *
+ * @param entity - The entity definition to check
+ * @returns True if the entity has @odata.draft.enabled === true
+ */
+export function isDraftEnabledEntity(
+  entity: unknown,
+): entity is { "@odata.draft.enabled": true } {
+  return (
+    typeof entity === "object" &&
+    entity !== null &&
+    "@odata.draft.enabled" in entity &&
+    (entity as Record<string, unknown>)["@odata.draft.enabled"] === true
+  );
+}
+
+/**
+ * Safely retrieves the draft definition (.drafts property) from an entity.
+ * Composition children of draft entities have a .drafts property pointing to their shadow table.
+ *
+ * @param entity - The entity definition to check
+ * @returns The draft definition if it exists, undefined otherwise
+ */
+export function getDraftDefinition(
+  entity: unknown,
+): csn.Definition | undefined {
+  if (typeof entity === "object" && entity !== null && "drafts" in entity) {
+    const draftsProp = (entity as Record<string, unknown>).drafts;
+    // Validate that drafts is actually a Definition-like object
+    if (typeof draftsProp === "object" && draftsProp !== null) {
+      return draftsProp as csn.Definition;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Safely extracts error message from unknown error types.
+ * Use this instead of (error as any).message in catch blocks.
+ *
+ * @param error - The error object (unknown type from catch)
+ * @returns Error message string
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const msg = (error as Record<string, unknown>).message;
+    return typeof msg === "string" ? msg : String(error);
+  }
+  return String(error);
+}

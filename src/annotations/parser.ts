@@ -26,6 +26,7 @@ import {
   parseResourceElements,
   splitDefinitionName,
   parseDeepInsertRefs,
+  isDraftEnabledEntity,
 } from "./utils";
 import { MCP_ANNOTATION_MAPPING, MCP_OMIT_PROP_KEY } from "./constants";
 
@@ -272,7 +273,7 @@ function constructResourceAnnotation(
   }
 
   // Detect draft-enabled entities
-  const isDraftEnabled = (entityDef as any)?.["@odata.draft.enabled"] === true;
+  const isDraftEnabled = isDraftEnabledEntity(entityDef);
   LOGGER.debug(
     `[MCP-DRAFT] Entity ${entityTarget}: isDraftEnabled=${isDraftEnabled}`,
   );

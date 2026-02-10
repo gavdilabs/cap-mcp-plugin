@@ -10,9 +10,15 @@ import {
   asMcpResult,
   applyOmissionFilter,
 } from "./utils";
-import { EntityOperationMode, EntityListQueryArgs } from "./types";
+import {
+  EntityOperationMode,
+  EntityListQueryArgs,
+  DraftEntityDefinition,
+  DraftCreationResult,
+} from "./types";
 import type { csn, ql, Service } from "@sap/cds";
 import cds from "@sap/cds";
+import { getDraftDefinition, getErrorMessage } from "../annotations/utils";
 
 /**
  * Wraps a promise with a timeout to avoid indefinite hangs in MCP tool calls.
@@ -51,7 +57,7 @@ async function withTimeout<T>(
 async function resolveServiceInstance(
   serviceName: string,
 ): Promise<Service | undefined> {
-  const CDS = (global as any).cds;
+  const CDS = global.cds;
   // Direct lookup (both exact and lowercase variants)
   let svc: Service | undefined =
     CDS.services?.[serviceName] || CDS.services?.[serviceName.toLowerCase()];
@@ -127,7 +133,7 @@ export function registerEntityWrappers(
   defaultModes: EntityOperationMode[],
   accesses: WrapAccess,
 ): void {
-  const CDS = (global as any).cds;
+  const CDS = global.cds;
   LOGGER.debug(
     `[REGISTRATION TIME] Registering entity wrappers for ${resAnno.serviceName}.${resAnno.target}, available services:`,
     Object.keys(CDS.services || {}),
@@ -335,7 +341,7 @@ function registerQueryTool(
       });
     }
     const args = parsed.data as EntityListQueryArgs;
-    const CDS = (global as any).cds;
+    const CDS = global.cds;
     LOGGER.debug(
       `[EXECUTION TIME] Query tool: Looking for service: ${resAnno.serviceName}, available services:`,
       Object.keys(CDS.services || {}),
@@ -351,8 +357,8 @@ function registerQueryTool(
     let q: ql.SELECT<any>;
     try {
       q = buildQuery(CDS, args, resAnno, allKeys);
-    } catch (e: any) {
-      return toolError("FILTER_PARSE_ERROR", e?.message || String(e));
+    } catch (e: unknown) {
+      return toolError("FILTER_PARSE_ERROR", getErrorMessage(e));
     }
 
     try {
@@ -374,8 +380,8 @@ function registerQueryTool(
       return asMcpResult(
         args.explain ? { data: result, plan: undefined } : result,
       );
-    } catch (error: any) {
-      const msg = `QUERY_FAILED: ${error?.message || String(error)}`;
+    } catch (error: unknown) {
+      const msg = `QUERY_FAILED: ${getErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError("QUERY_FAILED", msg);
     }
@@ -411,7 +417,7 @@ function registerGetTool(
 
   const getHandler = async (args: Record<string, unknown>) => {
     const startTime = Date.now();
-    const CDS = (global as any).cds;
+    const CDS = global.cds;
     LOGGER.debug(`[EXECUTION TIME] Get tool invoked: ${toolName}`, { args });
 
     const svc = await resolveServiceInstance(resAnno.serviceName);
@@ -422,7 +428,7 @@ function registerGetTool(
     }
 
     // Normalize single-key shorthand, case-insensitive keys, and value-only payloads
-    let normalizedArgs: any = args as any;
+    let normalizedArgs: any = args;
     if (resAnno.resourceKeys.size === 1) {
       const onlyKey = Array.from(resAnno.resourceKeys.keys())[0];
       if (
@@ -440,18 +446,18 @@ function registerGetTool(
         const alt = Object.entries(normalizedArgs).find(
           ([kk]) => String(kk).toLowerCase() === String(onlyKey).toLowerCase(),
         );
-        if (alt) normalizedArgs[onlyKey] = (normalizedArgs as any)[alt[0]];
+        if (alt) normalizedArgs[onlyKey] = normalizedArgs[alt[0]];
       }
     }
 
     const keys: Record<string, unknown> = {};
     for (const [k] of resAnno.resourceKeys.entries()) {
-      let provided = (normalizedArgs as any)[k];
+      let provided = normalizedArgs[k];
       if (provided === undefined) {
         const alt = Object.entries(normalizedArgs || {}).find(
           ([kk]) => String(kk).toLowerCase() === String(k).toLowerCase(),
         );
-        if (alt) provided = (normalizedArgs as any)[alt[0]];
+        if (alt) provided = normalizedArgs[alt[0]];
       }
       if (provided === undefined) {
         LOGGER.warn(`Get tool missing required key`, { key: k, toolName });
@@ -478,8 +484,8 @@ function registerGetTool(
 
       const result = applyOmissionFilter(response, resAnno);
       return asMcpResult(result ?? null);
-    } catch (error: any) {
-      const msg = `GET_FAILED: ${error?.message || String(error)}`;
+    } catch (error: unknown) {
+      const msg = `GET_FAILED: ${getErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError("GET_FAILED", msg);
     }
@@ -498,10 +504,10 @@ function registerGetTool(
  */
 async function createRootDraft(
   svc: Service,
-  draftEntityDef: any,
+  draftEntityDef: DraftEntityDefinition,
   data: Record<string, unknown>,
   toolName: string,
-): Promise<any> {
+): Promise<DraftCreationResult> {
   return withTimeout(
     svc.send("NEW", draftEntityDef, data),
     TIMEOUT_MS,
@@ -511,23 +517,29 @@ async function createRootDraft(
 
 /**
  * Creates a draft composition child by inserting directly into the draft shadow table.
- * Composition children require special handling:
- * - They use direct INSERT instead of svc.send('NEW')
- * - They must reference the parent's DraftAdministrativeData_DraftUUID
- * - They use explicit columns to avoid @Core.Computed field errors
+ *
+ * Manual UUID generation is necessary because:
+ * - CAP's svc.send('NEW') only works for root entities, not composition children
+ * - We use explicit .columns().values() INSERT to avoid @Core.Computed field errors
+ * - This low-level approach bypasses CAP's @cds.on.defaults handler that would auto-generate UUIDs
+ *
+ * UUID strategy: CDS.utils.uuid() (CAP-native) with fallback to crypto.randomUUID()
  */
 async function createDraftCompositionChild(
   svc: Service,
   resAnno: McpResourceAnnotation,
-  draftEntityDef: any,
+  draftEntityDef: DraftEntityDefinition,
   data: Record<string, unknown>,
   toolName: string,
   authEnabled: boolean,
-): Promise<any> {
-  const CDS = (global as any).cds;
+): Promise<DraftCreationResult> {
+  const CDS = global.cds;
   const { INSERT, SELECT } = CDS.ql;
 
-  // Auto-generate ID if not provided (UUID key)
+  // Auto-generate UUID for composition child
+  // CRITICAL: This is necessary because we use explicit .columns().values() insertion
+  // which bypasses CAP's default handlers that would normally auto-generate UUIDs.
+  // See function-level JSDoc for detailed explanation of why this approach is required.
   if (!data.ID) {
     data.ID = CDS.utils?.uuid?.() || require("crypto").randomUUID();
   }
@@ -572,10 +584,10 @@ async function createDraftCompositionChild(
       !insertResult ||
       Object.keys(insertResult).length === 0
     ) {
-      return { ...data };
+      return { ...data } as DraftCreationResult;
     }
-    return insertResult;
-  } catch (txError: any) {
+    return insertResult as DraftCreationResult;
+  } catch (txError: unknown) {
     try {
       await tx.rollback();
     } catch {}
@@ -592,7 +604,7 @@ async function resolveParentDraftUUID(
   resAnno: McpResourceAnnotation,
   data: Record<string, unknown>,
 ): Promise<void> {
-  const CDS = (global as any).cds;
+  const CDS = global.cds;
   const { SELECT } = CDS.ql;
 
   // Derive parent entity from target name (e.g. "ConsumptionRequests.chargeSheets" → "ConsumptionRequests")
@@ -601,7 +613,7 @@ async function resolveParentDraftUUID(
     resAnno.target.lastIndexOf("."),
   );
   const parentEntityDef = svc.entities?.[parentEntityName];
-  const parentDraftDef = parentEntityDef?.drafts;
+  const parentDraftDef = getDraftDefinition(parentEntityDef);
 
   if (!parentDraftDef) return;
 
@@ -623,9 +635,9 @@ async function resolveParentDraftUUID(
         `[MCP-DRAFT] Could not find parent draft for ${parentEntityName} with ID ${data.up__ID}`,
       );
     }
-  } catch (lookupErr: any) {
+  } catch (lookupErr: unknown) {
     LOGGER.warn(
-      `[MCP-DRAFT] Failed to lookup parent draft UUID: ${lookupErr?.message}`,
+      `[MCP-DRAFT] Failed to lookup parent draft UUID: ${getErrorMessage(lookupErr)}`,
     );
   }
 }
@@ -682,7 +694,7 @@ function registerCreateTool(
   const desc = `Resource description: ${resAnno.description}. Create a new ${resAnno.target}. Provide fields; service applies defaults.${hint}`;
 
   const createHandler = async (args: Record<string, unknown>) => {
-    const CDS = (global as any).cds;
+    const CDS = global.cds;
     const { INSERT } = CDS.ql;
     const svc = await resolveServiceInstance(resAnno.serviceName);
     if (!svc) {
@@ -745,23 +757,29 @@ function registerCreateTool(
           ? await createDraftCompositionChild(
               svc,
               resAnno,
-              draftEntityDef,
+              draftEntityDef as unknown as DraftEntityDefinition,
               data,
               toolName,
               authEnabled,
             )
-          : await createRootDraft(svc, draftEntityDef, data, toolName);
+          : await createRootDraft(
+              svc,
+              draftEntityDef as unknown as DraftEntityDefinition,
+              data,
+              toolName,
+            );
 
         LOGGER.info(
           `[MCP-DRAFT] Draft created for ${resAnno.target}. DraftUUID: ${draftResult?.DraftAdministrativeData_DraftUUID}`,
         );
         const result = applyOmissionFilter(draftResult, resAnno);
         return asMcpResult(result ?? {});
-      } catch (error: any) {
-        const isTimeout = String(error?.message || "").includes("timed out");
+      } catch (error: unknown) {
+        const errorMsg = getErrorMessage(error);
+        const isTimeout = errorMsg.includes("timed out");
         const msg = isTimeout
           ? `${toolName} (draft) timed out after ${TIMEOUT_MS}ms`
-          : `DRAFT_CREATE_FAILED: ${error?.message || String(error)}`;
+          : `DRAFT_CREATE_FAILED: ${errorMsg}`;
         LOGGER.error(msg, error);
         return toolError(isTimeout ? "TIMEOUT" : "DRAFT_CREATE_FAILED", msg);
       }
@@ -786,14 +804,15 @@ function registerCreateTool(
 
       const result = applyOmissionFilter(response, resAnno);
       return asMcpResult(result ?? {});
-    } catch (error: any) {
+    } catch (error: unknown) {
       try {
         await tx.rollback();
       } catch {}
-      const isTimeout = String(error?.message || "").includes("timed out");
+      const errorMsg = getErrorMessage(error);
+      const isTimeout = errorMsg.includes("timed out");
       const msg = isTimeout
         ? `${toolName} timed out after ${TIMEOUT_MS}ms`
-        : `CREATE_FAILED: ${error?.message || String(error)}`;
+        : `CREATE_FAILED: ${errorMsg}`;
       LOGGER.error(msg, error);
       return toolError(isTimeout ? "TIMEOUT" : "CREATE_FAILED", msg);
     }
@@ -866,7 +885,7 @@ function registerUpdateTool(
   const desc = `Resource description: ${resAnno.description}. Update ${resAnno.target} by key(s): ${keyList}. Provide fields to update.${hint}`;
 
   const updateHandler = async (args: Record<string, unknown>) => {
-    const CDS = (global as any).cds;
+    const CDS = global.cds;
     const { UPDATE } = CDS.ql;
     const svc = await resolveServiceInstance(resAnno.serviceName);
     if (!svc) {
@@ -937,14 +956,15 @@ function registerUpdateTool(
 
       const result = applyOmissionFilter(response, resAnno);
       return asMcpResult(result ?? {});
-    } catch (error: any) {
+    } catch (error: unknown) {
       try {
         await tx.rollback();
       } catch {}
-      const isTimeout = String(error?.message || "").includes("timed out");
+      const errorMsg = getErrorMessage(error);
+      const isTimeout = errorMsg.includes("timed out");
       const msg = isTimeout
         ? `${toolName} timed out after ${TIMEOUT_MS}ms`
-        : `UPDATE_FAILED: ${error?.message || String(error)}`;
+        : `UPDATE_FAILED: ${errorMsg}`;
       LOGGER.error(msg, error);
       return toolError(isTimeout ? "TIMEOUT" : "UPDATE_FAILED", msg);
     }
@@ -981,7 +1001,7 @@ function registerDeleteTool(
   const desc = `Resource description: ${resAnno.description}. Delete ${resAnno.target} by key(s): ${keyList}. This operation cannot be undone.${hint}`;
 
   const deleteHandler = async (args: Record<string, unknown>) => {
-    const CDS = (global as any).cds;
+    const CDS = global.cds;
     const { DELETE } = CDS.ql;
     const svc = await resolveServiceInstance(resAnno.serviceName);
     if (!svc) {
@@ -1031,14 +1051,15 @@ function registerDeleteTool(
       } catch {}
 
       return asMcpResult(response ?? { deleted: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       try {
         await tx.rollback();
       } catch {}
-      const isTimeout = String(error?.message || "").includes("timed out");
+      const errorMsg = getErrorMessage(error);
+      const isTimeout = errorMsg.includes("timed out");
       const msg = isTimeout
         ? `${toolName} timed out after ${TIMEOUT_MS}ms`
-        : `DELETE_FAILED: ${error?.message || String(error)}`;
+        : `DELETE_FAILED: ${errorMsg}`;
       LOGGER.error(msg, error);
       return toolError(isTimeout ? "TIMEOUT" : "DELETE_FAILED", msg);
     }

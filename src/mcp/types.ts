@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import type { csn } from "@sap/cds";
 
 /**
  * Type definitions for MCP (Model Context Protocol) server implementation
@@ -105,4 +106,55 @@ export interface EntityListQueryArgs {
 export interface McpResult {
   content: Array<any>;
   structuredContent?: Record<string, unknown>;
+}
+
+/**
+ * Draft-related type definitions for OData draft support
+ */
+
+/**
+ * Represents a CDS entity definition with draft support enabled.
+ * This is a partial type that includes the draft-specific properties we need.
+ */
+export type DraftEntityDefinition = csn.Definition & {
+  /** Reference to the draft shadow entity definition (e.g., Books.drafts) */
+  drafts?: csn.Definition;
+  /** OData draft annotation - true if entity has draft support enabled */
+  "@odata.draft.enabled"?: boolean;
+};
+
+/**
+ * Result returned from draft creation operations (both root and composition children).
+ * Contains the created entity data plus draft-specific metadata fields.
+ */
+export interface DraftCreationResult {
+  /** Primary key of the created draft entity (UUID) */
+  ID: string;
+  /** Always false for draft entities - indicates this is a draft, not active */
+  IsActiveEntity: boolean;
+  /** False for new drafts (no active version exists yet) */
+  HasActiveEntity: boolean;
+  /** Link to DraftAdministrativeData (draft metadata) - UUID */
+  DraftAdministrativeData_DraftUUID?: string;
+  /** Additional entity-specific fields from the creation operation */
+  [key: string]: unknown;
+}
+
+/**
+ * Data structure for creating draft composition children.
+ * Includes parent reference and draft linkage fields.
+ */
+export interface DraftCompositionChildData {
+  /** Primary key (UUID) - auto-generated if not provided */
+  ID?: string;
+  /** Reference to parent entity's ID (required for composition) */
+  up__ID: string;
+  /** Link to parent's DraftAdministrativeData UUID (resolved automatically) */
+  DraftAdministrativeData_DraftUUID?: string;
+  /** Always false for draft entities */
+  IsActiveEntity?: boolean;
+  /** Always false for new composition children */
+  HasActiveEntity?: boolean;
+  /** Additional child-specific fields */
+  [key: string]: unknown;
 }
