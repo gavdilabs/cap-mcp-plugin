@@ -1,7 +1,9 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 import {
   authHandlerFactory,
   errorHandlerFactory,
+  extractUserPrincipal,
+  resolveTenantId,
 } from "../../../src/auth/factory";
 
 // Access the global CDS mock set by test/setup.ts
@@ -272,6 +274,72 @@ describe("Authentication Handler", () => {
         },
       });
       expect(mockNext).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Helper Functions", () => {
+    it("should resolve tenant from security context", () => {
+      const mockSecurityContext = {
+        getZoneId: jest.fn().mockReturnValue("tenant-123"),
+      };
+      expect(resolveTenantId(mockSecurityContext)).toBe("tenant-123");
+    });
+
+    it("should resolve tenant from token payload fallback", () => {
+      const mockSecurityContext = {
+        getTokenInfo: jest.fn().mockReturnValue({
+          getPayload: jest.fn().mockReturnValue({ zid: "tenant-payload" }),
+        }),
+      };
+      expect(resolveTenantId(mockSecurityContext)).toBe("tenant-payload");
+    });
+
+    it("should create CAP user with correct roles using xsappname", () => {
+      const mockSecurityContext = {
+        getLogonName: jest.fn().mockReturnValue("testuser"),
+        getScopes: jest
+          .fn()
+          .mockReturnValue(["files!t1.Admin", "files!t1.User"]),
+        getAdditionalAuthzAttributes: jest
+          .fn()
+          .mockReturnValue({ attr1: "val1" }),
+      };
+
+      const user = extractUserPrincipal(mockSecurityContext, "files!t1");
+
+      expect(user.id).toBe("testuser");
+      expect(user.attr).toEqual({ attr1: "val1" });
+      expect(user._roles).toEqual({ Admin: true, User: true });
+      expect(user.authInfo).toBe(mockSecurityContext);
+    });
+
+    it("should handle scopes without xsappname prefix gracefully", () => {
+      const mockSecurityContext = {
+        getLogonName: jest.fn().mockReturnValue("testuser"),
+        getScopes: jest.fn().mockReturnValue(["other.Scope"]),
+      };
+
+      const user = extractUserPrincipal(mockSecurityContext, "files!t1");
+
+      expect(user._roles).toEqual({ "other.Scope": true });
+    });
+
+    it("should include RFC 9728 header in unauthorized response", async () => {
+      // Arrange
+      getGlobalCds().env.requires.auth.kind = "basic";
+      const handler = authHandlerFactory();
+
+      // Act
+      await handler(mockRequest as Request, mockResponse as Response, mockNext);
+
+      // Assert
+      expect(statusSpy).toHaveBeenCalledWith(401);
+      expect(mockResponse.set).toHaveBeenCalledWith(
+        "WWW-Authenticate",
+        expect.stringContaining(
+          'resource_metadata="http://localhost/.well-known/oauth-protected-resource"',
+        ),
+      );
     });
   });
 });

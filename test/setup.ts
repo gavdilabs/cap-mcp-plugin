@@ -22,10 +22,15 @@ export default async () => {
     context: {
       user: null,
     },
-    User: {
-      privileged: { id: "privileged", name: "Privileged User" },
-      anonymous: { id: "anonymous", _is_anonymous: true },
-    },
+    User: Object.assign(
+      function (this: any, data: any) {
+        Object.assign(this, data);
+      },
+      {
+        privileged: { id: "privileged", name: "Privileged User" },
+        anonymous: { id: "anonymous", _is_anonymous: true },
+      },
+    ),
     middlewares: {
       before: [], // Empty middleware array for tests
     },

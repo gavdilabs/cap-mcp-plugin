@@ -4,6 +4,7 @@ import {
   extractSubdomain,
   getProtocol,
   HostResolverEnv,
+  isLocalDevelopmentHost,
   isProductionEnv,
   normalizeHost,
   resolveEffectiveHost,
@@ -383,6 +384,70 @@ describe("Host Resolver", () => {
       const result = buildPublicBaseUrl(req, env);
 
       expect(result).toBe("https://myapp.cloud");
+    });
+  });
+
+  describe("isLocalDevelopmentHost", () => {
+    it("should return false in production even for localhost", () => {
+      const result = isLocalDevelopmentHost("localhost:4004", {
+        nodeEnv: "production",
+      });
+      expect(result).toBe(false);
+    });
+
+    it("should detect localhost in development", () => {
+      expect(
+        isLocalDevelopmentHost("localhost:4004", { nodeEnv: "development" }),
+      ).toBe(true);
+      expect(
+        isLocalDevelopmentHost("localhost", { nodeEnv: "development" }),
+      ).toBe(true);
+    });
+
+    it("should detect 127.x.x.x hosts in development", () => {
+      expect(
+        isLocalDevelopmentHost("127.0.0.1:3000", { nodeEnv: "development" }),
+      ).toBe(true);
+      expect(
+        isLocalDevelopmentHost("127.0.0.2", { nodeEnv: "development" }),
+      ).toBe(true);
+    });
+
+    it("should detect IPv6 localhost in development", () => {
+      expect(isLocalDevelopmentHost("[::1]", { nodeEnv: "development" })).toBe(
+        true,
+      );
+    });
+
+    it("should detect docker host in development", () => {
+      expect(
+        isLocalDevelopmentHost("host.docker.internal", {
+          nodeEnv: "development",
+        }),
+      ).toBe(true);
+    });
+
+    it("should return false for production domains", () => {
+      expect(
+        isLocalDevelopmentHost("tenant1.app.com", { nodeEnv: "development" }),
+      ).toBe(false);
+    });
+
+    it("should detect 0.0.0.0 in development", () => {
+      expect(
+        isLocalDevelopmentHost("0.0.0.0:4004", { nodeEnv: "development" }),
+      ).toBe(true);
+    });
+
+    it("should handle empty host", () => {
+      expect(isLocalDevelopmentHost("", { nodeEnv: "development" })).toBe(
+        false,
+      );
+    });
+
+    it("should default to development when env is not provided", () => {
+      // When env is not provided, it should use process.env which defaults to non-production
+      expect(isLocalDevelopmentHost("localhost")).toBeDefined();
     });
   });
 

@@ -43,6 +43,55 @@ function send401WithMetadata(
 }
 
 /**
+ * Extracts a CAP user principal from the XSUAA security context.
+ * Maps XSUAA scopes to CAP roles using standard SAP logic.
+ */
+export function extractUserPrincipal(
+  securityContext: any,
+  xsappname?: string,
+): any {
+  const userId =
+    securityContext.getLogonName?.() ||
+    securityContext.getEmail?.() ||
+    "unknown";
+  const attrs = securityContext.getAdditionalAuthzAttributes?.() || {};
+  const scopes = securityContext.getScopes?.() || [];
+
+  // Map XSUAA scopes to CAP roles using standard SAP logic
+  // Role = scope with xsappname prefix removed
+  const roles = scopes.reduce((acc: any, scope: string) => {
+    let role = scope;
+    if (xsappname && scope.startsWith(`${xsappname}.`)) {
+      role = scope.replace(`${xsappname}.`, "");
+    }
+    acc[role] = true;
+    return acc;
+  }, {});
+
+  const user = new cds.User({ id: userId, attr: attrs, _roles: roles });
+
+  // Attach authInfo for downstream services (destination resolution, token propagation)
+  (user as any).authInfo = securityContext;
+
+  return user;
+}
+
+/**
+ * Resolves the tenant ID from the security context or token payload.
+ */
+export function resolveTenantId(securityContext: any): string | undefined {
+  const tokenInfo = securityContext.getTokenInfo?.();
+  const payload = tokenInfo?.getPayload?.() || tokenInfo?.payload;
+
+  return (
+    securityContext.getZoneId?.() ||
+    payload?.zid ||
+    payload?.zone_id ||
+    payload?.tenantid
+  );
+}
+
+/**
  * Creates an Express middleware for MCP authentication validation.
  *
  * This handler validates that requests are properly authenticated based on the CAP authentication
@@ -92,6 +141,17 @@ export function authHandlerFactory(): RequestHandler {
 
       // Add security context to request for later use
       (req as any).securityContext = securityContext;
+
+      // Initialize CAP context with resolved user and tenant
+      const xsappname = xsuaaService?.getXsappname();
+      const user = extractUserPrincipal(securityContext, xsappname);
+      const tenant = resolveTenantId(securityContext);
+
+      cds.context = {
+        user,
+        tenant,
+        http: { req, res },
+      };
     }
 
     // Continue with existing CAP context validation
