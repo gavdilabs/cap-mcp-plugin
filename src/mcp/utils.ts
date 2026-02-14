@@ -32,17 +32,17 @@ export function determineMcpParameterType(
     case "Timestamp":
       return z.coerce.date();
     case "Integer":
-      return z.number();
+      return z.number().int();
     case "Int16":
-      return z.number();
+      return z.number().int();
     case "Int32":
-      return z.number();
+      return z.number().int();
     case "Int64":
-      return z.number();
+      return z.union([z.string(), z.number().int()]).transform(String);
     case "UInt8":
-      return z.number();
+      return z.number().int().min(0);
     case "Decimal":
-      return z.number();
+      return z.union([z.string(), z.number()]).transform(String);
     case "Double":
       return z.number();
     case "Boolean":
@@ -68,17 +68,17 @@ export function determineMcpParameterType(
     case "UUIDArray":
       return z.array(z.string());
     case "IntegerArray":
-      return z.array(z.number());
+      return z.array(z.number().int());
     case "Int16Array":
-      return z.array(z.number());
+      return z.array(z.number().int());
     case "Int32Array":
-      return z.array(z.number());
+      return z.array(z.number().int());
     case "Int64Array":
-      return z.array(z.number());
+      return z.array(z.union([z.string(), z.number().int()]).transform(String));
     case "UInt8Array":
-      return z.array(z.number());
+      return z.array(z.number().int().min(0));
     case "DecimalArray":
-      return z.array(z.number());
+      return z.array(z.union([z.string(), z.number()]).transform(String));
     case "BooleanArray":
       return z.array(z.boolean());
     case "DoubleArray":

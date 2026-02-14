@@ -1,5 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { registerEntityWrappers } from "../../../src/mcp/entity-tools";
+import {
+  registerEntityWrappers,
+  coerceKeyValue,
+} from "../../../src/mcp/entity-tools";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 import { WrapAccess } from "../../../src/auth/utils";
 import { EntityListQueryArgs } from "../../../src/mcp/types";
@@ -822,6 +825,246 @@ describe("entity-tools - query filtering consistency", () => {
       expect(testData.filteredRecords).toBe(3);
       expect(testData.filteredSum).toBe(30);
       expect(testData.filteredSum).not.toBe(testData.totalSum);
+    });
+  });
+});
+
+describe("coerceKeyValue - CDS type-aware key coercion", () => {
+  describe("safe integer CDS types should coerce digit strings to numbers", () => {
+    it.each(["Integer", "Int16", "Int32", "UInt8"])(
+      "coerces digit-only string to number for CDS type %s",
+      (cdsType) => {
+        expect(coerceKeyValue("123", cdsType)).toBe(123);
+      },
+    );
+  });
+
+  describe("precision-sensitive types should preserve strings", () => {
+    it("preserves digit-only string for Int64 (exceeds MAX_SAFE_INTEGER risk)", () => {
+      expect(coerceKeyValue("9007199254740993", "Int64")).toBe(
+        "9007199254740993",
+      );
+    });
+
+    it("preserves small digit string for Int64 (consistent behavior)", () => {
+      expect(coerceKeyValue("123", "Int64")).toBe("123");
+    });
+
+    it("preserves digit string for Decimal (exact arithmetic)", () => {
+      expect(coerceKeyValue("12345", "Decimal")).toBe("12345");
+    });
+
+    it("preserves digit string for Double", () => {
+      expect(coerceKeyValue("123", "Double")).toBe("123");
+    });
+  });
+
+  describe("string CDS types should preserve digit-only strings", () => {
+    it("preserves digit-only string for CDS type String", () => {
+      expect(coerceKeyValue("202402110001", "String")).toBe("202402110001");
+    });
+
+    it("preserves digit-only string for CDS type UUID", () => {
+      expect(coerceKeyValue("123456", "UUID")).toBe("123456");
+    });
+
+    it("preserves digit-only string for CDS type LargeString", () => {
+      expect(coerceKeyValue("999", "LargeString")).toBe("999");
+    });
+  });
+
+  describe("non-string values are passed through unchanged", () => {
+    it("passes through number values for Integer type", () => {
+      expect(coerceKeyValue(42, "Integer")).toBe(42);
+    });
+
+    it("passes through number values for String type", () => {
+      expect(coerceKeyValue(42, "String")).toBe(42);
+    });
+
+    it("passes through boolean values", () => {
+      expect(coerceKeyValue(true, "Boolean")).toBe(true);
+    });
+
+    it("passes through null", () => {
+      expect(coerceKeyValue(null, "String")).toBe(null);
+    });
+  });
+
+  describe("non-numeric strings are never coerced", () => {
+    it("preserves alphanumeric string for Integer type", () => {
+      expect(coerceKeyValue("abc123", "Integer")).toBe("abc123");
+    });
+
+    it("preserves UUID-format string for Integer type", () => {
+      expect(
+        coerceKeyValue("550e8400-e29b-41d4-a716-446655440000", "Integer"),
+      ).toBe("550e8400-e29b-41d4-a716-446655440000");
+    });
+
+    it("preserves empty string", () => {
+      expect(coerceKeyValue("", "Integer")).toBe("");
+    });
+  });
+
+  describe("negative integer strings should be coerced for safe types", () => {
+    it("coerces negative digit string for Integer", () => {
+      expect(coerceKeyValue("-42", "Integer")).toBe(-42);
+    });
+
+    it("coerces negative digit string for Int32", () => {
+      expect(coerceKeyValue("-1", "Int32")).toBe(-1);
+    });
+
+    it("coerces negative digit string for Int16", () => {
+      expect(coerceKeyValue("-100", "Int16")).toBe(-100);
+    });
+
+    it("does NOT coerce negative strings for UInt8 (unsigned)", () => {
+      expect(coerceKeyValue("-0", "UInt8")).toBe("-0");
+      expect(coerceKeyValue("-5", "UInt8")).toBe("-5");
+    });
+
+    it("coerces non-negative digit strings for UInt8", () => {
+      expect(coerceKeyValue("0", "UInt8")).toBe(0);
+      expect(coerceKeyValue("255", "UInt8")).toBe(255);
+    });
+  });
+
+  describe("negative strings preserved for precision-sensitive types", () => {
+    it("preserves negative digit string for Int64", () => {
+      expect(coerceKeyValue("-123", "Int64")).toBe("-123");
+    });
+
+    it("preserves negative decimal string for Decimal", () => {
+      expect(coerceKeyValue("-99.99", "Decimal")).toBe("-99.99");
+    });
+
+    it("does NOT coerce strings for Double (not precision-sensitive)", () => {
+      expect(coerceKeyValue("-3.14", "Double")).toBe("-3.14");
+    });
+  });
+
+  describe("number-to-string coercion for precision-sensitive types", () => {
+    it("coerces number to string for Int64", () => {
+      expect(coerceKeyValue(42, "Int64")).toBe("42");
+    });
+
+    it("coerces number to string for Decimal", () => {
+      expect(coerceKeyValue(3.14, "Decimal")).toBe("3.14");
+    });
+
+    it("does NOT coerce number to string for Double (not precision-sensitive)", () => {
+      expect(coerceKeyValue(1.5, "Double")).toBe(1.5);
+    });
+
+    it("coerces zero to string for Int64", () => {
+      expect(coerceKeyValue(0, "Int64")).toBe("0");
+    });
+  });
+});
+
+describe("determineMcpParameterType - numeric type validation", () => {
+  // These tests use real Zod (not mocked) to verify actual validation behavior
+  const { determineMcpParameterType } = require("../../../src/mcp/utils");
+
+  describe("safe integer types reject non-integers", () => {
+    it.each(["Integer", "Int16", "Int32"])(
+      "%s accepts 42 and rejects 1.5",
+      (cdsType) => {
+        const schema = determineMcpParameterType(cdsType);
+        expect(schema.safeParse(42).success).toBe(true);
+        expect(schema.safeParse(1.5).success).toBe(false);
+      },
+    );
+  });
+
+  describe("UInt8 rejects negative values", () => {
+    it("accepts 0", () => {
+      const schema = determineMcpParameterType("UInt8");
+      expect(schema.safeParse(0).success).toBe(true);
+    });
+
+    it("accepts 255", () => {
+      const schema = determineMcpParameterType("UInt8");
+      expect(schema.safeParse(255).success).toBe(true);
+    });
+
+    it("rejects -1", () => {
+      const schema = determineMcpParameterType("UInt8");
+      expect(schema.safeParse(-1).success).toBe(false);
+    });
+
+    it("rejects 1.5", () => {
+      const schema = determineMcpParameterType("UInt8");
+      expect(schema.safeParse(1.5).success).toBe(false);
+    });
+  });
+
+  describe("Int64 accepts string or number and normalizes to string", () => {
+    it("accepts number 42 and returns '42'", () => {
+      const schema = determineMcpParameterType("Int64");
+      const result = schema.parse(42);
+      expect(result).toBe("42");
+    });
+
+    it("accepts string '123' and returns '123'", () => {
+      const schema = determineMcpParameterType("Int64");
+      const result = schema.parse("123");
+      expect(result).toBe("123");
+    });
+
+    it("accepts large string beyond MAX_SAFE_INTEGER", () => {
+      const schema = determineMcpParameterType("Int64");
+      const result = schema.parse("9007199254740993");
+      expect(result).toBe("9007199254740993");
+    });
+
+    it("rejects non-integer number 1.5", () => {
+      const schema = determineMcpParameterType("Int64");
+      expect(schema.safeParse(1.5).success).toBe(false);
+    });
+
+    it("rejects boolean", () => {
+      const schema = determineMcpParameterType("Int64");
+      expect(schema.safeParse(true).success).toBe(false);
+    });
+  });
+
+  describe("Decimal accepts string or number and normalizes to string", () => {
+    it("accepts number 3.14 and returns '3.14'", () => {
+      const schema = determineMcpParameterType("Decimal");
+      const result = schema.parse(3.14);
+      expect(result).toBe("3.14");
+    });
+
+    it("accepts string '99.99' and returns '99.99'", () => {
+      const schema = determineMcpParameterType("Decimal");
+      const result = schema.parse("99.99");
+      expect(result).toBe("99.99");
+    });
+
+    it("accepts integer number 42 and returns '42'", () => {
+      const schema = determineMcpParameterType("Decimal");
+      const result = schema.parse(42);
+      expect(result).toBe("42");
+    });
+
+    it("rejects boolean", () => {
+      const schema = determineMcpParameterType("Decimal");
+      expect(schema.safeParse(true).success).toBe(false);
+    });
+  });
+
+  describe("Double remains z.number() without transformation", () => {
+    it("accepts 3.14 and returns 3.14", () => {
+      const schema = determineMcpParameterType("Double");
+      expect(schema.parse(3.14)).toBe(3.14);
+    });
+
+    it("rejects string '3.14'", () => {
+      const schema = determineMcpParameterType("Double");
+      expect(schema.safeParse("3.14").success).toBe(false);
     });
   });
 });
