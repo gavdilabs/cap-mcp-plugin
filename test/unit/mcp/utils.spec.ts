@@ -64,10 +64,28 @@ const mockZodType = {
   optional: mockOptional,
 };
 
+const mockNumberIntType = {
+  ...mockZodType,
+  _type: "number-int-type",
+  min: jest.fn(() => ({ ...mockZodType, _type: "number-int-min-type" })),
+};
+const mockNumberType = {
+  ...mockZodType,
+  _type: "number-type",
+  int: jest.fn(() => mockNumberIntType),
+};
+const mockUnionTransformType = {
+  ...mockZodType,
+  _type: "union-transform-type",
+};
+const mockUnionType = {
+  transform: jest.fn(() => mockUnionTransformType),
+};
+
 jest.mock("zod", () => ({
   z: {
     string: jest.fn(() => ({ ...mockZodType, _type: "string-type" })),
-    number: jest.fn(() => ({ ...mockZodType, _type: "number-type" })),
+    number: jest.fn(() => mockNumberType),
     boolean: jest.fn(() => ({ ...mockZodType, _type: "boolean-type" })),
     date: jest.fn(() => ({ ...mockZodType, _type: "date-type" })),
     array: jest.fn(
@@ -75,6 +93,7 @@ jest.mock("zod", () => ({
     ),
     any: jest.fn(() => "any-type"),
     object: jest.fn(() => "object-type"),
+    union: jest.fn(() => mockUnionType),
     coerce: {
       date: jest.fn(() => ({ ...mockZodType, _type: "coerce-date-type" })),
     },
@@ -116,23 +135,31 @@ describe("Server Utils", () => {
       expect(result).toMatchObject({ _type: "coerce-date-type" });
     });
 
-    test("should return number type for Integer CDS types", () => {
-      const numberTypes = [
-        "Integer",
-        "Int16",
-        "Int32",
-        "Int64",
-        "UInt8",
-        "Decimal",
-        "Double",
-      ];
+    test("should return integer type for safe integer CDS types", () => {
+      const intTypes = ["Integer", "Int16", "Int32"];
 
-      numberTypes.forEach((type) => {
+      intTypes.forEach((type) => {
         const result = determineMcpParameterType(type);
-        expect(result).toMatchObject({ _type: "number-type" });
+        expect(result).toMatchObject({ _type: "number-int-type" });
       });
+    });
 
-      expect(z.number).toHaveBeenCalledTimes(numberTypes.length);
+    test("should return integer type with min(0) for UInt8", () => {
+      const result = determineMcpParameterType("UInt8");
+      expect(result).toMatchObject({ _type: "number-int-min-type" });
+    });
+
+    test("should return union+transform type for Int64 and Decimal", () => {
+      ["Int64", "Decimal"].forEach((type) => {
+        const result = determineMcpParameterType(type);
+        expect(result).toMatchObject({ _type: "union-transform-type" });
+      });
+      expect(z.union).toHaveBeenCalled();
+    });
+
+    test("should return number type for Double", () => {
+      const result = determineMcpParameterType("Double");
+      expect(result).toMatchObject({ _type: "number-type" });
     });
 
     test("should return boolean type for Boolean CDS type", () => {
@@ -182,10 +209,8 @@ describe("Server Utils", () => {
 
       arrayTypes.forEach((type) => {
         const result = determineMcpParameterType(type);
-        expect(result).toMatch(/^array-of-/);
+        expect(typeof result === "string" ? result : "").toMatch(/^array-of-/);
       });
-
-      expect(z.array).toHaveBeenCalledTimes(arrayTypes.length);
     });
 
     test("should default to string type for unknown CDS type", () => {

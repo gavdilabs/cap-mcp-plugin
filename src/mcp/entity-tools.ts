@@ -84,6 +84,93 @@ async function resolveServiceInstance(
 const MAX_TOP = 200;
 const TIMEOUT_MS = 10_000; // Standard timeout for tool calls (ms)
 
+/**
+ * CDS integer types whose values can be safely represented as a JavaScript `Number`
+ * without risk of precision loss: `Integer`, `Int16`, `Int32`, `UInt8`.
+ *
+ * All values of these types are guaranteed to fit within `Number.MAX_SAFE_INTEGER`
+ * (2^53 - 1). When a key value arrives as a digit string (e.g. `"42"`),
+ * {@link coerceKeyValue} converts it to a `Number` so that CAP can resolve
+ * the entity lookup correctly.
+ *
+ * The following numeric CDS types are intentionally excluded:
+ *
+ * - `Int64` — values may exceed `Number.MAX_SAFE_INTEGER`, causing silent
+ *   precision loss. Classified under {@link PRECISION_SENSITIVE_CDS_TYPES}.
+ * - `Decimal` — arbitrary-precision type; CAP preserves these as strings
+ *   for exact arithmetic. Classified under {@link PRECISION_SENSITIVE_CDS_TYPES}.
+ * - `Double` — maps directly to IEEE 754 double-precision (identical to JS
+ *   `number`), so there is no precision concern. Excluded here because it is
+ *   a floating-point type, not an integer.
+ *
+ * @see {@link PRECISION_SENSITIVE_CDS_TYPES}
+ * @see {@link coerceKeyValue}
+ * @see https://tc39.es/ecma262/#sec-number.max_safe_integer — ECMAScript Number.MAX_SAFE_INTEGER
+ * @see https://cap.cloud.sap/docs/cds/types — CAP CDS Built-in Types
+ */
+const SAFE_INTEGER_CDS_TYPES = new Set(["Integer", "Int16", "Int32", "UInt8"]);
+
+/**
+ * CDS numeric types where values must be represented as strings to preserve
+ * precision: `Int64`, `Decimal`.
+ *
+ * JavaScript `Number` (IEEE 754 double-precision) cannot faithfully represent
+ * all values of these types. When a key value arrives as a `number` from the
+ * MCP tool input, {@link coerceKeyValue} normalizes it to a `string` so that
+ * CAP can handle it without silent truncation.
+ *
+ * CAP's `cds.features.ieee754compatible` setting controls whether OData
+ * responses serialize `Edm.Int64` and `Edm.Decimal` as JSON strings.
+ * Regardless of that setting, this set ensures keys are always passed as
+ * strings to the CAP runtime.
+ *
+ * `Double` is intentionally not included. It maps directly to IEEE 754
+ * double-precision — the same representation as a JavaScript `number` — so
+ * no precision is lost during coercion. The `ieee754compatible` flag does
+ * not affect `Double`.
+ *
+ * @see {@link SAFE_INTEGER_CDS_TYPES}
+ * @see {@link coerceKeyValue}
+ * @see https://www.rfc-editor.org/rfc/rfc8259#section-6 — RFC 8259, Section 6: Numbers
+ * @see https://cap.cloud.sap/docs/releases/jun24#ieee754compatible — CAP ieee754compatible
+ */
+const PRECISION_SENSITIVE_CDS_TYPES = new Set(["Int64", "Decimal"]);
+
+/**
+ * Coerces a key value between string and number representations based on
+ * the CDS type metadata of the target entity element.
+ *
+ * Coercion rules, applied in order:
+ *
+ * 1. Safe integer types ({@link SAFE_INTEGER_CDS_TYPES}) — digit-only strings
+ *    (e.g. `"42"`) are converted to `Number`. `UInt8` only accepts non-negative
+ *    digit strings since it is an unsigned type.
+ * 2. Precision-sensitive types ({@link PRECISION_SENSITIVE_CDS_TYPES}) — numeric
+ *    values are converted to `String` to prevent silent precision loss beyond
+ *    `Number.MAX_SAFE_INTEGER`.
+ * 3. All other types — returned unchanged.
+ *
+ * @param raw - The raw key value received from the MCP tool input.
+ * @param cdsType - The CDS type name of the key element (e.g. `"String"`, `"Integer"`).
+ * @returns The coerced value, or the original value if no coercion rule applies.
+ *
+ * @see {@link SAFE_INTEGER_CDS_TYPES}
+ * @see {@link PRECISION_SENSITIVE_CDS_TYPES}
+ */
+export function coerceKeyValue(raw: unknown, cdsType: string): unknown {
+  if (typeof raw === "string" && SAFE_INTEGER_CDS_TYPES.has(cdsType)) {
+    // UInt8 is unsigned — only accept non-negative digit strings
+    const pattern = cdsType === "UInt8" ? /^\d+$/ : /^-?\d+$/;
+    if (pattern.test(raw)) {
+      return Number(raw);
+    }
+  }
+  if (typeof raw === "number" && PRECISION_SENSITIVE_CDS_TYPES.has(cdsType)) {
+    return String(raw);
+  }
+  return raw;
+}
+
 // Map OData operators to CDS/SQL operators for better performance and readability
 const ODATA_TO_CDS_OPERATORS = new Map<string, string>([
   ["eq", "="],
@@ -461,7 +548,7 @@ function registerGetTool(
     }
 
     const keys: Record<string, unknown> = {};
-    for (const [k] of resAnno.resourceKeys.entries()) {
+    for (const [k, cdsType] of resAnno.resourceKeys.entries()) {
       let provided = (normalizedArgs as any)[k];
       if (provided === undefined) {
         const alt = Object.entries(normalizedArgs || {}).find(
@@ -473,9 +560,7 @@ function registerGetTool(
         LOGGER.warn(`Get tool missing required key`, { key: k, toolName });
         return toolError("MISSING_KEY", `Missing key '${k}'`);
       }
-      const raw = provided;
-      keys[k] =
-        typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : raw;
+      keys[k] = coerceKeyValue(provided, cdsType);
     }
 
     LOGGER.debug(`Executing READ on ${resAnno.target} with keys`, keys);
@@ -716,14 +801,11 @@ function registerUpdateTool(
 
     // Extract keys and update fields
     const keys: Record<string, unknown> = {};
-    for (const [k] of resAnno.resourceKeys.entries()) {
+    for (const [k, cdsType] of resAnno.resourceKeys.entries()) {
       if (args[k] === undefined) {
-        return {
-          isError: true,
-          content: [{ type: "text", text: `Missing key '${k}'` }],
-        };
+        return toolError("MISSING_KEY", `Missing key '${k}'`);
       }
-      keys[k] = args[k];
+      keys[k] = coerceKeyValue(args[k], cdsType);
     }
 
     // Normalize updates: prefer *_ID for associations and coerce numeric strings
@@ -836,7 +918,7 @@ function registerDeleteTool(
 
     // Extract keys - similar to get/update handlers
     const keys: Record<string, unknown> = {};
-    for (const [k] of resAnno.resourceKeys.entries()) {
+    for (const [k, cdsType] of resAnno.resourceKeys.entries()) {
       let provided = (args as any)[k];
       if (provided === undefined) {
         // Case-insensitive key matching (like in get handler)
@@ -849,10 +931,7 @@ function registerDeleteTool(
         LOGGER.warn(`Delete tool missing required key`, { key: k, toolName });
         return toolError("MISSING_KEY", `Missing key '${k}'`);
       }
-      // Coerce numeric strings (like in get handler)
-      const raw = provided;
-      keys[k] =
-        typeof raw === "string" && /^\d+$/.test(raw) ? Number(raw) : raw;
+      keys[k] = coerceKeyValue(provided, cdsType);
     }
 
     LOGGER.debug(`Executing DELETE on ${resAnno.target} with keys`, keys);

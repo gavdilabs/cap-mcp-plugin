@@ -66,7 +66,7 @@ describe("MCP HTTP API - Complex Keys Integration", () => {
 
       expect(getBooksSchema.properties).toHaveProperty("ID");
       expect(getBooksSchema.required).toContain("ID");
-      expect(getBooksSchema.properties.ID.type).toBe("number");
+      expect(getBooksSchema.properties.ID.type).toBe("integer");
 
       // Verify get tool for simple entity works
       const getBooksResponse = await request(app)
