@@ -70,12 +70,11 @@ describe("MCP HTTP API - Session Management", () => {
         .set("Content-Type", "application/json")
         .set("Accept", "application/json, text/event-stream")
         .send(invalidRequest)
-        .expect(400);
+        .expect(404);
 
       expect(response.body).toHaveProperty("error");
-      expect(response.body.error.message).toContain(
-        "No valid sessions ID provided",
-      );
+      expect(response.body.error.code).toBe(-32001);
+      expect(response.body.error.message).toContain("Session not found");
     });
   });
 
@@ -138,11 +137,10 @@ describe("MCP HTTP API - Session Management", () => {
           id: 2,
           method: "resources/list",
         })
-        .expect(400);
+        .expect(404);
 
-      expect(response.body.error.message).toContain(
-        "No valid sessions ID provided",
-      );
+      expect(response.body.error.code).toBe(-32001);
+      expect(response.body.error.message).toContain("Session not found");
     });
 
     it("should handle session cleanup via DELETE", async () => {
@@ -162,7 +160,7 @@ describe("MCP HTTP API - Session Management", () => {
           id: 3,
           method: "resources/list",
         })
-        .expect(400);
+        .expect(404);
     });
   });
 
@@ -185,9 +183,10 @@ describe("MCP HTTP API - Session Management", () => {
         .post("/mcp")
         .set("Accept", "application/json, text/event-stream")
         .send({ test: "data" })
-        .expect(400);
+        .expect(404);
 
-      // Express middleware should catch missing Content-Type
+      // Without Content-Type: application/json, body isn't parsed,
+      // so the request falls through to the session check and gets rejected
       expect(response.body).toBeDefined();
     });
 

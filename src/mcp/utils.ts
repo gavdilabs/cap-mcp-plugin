@@ -224,15 +224,15 @@ export async function handleMcpSessionRequest(
 ) {
   const sessionIdHeader = req.headers[MCP_SESSION_HEADER] as string;
   if (!sessionIdHeader || !sessions.has(sessionIdHeader)) {
-    res.status(400).send("Invalid or missing session ID");
+    res.status(404).json({
+      jsonrpc: "2.0",
+      error: { code: -32001, message: "Session not found" },
+      id: null,
+    });
     return;
   }
 
-  const session = sessions.get(sessionIdHeader);
-  if (!session) {
-    res.status(400).send("Invalid session");
-    return;
-  }
+  const session = sessions.get(sessionIdHeader)!;
 
   await session.transport.handleRequest(req, res);
 }

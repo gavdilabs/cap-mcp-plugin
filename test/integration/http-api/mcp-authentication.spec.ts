@@ -293,11 +293,10 @@ describe("MCP Authentication - Integration Tests", () => {
             id: 3,
             method: "resources/list",
           })
-          .expect(400);
+          .expect(404);
 
-        expect(response.body.error.message).toContain(
-          "No valid sessions ID provided",
-        );
+        expect(response.body.error.code).toBe(-32001);
+        expect(response.body.error.message).toContain("Session not found");
       });
     });
   });

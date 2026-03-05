@@ -275,11 +275,10 @@ describe("MCP Security Boundary Tests", () => {
             id: 2,
             method: "resources/list",
           })
-          .expect(400);
+          .expect(404);
 
-        expect(response.body.error.message).toContain(
-          "No valid sessions ID provided",
-        );
+        expect(response.body.error.code).toBe(-32001);
+        expect(response.body.error.message).toContain("Session not found");
       }
     });
 
@@ -328,7 +327,7 @@ describe("MCP Security Boundary Tests", () => {
       if (response.status === 200) {
         expect(returnedSessionId).not.toBe(forcedSessionId);
       } else {
-        expect(response.status).toBe(400);
+        expect(response.status).toBe(404);
       }
     });
   });
