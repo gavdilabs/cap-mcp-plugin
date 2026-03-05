@@ -2,6 +2,7 @@ import * as xssec from "@sap/xssec";
 import { Request } from "express";
 import { LOGGER } from "../logger";
 import { resolveEffectiveHost, isLocalDevelopmentHost } from "./host-resolver";
+import { cleanSubdomainUri, fetchVCapAppInfo, VCapApp } from "./utils";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds");
@@ -59,6 +60,7 @@ export class XSUAAService {
     authProvider: AuthCredentials;
     xsuaa: AuthCredentials;
   };
+  private readonly vcap: VCapApp | undefined;
   private readonly xsuaaService: xssec.XsuaaService;
   private endpoints: {
     authProvider: OAuthEndpoints;
@@ -89,6 +91,7 @@ export class XSUAAService {
     };
 
     this.xsuaaService = new xssec.XsuaaService(this.credentials.xsuaa);
+    this.vcap = fetchVCapAppInfo();
   }
 
   isConfigured(): boolean {
@@ -132,6 +135,8 @@ export class XSUAAService {
           `Verify your XSUAA service binding includes this property.`,
       );
     }
+
+    subdomain = cleanSubdomainUri(subdomain, this.vcap);
     return `https://${subdomain}.${domain}/oauth/token`;
   }
 
@@ -274,10 +279,9 @@ export class XSUAAService {
   ): Promise<TokenResponse> {
     try {
       const endpoint = tokenEndpoint || this.endpoints.xsuaa.token_endpoint;
-
       const tokenOptions = {
         grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        reponse_type: "token+id_token",
+        response_type: "token+id_token",
         assertion: token.access_token,
       };
 

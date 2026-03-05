@@ -17,6 +17,8 @@ import {
   registerAuthMiddleware,
   registerOAuthEndpoints,
   renderCustomSchemeRedirect,
+  cleanSubdomainUri,
+  VCapApp,
 } from "../../../src/auth/utils";
 import { McpAuthType } from "../../../src/config/types";
 
@@ -866,6 +868,114 @@ describe("Authentication Utils", () => {
         expect(result).not.toContain('"><script>');
         expect(result).toContain("&quot;&gt;&lt;script&gt;");
       });
+    });
+  });
+
+  describe("cleanSubdomainUri", () => {
+    it("should remove solution specific subdomain info", () => {
+      const input = "my-tenant-mcp-app-subdomain";
+      const expected = "my-tenant";
+      const vcap: VCapApp = {
+        space_name: "mcp",
+        name: "app-subdomain",
+      };
+
+      const result = cleanSubdomainUri(input, vcap);
+      expect(result).toBe(expected);
+    });
+
+    it("should keep the tenant related info in subdomain even if numbers are included", () => {
+      const input = "my-tenant-domain1-mcp-app-subdomain";
+      const expected = "my-tenant-domain1";
+      const vcap: VCapApp = {
+        space_name: "mcp",
+        name: "app-subdomain",
+      };
+
+      const result = cleanSubdomainUri(input, vcap);
+      expect(result).toBe(expected);
+    });
+
+    it("should return the subdomain in case no solution specific info is present", () => {
+      const input = "my-tenant-domain";
+      const expected = "my-tenant-domain";
+      const vcap: VCapApp = {
+        space_name: "mcp",
+        name: "my-app",
+      };
+
+      const result = cleanSubdomainUri(input, vcap);
+      expect(result).toBe(expected);
+    });
+
+    it("should return the input subdomain in case the subdomain matches the solution domain", () => {
+      const input = "mcp-app-subdomain";
+      const expected = "mcp-app-subdomain";
+      const vcap: VCapApp = {
+        space_name: "mcp",
+        name: "app-subdomain",
+      };
+
+      const result = cleanSubdomainUri(input, vcap);
+      expect(result).toBe(expected);
+    });
+
+    it("should return the input subdomain in case there is no VCAP application info provided", () => {
+      const input = "my-tenant-subdomain-mcp-app-subdomain";
+      const expected = "my-tenant-subdomain-mcp-app-subdomain";
+
+      const result1 = cleanSubdomainUri(input, {});
+      expect(result1).toBe(expected);
+
+      const result2 = cleanSubdomainUri(input, undefined);
+      expect(result2).toBe(expected);
+    });
+
+    it("should default to the organization name in case subdomain provided is empty", () => {
+      const input = "";
+      const expected = "my-organization";
+      const vcap: VCapApp = {
+        organization_name: expected,
+      };
+
+      const result = cleanSubdomainUri(input, vcap);
+      expect(result).toBe(expected);
+    });
+
+    it("should default to the organization name in case the subdomain is undefined", () => {
+      const input = undefined;
+      const expected = "my-organization";
+      const vcap: VCapApp = {
+        organization_name: expected,
+      };
+
+      const result = cleanSubdomainUri(input as any, vcap);
+      expect(result).toBe(expected);
+    });
+
+    it("should default to the organization name in case the subdomain is null", () => {
+      const input = null;
+      const expected = "my-organization";
+      const vcap: VCapApp = {
+        organization_name: expected,
+      };
+
+      const result = cleanSubdomainUri(input as any, vcap);
+      expect(result).toBe(expected);
+    });
+
+    it("should throw an error in case there is no subdomain and no fallback vcap info", () => {
+      const input = "";
+      const vcap = undefined;
+      let err: Error | undefined;
+
+      try {
+        cleanSubdomainUri(input, vcap);
+      } catch (e) {
+        err = e as Error;
+      }
+
+      expect(err).toBeDefined();
     });
   });
 });

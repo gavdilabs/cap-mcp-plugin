@@ -12,6 +12,7 @@ import {
   isLocalDevelopmentHost,
 } from "./host-resolver";
 import { AuthCredentials, XSUAAService } from "./xsuaa-service";
+import assert from "assert";
 
 /**
  * Allowed custom URI schemes for OAuth redirection in IDE extensions/apps.
@@ -80,6 +81,23 @@ interface CallbackQuery {
   redirect_uri?: string;
   code_verifier?: string;
 }
+
+/**
+ * VCAP_APPLICATION info object
+ */
+export interface VCapApp {
+  /** CF application name */
+  name?: string;
+  /** CF Space name */
+  space_name?: string;
+  /** CF Organization name */
+  organization_name?: string;
+}
+
+/**
+ * VCAP_APPLICATION environment key
+ */
+const VCAP_APP = "VCAP_APPLICATION";
 
 /**
  * Union type representing all supported CAP authentication types.
@@ -786,4 +804,49 @@ export function getWrapAccesses(
  */
 export function useMockAuth(authKind: AuthTypes): boolean {
   return authKind !== "jwt" && authKind !== "ias" && authKind !== "xsuaa";
+}
+
+/**
+ * Cleans the subdomain info used for authentication in relation to the tenant
+ * @returns string
+ */
+export function cleanSubdomainUri(
+  subdomain: string,
+  vcapApp: VCapApp | undefined,
+): string {
+  if (!subdomain) {
+    assert(
+      vcapApp?.organization_name,
+      "Invalid subdomain provided with no fallbacks available",
+    );
+    return vcapApp.organization_name;
+  }
+
+  if (!vcapApp?.space_name || !vcapApp?.name) {
+    return subdomain;
+  }
+
+  const vcapAddress = `${vcapApp?.space_name}-${vcapApp?.name}`;
+  if (vcapAddress === subdomain) {
+    return subdomain;
+  }
+
+  const formatted = subdomain.replace(vcapAddress, "");
+  return formatted[formatted.length - 1] === "-"
+    ? formatted.substring(0, formatted.length - 1)
+    : formatted;
+}
+
+/**
+ * Fetches the environment VCAP_APPLICATION info.
+ * In the case that none exists, an empty construction will be returned.
+ */
+export function fetchVCapAppInfo(): VCapApp | undefined {
+  const envValue = process.env[VCAP_APP];
+  if (!envValue) {
+    return undefined;
+  }
+
+  const parsed = JSON.parse(envValue);
+  return parsed;
 }
