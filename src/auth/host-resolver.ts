@@ -69,6 +69,36 @@ export function extractSubdomain(host: string, appDomain?: string): string {
 }
 
 /**
+ * Determines if a host indicates local development.
+ * Combines environment check (NODE_ENV) with host pattern matching.
+ *
+ * @param host - The host string to check (e.g., "localhost:4004", "127.0.0.1")
+ * @param env - Environment configuration (optional)
+ * @returns true if the host represents local development
+ */
+export function isLocalDevelopmentHost(
+  host: string,
+  env: HostResolverEnv = getHostResolverEnv(),
+): boolean {
+  // In production, never treat as local dev (even if host looks like localhost)
+  if (isProductionEnv(env)) {
+    return false;
+  }
+
+  // In non-production, check host patterns
+  const cleanHost = (host || "").split(".")[0].toLowerCase();
+
+  return (
+    cleanHost.includes(":") || // localhost:4004, 127.0.0.1:3000
+    cleanHost === "localhost" || // localhost
+    cleanHost.startsWith("127") || // 127.0.0.1, 127.0.0.2
+    cleanHost === "0" || // 0.0.0.0
+    cleanHost.startsWith("[") || // [::1] (IPv6 localhost)
+    cleanHost === "host" // host.docker.internal
+  );
+}
+
+/**
  * Safely gets the host header from request.
  * Handles cases where req.get might not be available (e.g., in tests).
  */

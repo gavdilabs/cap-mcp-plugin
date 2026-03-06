@@ -37,12 +37,17 @@ export async function handleTokenRequest(
         return;
       }
 
+      const resolvedEndpoint = xsuaaService.resolveTokenEndpoint(req);
       const tokenData = await xsuaaService.exchangeCodeForToken(
         code,
         redirect_uri,
         code_verifier,
+        resolvedEndpoint,
       );
-      const scopedToken = await xsuaaService.getApplicationScopes(tokenData);
+      const scopedToken = await xsuaaService.getApplicationScopes(
+        tokenData,
+        resolvedEndpoint,
+      );
       LOGGER.debug("Scopes in token:", scopedToken.scope);
       LOGGER.debug("[AUTH] Token exchange successful");
       res.json(scopedToken);
