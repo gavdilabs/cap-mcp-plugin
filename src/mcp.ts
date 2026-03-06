@@ -127,13 +127,13 @@ export default class McpPlugin {
       const sessionIdHeader = req.headers[MCP_SESSION_HEADER] as string;
       const sessions = this.sessionManager.getSessions();
       if (!sessionIdHeader || !sessions.has(sessionIdHeader)) {
-        return res.status(400).json({
+        return res.status(404).json({
           jsonrpc: "2.0",
           error: {
-            code: -32000,
-            message: "Bad Request: No valid sessions ID provided",
-            id: null,
+            code: -32001,
+            message: "Session not found",
           },
+          id: null,
         });
       }
       const session = sessions.get(sessionIdHeader)!;
@@ -169,13 +169,13 @@ export default class McpPlugin {
 
       if (!session) {
         LOGGER.error("Invalid session ID", sessionIdHeader);
-        res.status(400).json({
+        res.status(404).json({
           jsonrpc: "2.0",
           error: {
-            code: -32000,
-            message: "Bad Request: No valid sessions ID provided",
-            id: null,
+            code: -32001,
+            message: "Session not found",
           },
+          id: null,
         });
         return;
       }
@@ -192,8 +192,8 @@ export default class McpPlugin {
           error: {
             code: -32603,
             message: "Internal Error: Transport failed",
-            id: null,
           },
+          id: null,
         });
         return;
       }
