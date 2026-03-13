@@ -55,7 +55,7 @@
     "zod-to-json-schema": "^3.24.5"
   },
   "devDependencies": {
-    "@cap-js/cds-types": "^0.13.0",
+    "@cap-js/cds-types": "^0.16.0",
     "@release-it/conventional-changelog": "^10.0.1",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
