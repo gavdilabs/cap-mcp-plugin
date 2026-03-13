@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@cap-js/sqlite": "^2",
-    "@cap-js/cds-types": "^0.10.0"
+    "@cap-js/cds-types": "^0.16.0"
   },
   "scripts": {
     "start": "cds-serve",
