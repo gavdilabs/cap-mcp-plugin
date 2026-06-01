@@ -414,50 +414,47 @@ function registerOAuthEndpoints(
     async (req: Request, res: Response): Promise<void> => {
       const baseUrl = buildPublicBaseUrl(req);
 
+      // XSUAA does not support DCR so we will respond with the pre-configured client_id
       // IAS does not support DCR so we will respond with the pre-configured client_id
-      if (kind === "ias") {
-        const enhancedResponse = {
-          client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: req.body.redirect_uris || [
-            `${baseUrl}/oauth/callback`,
-          ],
-        };
-        LOGGER.debug(
-          "Provided static client_id during DCR registration process",
-        );
-        res.json(enhancedResponse);
-        return;
-      }
+      // if (kind === "ias") {
+      const enhancedResponse = {
+        client_id: credentials.clientid, // Add our CAP app's client ID
+        redirect_uris: req.body.redirect_uris || [`${baseUrl}/oauth/callback`],
+      };
+      LOGGER.debug("Provided static client_id during DCR registration process");
+      res.json(enhancedResponse);
+      return;
+      // }
 
       // Keep original implementation for XSUAA
-      try {
-        // Simple proxy for discovery - no CSRF needed
-        const response = await fetch(`${credentials.url}/oauth/register`, {
-          method: "GET",
-          headers: {
-            Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
-            Accept: "application/json",
-          },
-        });
+      // try {
+      //   // Simple proxy for discovery - no CSRF needed
+      //   const response = await fetch(`${credentials.url}/oauth/register`, {
+      //     method: "GET",
+      //     headers: {
+      //       Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
+      //       Accept: "application/json",
+      //     },
+      //   });
 
-        const xsuaaData = await response.json();
+      //   const xsuaaData = await response.json();
 
-        // Add missing required fields that MCP client expects
-        const enhancedResponse = {
-          ...xsuaaData, // Keep all XSUAA fields
-          client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: [`${baseUrl}/oauth/callback`], // Add our callback URL for discovery
-        };
+      //   // Add missing required fields that MCP client expects
+      //   const enhancedResponse = {
+      //     ...xsuaaData, // Keep all XSUAA fields
+      //     client_id: credentials.clientid, // Add our CAP app's client ID
+      //     redirect_uris: [`${baseUrl}/oauth/callback`], // Add our callback URL for discovery
+      //   };
 
-        res.status(response.status).json(enhancedResponse);
-      } catch (error) {
-        LOGGER.error("OAuth registration discovery error:", error);
-        res.status(500).json({
-          error: "server_error",
-          error_description:
-            error instanceof Error ? error.message : "Unknown error",
-        });
-      }
+      //   res.status(response.status).json(enhancedResponse);
+      // } catch (error) {
+      //   LOGGER.error("OAuth registration discovery error:", error);
+      //   res.status(500).json({
+      //     error: "server_error",
+      //     error_description:
+      //       error instanceof Error ? error.message : "Unknown error",
+      //   });
+      // }
     },
   );
 
@@ -467,83 +464,80 @@ function registerOAuthEndpoints(
     async (req: Request, res: Response): Promise<void> => {
       const baseUrl = buildPublicBaseUrl(req);
 
+      // XSUAA does not support DCR so we will respond with the pre-configured client_id
       // IAS does not support DCR so we will respond with the pre-configured client_id
-      if (kind === "ias") {
-        const enhancedResponse = {
-          client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: req.body.redirect_uris || [
-            `${baseUrl}/oauth/callback`,
-          ],
-        };
-        LOGGER.debug(
-          "Provided static client_id during DCR registration process",
-        );
-        res.json(enhancedResponse);
-        return;
-      }
+      // if (kind === "ias") {
+      const enhancedResponse = {
+        client_id: credentials.clientid, // Add our CAP app's client ID
+        redirect_uris: req.body.redirect_uris || [`${baseUrl}/oauth/callback`],
+      };
+      LOGGER.debug("Provided static client_id during DCR registration process");
+      res.json(enhancedResponse);
+      return;
+      // }
 
       // Keep original implementation for XSUAA
-      try {
-        // Step 1: Fetch CSRF token from XSUAA
-        const csrfResponse = await fetch(`${credentials.url}/oauth/register`, {
-          method: "GET",
-          headers: {
-            "X-CSRF-Token": "Fetch",
-            Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
-            Accept: "application/json",
-          },
-        });
+      // try {
+      // Step 1: Fetch CSRF token from XSUAA
+      // const csrfResponse = await fetch(`${credentials.url}/oauth/register`, {
+      //   method: "GET",
+      //   headers: {
+      //     "X-CSRF-Token": "Fetch",
+      //     Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
+      //     Accept: "application/json",
+      //   },
+      // });
 
-        if (!csrfResponse.ok) {
-          throw new Error(`CSRF fetch failed: ${csrfResponse.status}`);
-        }
+      // if (!csrfResponse.ok) {
+      //   throw new Error(`CSRF fetch failed: ${csrfResponse.status}`);
+      // }
 
-        // Step 2: Extract CSRF token and session cookie
-        const setCookieHeader = csrfResponse.headers.get("set-cookie") || "";
-        const csrfToken = extractCsrfFromCookie(setCookieHeader);
+      // Step 2: Extract CSRF token and session cookie
+      // const setCookieHeader = csrfResponse.headers.get("set-cookie") || "";
+      // const csrfToken = extractCsrfFromCookie(setCookieHeader);
 
-        if (!csrfToken) {
-          throw new Error("Could not extract CSRF token from XSUAA response");
-        }
+      // if (!csrfToken) {
+      //   throw new Error("Could not extract CSRF token from XSUAA response");
+      // }
 
-        // Step 3: Make actual registration POST with CSRF token
-        const registrationResponse = await fetch(
-          `${credentials.url}/oauth/register`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "X-CSRF-Token": csrfToken,
-              Cookie: setCookieHeader,
-              Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
-              Accept: "application/json",
-            },
-            body: JSON.stringify(req.body),
-          },
-        );
+      // Step 3: Make actual registration POST with CSRF token
+      // const registrationResponse = await fetch(
+      //   `${credentials.url}/oauth/register`,
+      //   {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       "X-CSRF-Token": csrfToken,
+      //       Cookie: setCookieHeader,
+      //       Authorization: `Basic ${Buffer.from(`${credentials.clientid}:${credentials.clientsecret}`).toString("base64")}`,
+      //       Accept: "application/json",
+      //     },
+      //     body: JSON.stringify(req.body),
+      //   },
+      // );
 
-        const xsuaaData = await registrationResponse.json();
+      // const xsuaaData = await registrationResponse.json();
 
-        // Add missing required fields that MCP client expects
-        const enhancedResponse = {
-          ...xsuaaData, // Keep all XSUAA fields
-          client_id: credentials.clientid, // Add our CAP app's client ID
-          redirect_uris: req.body.redirect_uris || [
-            `${baseUrl}/oauth/callback`,
-          ],
-        };
+      // Add missing required fields that MCP client expects
+      //   const enhancedResponse = {
+      //     ...xsuaaData, // Keep all XSUAA fields
+      //     client_id: credentials.clientid, // Add our CAP app's client ID
+      //     redirect_uris: req.body.redirect_uris || [
+      //       `${baseUrl}/oauth/callback`,
+      //     ],
+      //   };
 
-        LOGGER.debug("[AUTH] Register POST response", enhancedResponse);
+      //   LOGGER.debug("[AUTH] Register POST response", enhancedResponse);
 
-        res.status(registrationResponse.status).json(enhancedResponse);
-      } catch (error) {
-        LOGGER.error("OAuth registration error:", error);
-        res.status(500).json({
-          error: "server_error",
-          error_description:
-            error instanceof Error ? error.message : "Unknown error",
-        });
-      }
+      //   res.status(registrationResponse.status).json(enhancedResponse);
+      // } catch (error) {
+      //   LOGGER.error("OAuth registration error:", error);
+      //   res.status(500).json({
+      //     error: "server_error",
+      //     error_description:
+      //       error instanceof Error ? error.message : "Unknown error",
+      //   });
+      // }
     },
   );
 
