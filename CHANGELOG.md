@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.6.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.5.1...1.6.0) (2026-06-01)
+
+### Bug Fixes
+
+* invalid session error not reaching clients ([#137](https://github.com/gavdilabs/cap-mcp-plugin/issues/137)) ([1ac9790](https://github.com/gavdilabs/cap-mcp-plugin/commit/1ac9790e2496a1bb812f32c8dc6a5cfc69fb3b7b))
+* remove custom authentication logic ([#145](https://github.com/gavdilabs/cap-mcp-plugin/issues/145)) ([484d04a](https://github.com/gavdilabs/cap-mcp-plugin/commit/484d04a8a5c4472d329ed918be5145755384abde))
+
+### Additional Changes
+
+* **deps-dev:** bump @types/node from 24.0.3 to 25.3.0 ([#135](https://github.com/gavdilabs/cap-mcp-plugin/issues/135)) ([76ba1c5](https://github.com/gavdilabs/cap-mcp-plugin/commit/76ba1c5fe158fb119588208681eaef60aa88747f))
+* **deps-dev:** bump lint-staged from 16.1.2 to 16.2.7 ([#134](https://github.com/gavdilabs/cap-mcp-plugin/issues/134)) ([59bf6e8](https://github.com/gavdilabs/cap-mcp-plugin/commit/59bf6e803ccef9f849a76cd64aab428a79995182))
+* **deps-dev:** bump typescript from 5.8.3 to 5.9.3 ([#127](https://github.com/gavdilabs/cap-mcp-plugin/issues/127)) ([07ac932](https://github.com/gavdilabs/cap-mcp-plugin/commit/07ac932202435ecdd4c3a00e88bf9f046321c24e))
+* upgrade express to v5 ([#146](https://github.com/gavdilabs/cap-mcp-plugin/issues/146)) ([1e9bc6d](https://github.com/gavdilabs/cap-mcp-plugin/commit/1e9bc6d318f77a2224f2e8280c201bfd9f7ed9a9))
+
 ## [1.5.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.5.0...1.5.1) (2026-02-17)
 
 ### Bug Fixes
