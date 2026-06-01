@@ -43,8 +43,8 @@
     "docs:links": "markdown-link-check docs/**/*.md"
   },
   "peerDependencies": {
-    "@sap/cds": ">=9",
-    "express": "^4"
+    "@sap/cds": "^9",
+    "express": "^5"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.23.0",
