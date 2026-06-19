@@ -294,6 +294,40 @@ extend projection Books with actions {
 }
 ```
 
+#### Required vs Optional Parameters
+
+Parameters follow standard CDS nullability rules. A parameter declared `not null` is **required** in the MCP tool schema; a parameter without `not null` is **optional** and may be omitted by the AI agent.
+
+```cds
+@mcp: {
+  name       : 'search-items',
+  description: 'Search for items by keyword with optional filters',
+  tool       : true
+}
+function searchItems(
+  query    : String  not null,  // required — must be provided
+  category : String,            // optional — may be omitted
+  limit    : Integer,           // optional — may be omitted
+  format   : String             // optional — may be omitted
+) returns array of String;
+```
+
+The generated JSON Schema will list only `not null` parameters in the `required` array:
+
+```json
+{
+  "properties": {
+    "query":    { "type": "string" },
+    "category": { "type": "string" },
+    "limit":    { "type": "integer" },
+    "format":   { "type": "string" }
+  },
+  "required": ["query"]
+}
+```
+
+> **Note:** This behaviour applies to unbound functions and actions. Entity wrapper tools (`query`, `get`, `create`, `update`) derive nullability from the entity element definitions.
+
 #### Tool Elicitation
 
 Request user confirmation or input before tool execution using the `elicit` property:
