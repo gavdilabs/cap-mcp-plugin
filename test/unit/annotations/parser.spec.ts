@@ -230,6 +230,7 @@ describe("Parser", () => {
                 params: {
                   input: {
                     type: { ref: ["myTypes.CustomDouble", "double1"] },
+                    notNull: true,
                   },
                 },
               },
@@ -266,8 +267,9 @@ describe("Parser", () => {
             params: {
               complexParam: {
                 type: { ref: ["myTypes.ComplexType", "stringField"] },
+                notNull: true,
               },
-              simpleParam: { type: "cds.Boolean" },
+              simpleParam: { type: "cds.Boolean", notNull: true },
             },
           },
         },
@@ -310,8 +312,9 @@ describe("Parser", () => {
             params: {
               nestedComplexParam: {
                 type: { ref: ["myTypes.ComplexType", "stringField"] },
+                notNull: true,
               },
-              simpleParam: { type: "cds.Boolean" },
+              simpleParam: { type: "cds.Boolean", notNull: true },
             },
           },
         },
@@ -357,15 +360,19 @@ describe("Parser", () => {
             params: {
               personName: {
                 type: { ref: ["myTypes.Person", "name"] },
+                notNull: true,
               },
               personAge: {
                 type: { ref: ["myTypes.Person", "age"] },
+                notNull: true,
               },
               addressZip: {
                 type: { ref: ["myTypes.Address", "zipCode"] },
+                notNull: true,
               },
               isPersonActive: {
                 type: { ref: ["myTypes.Person", "isActive"] },
+                notNull: true,
               },
             },
           },
@@ -1000,11 +1007,11 @@ describe("Parser", () => {
             "@mcp.description": "Action with mixed parameter types",
             "@mcp.tool": true,
             params: {
-              singleValue: { type: "cds.String" },
+              singleValue: { type: "cds.String", notNull: true },
               arrayValues: {
                 items: { type: "cds.String" },
               },
-              numericValue: { type: "cds.Integer" },
+              numericValue: { type: "cds.Integer", notNull: true },
               numericArray: {
                 items: { type: "cds.Integer" },
               },
@@ -1093,7 +1100,7 @@ describe("Parser", () => {
                   quantities: {
                     items: { type: "cds.Integer" },
                   },
-                  enabled: { type: "cds.Boolean" },
+                  enabled: { type: "cds.Boolean", notNull: true },
                 },
               },
             },

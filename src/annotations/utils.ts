@@ -293,6 +293,7 @@ export function parseResourceElements(
 type OperationParameter = {
   type?: string | { ref: string[] };
   items?: { type: string | { ref: string[] } };
+  notNull?: boolean;
 };
 
 /**
@@ -344,7 +345,8 @@ export function parseOperationElements(
         continue;
       }
 
-      parseParam(k, v);
+      const optionalSuffix = v.notNull ? undefined : "Optional";
+      parseParam(k, v, optionalSuffix);
     }
   }
 

@@ -594,8 +594,8 @@ describe("Utils", () => {
         definition: {
           kind: "function",
           params: {
-            param1: { type: "cds.String" },
-            param2: { type: "cds.Integer" },
+            param1: { type: "cds.String", notNull: true },
+            param2: { type: "cds.Integer", notNull: true },
           },
         } as any,
         name: "test",
@@ -656,11 +656,11 @@ describe("Utils", () => {
         definition: {
           kind: "action",
           params: {
-            singleString: { type: "cds.String" },
+            singleString: { type: "cds.String", notNull: true },
             stringArray: {
               items: { type: "cds.String" },
             },
-            singleInteger: { type: "cds.Integer" },
+            singleInteger: { type: "cds.Integer", notNull: true },
             integerArray: {
               items: { type: "cds.Integer" },
             },
@@ -783,6 +783,47 @@ describe("Utils", () => {
 
       expect(result.parameters).toBeUndefined();
       expect(result.operationKind).toBe("action");
+    });
+
+    test("should mark parameters without notNull as Optional-suffixed", () => {
+      const annotations: McpAnnotationStructure = {
+        definition: {
+          kind: "function",
+          params: {
+            required: { type: "cds.String", notNull: true },
+            optional: { type: "cds.String" },
+            alsoOptional: { type: "cds.Integer" },
+          },
+        } as any,
+        name: "test-optional",
+        description: "test optional parameters",
+      };
+
+      const mockModel: csn.CSN = { definitions: {} };
+      const result = parseOperationElements(annotations, mockModel);
+
+      expect(result.parameters).toBeDefined();
+      expect(result.parameters!.get("required")).toBe("String");
+      expect(result.parameters!.get("optional")).toBe("StringOptional");
+      expect(result.parameters!.get("alsoOptional")).toBe("IntegerOptional");
+    });
+
+    test("should mark notNull: false parameters as Optional-suffixed", () => {
+      const annotations: McpAnnotationStructure = {
+        definition: {
+          kind: "action",
+          params: {
+            explicit: { type: "cds.Boolean", notNull: false },
+          },
+        } as any,
+        name: "test-explicit-optional",
+        description: "test explicit notNull false",
+      };
+
+      const mockModel: csn.CSN = { definitions: {} };
+      const result = parseOperationElements(annotations, mockModel);
+
+      expect(result.parameters!.get("explicit")).toBe("BooleanOptional");
     });
   });
 
