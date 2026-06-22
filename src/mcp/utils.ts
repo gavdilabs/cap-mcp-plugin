@@ -18,6 +18,11 @@ export function determineMcpParameterType(
   key?: string,
   target?: string,
 ): z.ZodType {
+  if (cdsType?.endsWith("Optional")) {
+    const baseType = cdsType.slice(0, -"Optional".length);
+    return determineMcpParameterType(baseType, key, target).optional();
+  }
+
   switch (cdsType) {
     case "String":
       return z.string();

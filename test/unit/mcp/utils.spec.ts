@@ -246,6 +246,24 @@ describe("Server Utils", () => {
       expect(resultUpper).toMatchObject({ _type: "string-type" });
     });
 
+    test("should return optional wrapper for Optional-suffixed types", () => {
+      const result = determineMcpParameterType("StringOptional");
+      expect(mockOptional).toHaveBeenCalled();
+      expect(result).toBe("optional-type");
+    });
+
+    test("should return optional wrapper for BooleanOptional", () => {
+      const result = determineMcpParameterType("BooleanOptional");
+      expect(mockOptional).toHaveBeenCalled();
+      expect(result).toBe("optional-type");
+    });
+
+    test("should return optional wrapper for IntegerOptional", () => {
+      const result = determineMcpParameterType("IntegerOptional");
+      expect(mockOptional).toHaveBeenCalled();
+      expect(result).toBe("optional-type");
+    });
+
     describe("Composition type handling", () => {
       // Store original cds reference
       const originalCds = (global as any).cds;

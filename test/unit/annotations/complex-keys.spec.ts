@@ -215,7 +215,7 @@ describe("Complex Keys Annotation Parser", () => {
                 "@mcp.description": "Process entity with complex keys",
                 "@mcp.tool": true,
                 params: {
-                  amount: { type: "cds.Decimal" },
+                  amount: { type: "cds.Decimal", notNull: true },
                 },
               },
             },
@@ -289,10 +289,10 @@ describe("Complex Keys Annotation Parser", () => {
             "@mcp.description": "Function working with complex key entities",
             "@mcp.tool": true,
             params: {
-              entityId: { type: "cds.UUID" },
-              randomKey: { type: "cds.Integer" },
-              otherRef: { type: "cds.UUID" }, // Reference to Other.ID
-              processMode: { type: "cds.String" },
+              entityId: { type: "cds.UUID", notNull: true },
+              randomKey: { type: "cds.Integer", notNull: true },
+              otherRef: { type: "cds.UUID", notNull: true }, // Reference to Other.ID
+              processMode: { type: "cds.String", notNull: true },
             },
           },
         },
