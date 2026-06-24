@@ -111,6 +111,71 @@ describe("entity-tools - registration", () => {
     const accesses: WrapAccess = { canDelete: true };
     registerEntityWrappers(res, server, false, ["delete"], accesses);
   });
+
+  it("emits behaviour annotations per entity wrapper mode", () => {
+    const server = new McpServer({ name: "t", version: "1" });
+    const annotations: Record<string, any> = {};
+    // @ts-ignore override registerTool to capture annotations
+    server.registerTool = (name: string, config: any) => {
+      annotations[name] = config.annotations;
+      return undefined as any;
+    };
+
+    const res = new McpResourceAnnotation(
+      "books",
+      "Books",
+      "Books",
+      "CatalogService",
+      new Set(["filter", "orderby", "select", "top", "skip"]),
+      new Map([
+        ["ID", "Integer"],
+        ["title", "String"],
+      ]),
+      new Map([["ID", "Integer"]]),
+      new Map(),
+      { tools: true, modes: ["query", "get", "create", "update", "delete"] },
+    );
+
+    const accesses: WrapAccess = {
+      canRead: true,
+      canCreate: true,
+      canUpdate: true,
+      canDelete: true,
+    };
+    registerEntityWrappers(
+      res,
+      server,
+      false,
+      ["query", "get", "create", "update", "delete"],
+      accesses,
+    );
+
+    expect(annotations["CatalogService_Books_query"]).toEqual({
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+    });
+    expect(annotations["CatalogService_Books_get"]).toEqual({
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+    });
+    expect(annotations["CatalogService_Books_create"]).toEqual({
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+    });
+    expect(annotations["CatalogService_Books_update"]).toEqual({
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+    });
+    expect(annotations["CatalogService_Books_delete"]).toEqual({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+    });
+  });
 });
 
 describe("entity-tools - custom tool naming via @mcp.wrap.name", () => {
