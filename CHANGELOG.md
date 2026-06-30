@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.7.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.6.0...1.7.0) (2026-06-30)
+
+### Features
+
+* make action/function parameters optional when notNull is not set ([#148](https://github.com/gavdilabs/cap-mcp-plugin/issues/148)) ([c755888](https://github.com/gavdilabs/cap-mcp-plugin/commit/c7558883aad023f731d0ca9ebe267176c8bbeb12))
+
 ## [1.6.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.5.1...1.6.0) (2026-06-01)
 
 ### Bug Fixes
