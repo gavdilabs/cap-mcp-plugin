@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { McpResourceAnnotation } from "../annotations/structures";
 import { getAccessRights, WrapAccess } from "../auth/utils";
 import { LOGGER } from "../logger";
@@ -481,7 +482,16 @@ function registerQueryTool(
 
   server.registerTool(
     toolName,
-    { title: toolName, description: desc, inputSchema },
+    {
+      title: toolName,
+      description: desc,
+      inputSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+      } as ToolAnnotations,
+    },
     queryHandler as any,
   );
 }
@@ -588,7 +598,16 @@ function registerGetTool(
 
   server.registerTool(
     toolName,
-    { title: toolName, description: desc, inputSchema },
+    {
+      title: toolName,
+      description: desc,
+      inputSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+      } as ToolAnnotations,
+    },
     getHandler as any,
   );
 }
@@ -720,7 +739,16 @@ function registerCreateTool(
 
   server.registerTool(
     toolName,
-    { title: toolName, description: desc, inputSchema },
+    {
+      title: toolName,
+      description: desc,
+      inputSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: false,
+      } as ToolAnnotations,
+    },
     createHandler as any,
   );
 }
@@ -873,7 +901,16 @@ function registerUpdateTool(
 
   server.registerTool(
     toolName,
-    { title: toolName, description: desc, inputSchema },
+    {
+      title: toolName,
+      description: desc,
+      inputSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+      } as ToolAnnotations,
+    },
     updateHandler as any,
   );
 }
@@ -969,7 +1006,16 @@ function registerDeleteTool(
 
   server.registerTool(
     toolName,
-    { title: toolName, description: desc, inputSchema },
+    {
+      title: toolName,
+      description: desc,
+      inputSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: true,
+      } as ToolAnnotations,
+    },
     deleteHandler as any,
   );
 }
