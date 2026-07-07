@@ -100,6 +100,11 @@ describe("tools.ts", () => {
             param1: expect.any(z.ZodString),
             param2: expect.any(z.ZodNumber),
           }),
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: false,
+          },
         });
         expect(registerCall.args[2]).toEqual(expect.any(Function));
 
@@ -226,6 +231,11 @@ describe("tools.ts", () => {
           title: "TestTool",
           description: "Test tool description",
           inputSchema: {},
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: false,
+          },
         });
         expect(registerCall.args[2]).toEqual(expect.any(Function));
       });
@@ -261,6 +271,11 @@ describe("tools.ts", () => {
           title: "TestTool",
           description: "Test tool description",
           inputSchema: {},
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: false,
+          },
         });
         expect(registerCall.args[2]).toEqual(expect.any(Function));
       });
@@ -353,6 +368,11 @@ describe("tools.ts", () => {
             id: expect.any(z.ZodNumber),
             param1: expect.any(z.ZodString),
           }),
+          annotations: {
+            readOnlyHint: false,
+            destructiveHint: true,
+            idempotentHint: false,
+          },
         });
         expect(registerCall.args[2]).toEqual(expect.any(Function));
 
@@ -1199,6 +1219,90 @@ describe("tools.ts", () => {
             boolParam: true,
           },
           params: [{ id: "guid-123-456" }],
+        });
+      });
+    });
+
+    describe("Operation Annotations", () => {
+      it("emits read-only hints for CDS functions", () => {
+        const model = new McpToolAnnotation(
+          "ReadTool",
+          "A read-only function",
+          "readFunction",
+          "TestService",
+          new Map(),
+          undefined,
+          "function",
+        );
+
+        (cds as any).services["TestService"] = {
+          send: jest.fn(),
+          tx: jest.fn().mockReturnValue({ send: jest.fn() }),
+        };
+
+        assignToolToServer(model, mockServer as any, false);
+
+        const registerCall = (
+          mockServer.registerTool as sinon.SinonStub
+        ).getCall(0);
+        expect(registerCall.args[1].annotations).toEqual({
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+        });
+      });
+
+      it("emits write hints for CDS actions", () => {
+        const model = new McpToolAnnotation(
+          "WriteTool",
+          "A side-effecting action",
+          "writeAction",
+          "TestService",
+          new Map(),
+          undefined,
+          "action",
+        );
+
+        (cds as any).services["TestService"] = {
+          send: jest.fn(),
+          tx: jest.fn().mockReturnValue({ send: jest.fn() }),
+        };
+
+        assignToolToServer(model, mockServer as any, false);
+
+        const registerCall = (
+          mockServer.registerTool as sinon.SinonStub
+        ).getCall(0);
+        expect(registerCall.args[1].annotations).toEqual({
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: false,
+        });
+      });
+
+      it("treats an unknown operation kind as a write for safety", () => {
+        const model = new McpToolAnnotation(
+          "UnknownTool",
+          "An operation without a declared kind",
+          "unknownOp",
+          "TestService",
+          new Map(),
+        );
+
+        (cds as any).services["TestService"] = {
+          send: jest.fn(),
+          tx: jest.fn().mockReturnValue({ send: jest.fn() }),
+        };
+
+        assignToolToServer(model, mockServer as any, false);
+
+        const registerCall = (
+          mockServer.registerTool as sinon.SinonStub
+        ).getCall(0);
+        expect(registerCall.args[1].annotations).toEqual({
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: false,
         });
       });
     });

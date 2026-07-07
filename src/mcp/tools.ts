@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { McpToolAnnotation } from "../annotations/structures";
 import { determineMcpParameterType, asMcpResult } from "./utils";
 import { LOGGER } from "../logger";
@@ -40,6 +41,27 @@ export function assignToolToServer(
 }
 
 /**
+ * Derives MCP tool behaviour hints from a CDS operation kind.
+ *
+ * CDS `function`s are non-side-effecting reads, while `action`s are
+ * side-effecting writes. These map onto the MCP `ToolAnnotations` hints so
+ * clients can advertise read-only/destructive intent in `tools/list`.
+ *
+ * Any non-`function` kind (including an undefined kind) is treated as an
+ * action to stay on the safe, write-capable side.
+ * @param model - The tool annotation carrying the parsed operation kind
+ * @returns Tool annotation hints describing the operation's behaviour
+ */
+function buildOperationAnnotations(model: McpToolAnnotation): ToolAnnotations {
+  const readOnly = model.operationKind === "function";
+  return {
+    readOnlyHint: readOnly,
+    destructiveHint: !readOnly,
+    idempotentHint: readOnly,
+  };
+}
+
+/**
  * Registers a bound operation that operates on a specific entity instance
  * Requires entity key parameters in addition to operation parameters
  * @param params - Zod schema definitions for operation parameters
@@ -75,6 +97,7 @@ function assignBoundOperation(
       title: model.name,
       description: model.description,
       inputSchema: inputSchema,
+      annotations: buildOperationAnnotations(model),
     },
     async (args) => {
       // Resolve from current CAP context; prefer global to align with Jest mocks
@@ -150,6 +173,7 @@ function assignUnboundOperation(
       title: model.name,
       description: model.description,
       inputSchema: inputSchema,
+      annotations: buildOperationAnnotations(model),
     },
     async (args) => {
       // Resolve from current CAP context; prefer global to align with Jest mocks
