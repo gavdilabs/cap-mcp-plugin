@@ -50,7 +50,7 @@ jobs:
           #NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Release
-        run: npm run release ${{ github.event.inputs.version-bump }} --ci
+        run: npx release-it ${{ github.event.inputs.version-bump }} --ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           #NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
