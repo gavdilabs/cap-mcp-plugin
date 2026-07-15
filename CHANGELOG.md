@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.8.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.7.0...1.8.0) (2026-07-15)
+
+### Features
+
+* **mcp:** emit tool annotations from CDS operation kind ([#149](https://github.com/gavdilabs/cap-mcp-plugin/issues/149)) ([adbf605](https://github.com/gavdilabs/cap-mcp-plugin/commit/adbf605fe62e46acc7cafc23cd6277bf1bfcfdab))
+* upgrade cds v9 to v10 ([#151](https://github.com/gavdilabs/cap-mcp-plugin/issues/151)) ([3dad880](https://github.com/gavdilabs/cap-mcp-plugin/commit/3dad88031d5cf0f2b59b1905e7c23e7d74836351))
+
+### Bug Fixes
+
+* add body-parser configuration in bootstrap ([#153](https://github.com/gavdilabs/cap-mcp-plugin/issues/153)) ([55bb364](https://github.com/gavdilabs/cap-mcp-plugin/commit/55bb364af7421bd32e6f8f2af3e856c3abd1f892))
+* upgrade release-it to keep it from breaking during ci ([#154](https://github.com/gavdilabs/cap-mcp-plugin/issues/154)) ([f3dd193](https://github.com/gavdilabs/cap-mcp-plugin/commit/f3dd1935a544aa3c81feea1b0c7d5c730655f043))
+
+### Additional Changes
+
+* **ci:** change release command to use npx release-it ([90ad95d](https://github.com/gavdilabs/cap-mcp-plugin/commit/90ad95d182c6309160e424dcb9c424a649be4b65))
+* **deps-dev:** bump @cap-js/cds-types from 0.10.0 to 0.18.0 ([#141](https://github.com/gavdilabs/cap-mcp-plugin/issues/141)) ([5e0f299](https://github.com/gavdilabs/cap-mcp-plugin/commit/5e0f299b7548957f85ff3c3a20f871945ce44c98))
+* **deps-dev:** bump @types/node from 25.3.0 to 26.1.1 ([#139](https://github.com/gavdilabs/cap-mcp-plugin/issues/139)) ([0e8fe5e](https://github.com/gavdilabs/cap-mcp-plugin/commit/0e8fe5e940d1145fc5cd01f1712a04e7c7e12d85))
+* **deps:** upgrade xssec to latest version as requirement ([#152](https://github.com/gavdilabs/cap-mcp-plugin/issues/152)) ([bf7ae56](https://github.com/gavdilabs/cap-mcp-plugin/commit/bf7ae56f4a3182363319fb7a4eb09ce70a004306))
+
 ## [1.7.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.6.0...1.7.0) (2026-06-30)
 
 ### Features
