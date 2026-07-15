@@ -28,7 +28,7 @@ By integrating MCP with your CAP applications, you unlock:
 ### Prerequisites
 
 - **Node.js**: Version 18 or higher
-- **SAP CAP**: Version 9 or higher
+- **SAP CAP**: Version 10 or higher
 - **Express**: Version 5 or higher
 - **TypeScript**: Optional but recommended
 
