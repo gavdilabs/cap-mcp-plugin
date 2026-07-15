@@ -68,6 +68,15 @@ export default class McpPlugin {
       }),
     );
 
+    // Apply body limit
+    const limit =
+      cds.env.mcp?.body_parser?.limit ??
+      cds.env.server?.body_parser?.limit ??
+      "100kb"; // preserve current default if no config
+
+    this.expressApp.use("/mcp", express.json({ limit }));
+
+    // Handle auth configuration
     if (this.config.auth === "inherit") {
       registerAuthMiddleware(this.expressApp);
     }
