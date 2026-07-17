@@ -7,7 +7,7 @@
   "private": true,
   "dependencies": {
     "@sap/cds": ">=9",
-    "express": "^4",
+    "express": "^5",
     "@gavdi/cap-mcp": "../../."
   },
   "devDependencies": {
