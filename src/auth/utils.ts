@@ -2,7 +2,11 @@ import { User } from "@sap/cds";
 import { Application, Request, Response } from "express";
 import express from "express";
 import helmet from "helmet";
-import { authHandlerFactory, errorHandlerFactory } from "./factory";
+import {
+  authHandlerFactory,
+  errorHandlerFactory,
+  amsHandlerFactory,
+} from "./factory";
 import { McpAuthType } from "../config/types";
 import { McpRestriction } from "../annotations/types";
 import { XSUAAService, AuthCredentials } from "./xsuaa-service";
@@ -74,6 +78,13 @@ interface CallbackQuery {
  * @since 1.0.0
  */
 export type AuthTypes = "dummy" | "mocked" | "basic" | "jwt" | "xsuaa" | "ias";
+
+/**
+ * Specifies the types of keys used for authentication credentials.
+ * - `clientsecret`: client_id and client_secret are available
+ * - `certificate`: client_id along with certificate and private key are used for authentication
+ */
+export type KeyTypes = "clientsecret" | "certificate";
 
 /**
  * Determines whether authentication is enabled for the MCP plugin.
@@ -180,6 +191,10 @@ export function registerAuthMiddleware(expressApp: Application): void {
   authMiddleware.push(errorHandlerFactory());
   authMiddleware.push(authHandlerFactory());
 
+  // Add AMS handler if available
+  const amsHandler = amsHandlerFactory();
+  if (amsHandler) authMiddleware.push(amsHandler);
+
   // If we require OAuth then we should also apply for that
   configureOAuthProxy(expressApp);
 
@@ -235,7 +250,8 @@ function configureOAuthProxy(expressApp: Application): void {
   if (
     !credentials ||
     !credentials.clientid ||
-    !credentials.clientsecret ||
+    (!credentials.clientsecret &&
+      (!credentials.certificate || !credentials.key)) ||
     !credentials.url
   ) {
     throw new Error("Invalid security credentials");
@@ -253,7 +269,7 @@ function registerOAuthEndpoints(
   credentials: AuthCredentials,
   kind: AuthTypes,
 ): void {
-  const xsuaaService = new XSUAAService();
+  const xsuaaService = new XSUAAService(kind);
 
   // Fetch endpoints from OIDC configuration
   xsuaaService.discoverOAuthEndpoints();

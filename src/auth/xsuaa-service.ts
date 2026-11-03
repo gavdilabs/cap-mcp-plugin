@@ -1,6 +1,8 @@
 import { Request } from "express";
 import * as xssec from "@sap/xssec";
 import { LOGGER } from "../logger";
+import { Agent, fetch } from "undici";
+import { AuthTypes, KeyTypes } from "./utils";
 
 /* @ts-ignore */
 const cds = global.cds || require("@sap/cds");
@@ -19,12 +21,14 @@ interface OAuthEndpoints {
  */
 export interface AuthCredentials {
   clientid: string;
-  clientsecret: string;
+  clientsecret?: string;
   url: string;
   uaadomain?: string;
   verificationkey?: string;
   identityzone?: string;
   tenantid?: string;
+  certificate?: string;
+  key?: string;
 }
 
 /**
@@ -57,13 +61,14 @@ export class XSUAAService {
     authProvider: AuthCredentials;
     xsuaa: AuthCredentials;
   };
-  private readonly xsuaaService: xssec.XsuaaService;
+  private readonly xsuaaService: xssec.XsuaaService | xssec.IdentityService;
   private endpoints: {
     authProvider: OAuthEndpoints;
     xsuaa: OAuthEndpoints;
   };
+  private readonly kind: AuthTypes;
 
-  constructor() {
+  constructor(kind: AuthTypes) {
     // In case of IAS, the final token conversion to get application scopes has to be done with XSUAA, so there will be 2 sets of credentials
     this.credentials = {
       authProvider: cds.env.requires.auth?.credentials,
@@ -86,15 +91,57 @@ export class XSUAAService {
       },
     };
 
-    this.xsuaaService = new xssec.XsuaaService(this.credentials.xsuaa);
+    this.kind = kind;
+    if (this.kind === "ias" && !cds.env.requires.xsuaa) {
+      // IAS without extra XSUAA should mean AMS is used, so the roles are assigned directly via IAS Policies
+      this.xsuaaService = new xssec.IdentityService(
+        this.credentials.authProvider,
+      );
+    } else {
+      // in any other scenario no AMS is used, so the roles are assigned via XSUAA Role Collections
+      this.xsuaaService = new xssec.XsuaaService(this.credentials.xsuaa);
+    }
   }
 
   isConfigured(): boolean {
     return !!(
       this.credentials.authProvider?.clientid &&
-      this.credentials.authProvider?.clientsecret &&
+      this.getAuthProviderKeyType() !== undefined &&
       this.credentials.authProvider?.url
     );
+  }
+
+  getAuthProviderKeyType(): KeyTypes | undefined {
+    if (
+      !!this.credentials.authProvider?.clientid &&
+      !!this.credentials.authProvider?.clientsecret
+    ) {
+      return "clientsecret";
+    }
+    if (
+      !!this.credentials.authProvider?.clientid &&
+      !!this.credentials.authProvider?.certificate &&
+      !!this.credentials.authProvider?.key
+    ) {
+      return "certificate";
+    }
+    return undefined;
+  }
+  getXsuaaKeyType(): KeyTypes | undefined {
+    if (
+      !!this.credentials.xsuaa?.clientid &&
+      !!this.credentials.xsuaa?.clientsecret
+    ) {
+      return "clientsecret";
+    }
+    if (
+      !!this.credentials.xsuaa?.clientid &&
+      !!this.credentials.xsuaa?.certificate &&
+      !!this.credentials.xsuaa?.key
+    ) {
+      return "certificate";
+    }
+    return undefined;
   }
 
   /**
@@ -115,12 +162,12 @@ export class XSUAAService {
           },
         });
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData: any = await response.json();
           LOGGER.warn(
             `OAuth endpoints fetch failed: ${response.status} ${errorData.error_description || errorData.error}. Continuing with default configuration.`,
           );
         } else {
-          const oidcConfig = await response.json();
+          const oidcConfig: any = await response.json();
           this.endpoints[key].authorization_endpoint =
             oidcConfig.authorization_endpoint;
           this.endpoints[key].token_endpoint = oidcConfig.token_endpoint;
@@ -176,18 +223,34 @@ export class XSUAAService {
   ): Promise<TokenResponse> {
     try {
       const tokenOptions = {
+        client_id: this.credentials.authProvider?.clientid,
         grant_type: "authorization_code",
         code,
         redirect_uri: redirectUri,
         ...(!!code_verifier ? { code_verifier } : {}),
       };
 
+      // Prepare authentication options
+      let certAgent: Agent | null = null;
+      let authHeader: string | null = null;
+      if (this.getAuthProviderKeyType() === "certificate") {
+        certAgent = new Agent({
+          connect: {
+            cert: this.credentials.authProvider?.certificate,
+            key: this.credentials.authProvider?.key,
+          },
+        });
+      } else if (this.getAuthProviderKeyType() === "clientsecret") {
+        authHeader = `Basic ${Buffer.from(`${this.credentials.authProvider?.clientid}:${this.credentials.authProvider?.clientsecret}`).toString("base64")}`;
+      }
+
       // Use direct XSUAA/IAS token endpoint for authorization code exchange
       const response = await fetch(this.endpoints.authProvider.token_endpoint, {
+        ...(certAgent ? { dispatcher: certAgent } : {}),
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${Buffer.from(`${this.credentials.authProvider?.clientid}:${this.credentials.authProvider?.clientsecret}`).toString("base64")}`,
+          ...(authHeader ? { Authorization: authHeader } : {}),
         },
         body: new URLSearchParams(tokenOptions),
       });
@@ -215,15 +278,30 @@ export class XSUAAService {
     try {
       const tokenOptions = {
         grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-        reponse_type: "token+id_token",
+        response_type: "token+id_token",
         assertion: token.access_token,
       };
 
+      // Prepare authentication options
+      let certAgent: Agent | null = null;
+      let authHeader: string | null = null;
+      if (this.getXsuaaKeyType() === "certificate") {
+        certAgent = new Agent({
+          connect: {
+            cert: this.credentials.xsuaa?.certificate,
+            key: this.credentials.xsuaa?.key,
+          },
+        });
+      } else if (this.getXsuaaKeyType() === "clientsecret") {
+        authHeader = `Basic ${Buffer.from(`${this.credentials.xsuaa?.clientid}:${this.credentials.xsuaa?.clientsecret}`).toString("base64")}`;
+      }
+
       const response = await fetch(this.endpoints.xsuaa.token_endpoint, {
         method: "POST",
+        ...(certAgent ? { dispatcher: certAgent } : {}),
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${Buffer.from(`${this.credentials.xsuaa?.clientid}:${this.credentials.xsuaa?.clientsecret}`).toString("base64")}`,
+          ...(authHeader ? { Authorization: authHeader } : {}),
         },
         body: new URLSearchParams(tokenOptions),
       });
@@ -249,11 +327,26 @@ export class XSUAAService {
    */
   async refreshAccessToken(refreshToken: string): Promise<TokenResponse> {
     try {
+      // Prepare authentication options
+      let certAgent: Agent | null = null;
+      let authHeader: string | null = null;
+      if (this.getXsuaaKeyType() === "certificate") {
+        certAgent = new Agent({
+          connect: {
+            cert: this.credentials.xsuaa?.certificate,
+            key: this.credentials.xsuaa?.key,
+          },
+        });
+      } else if (this.getXsuaaKeyType() === "clientsecret") {
+        authHeader = `Basic ${Buffer.from(`${this.credentials.xsuaa?.clientid}:${this.credentials.xsuaa?.clientsecret}`).toString("base64")}`;
+      }
+
       const response = await fetch(this.endpoints.xsuaa.token_endpoint, {
         method: "POST",
+        ...(certAgent ? { dispatcher: certAgent } : {}),
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: `Basic ${Buffer.from(`${this.credentials.xsuaa?.clientid}:${this.credentials.xsuaa?.clientsecret}`).toString("base64")}`,
+          ...(authHeader ? { Authorization: authHeader } : {}),
         },
         body: new URLSearchParams({
           grant_type: "refresh_token",
@@ -338,7 +431,7 @@ export class XSUAAService {
   /**
    * Get XSUAA service instance for advanced operations
    */
-  getXsuaaService(): xssec.XsuaaService {
+  getXsuaaService(): xssec.XsuaaService | xssec.IdentityService {
     return this.xsuaaService;
   }
 }

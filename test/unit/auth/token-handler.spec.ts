@@ -38,7 +38,7 @@ describe("OAuth Token Handler", () => {
       status: jest.fn().mockReturnThis(),
     };
 
-    mockXsuaaService = new XSUAAService() as any;
+    mockXsuaaService = new XSUAAService("xsuaa") as any;
     mockXsuaaService.exchangeCodeForToken = jest.fn();
     mockXsuaaService.getApplicationScopes = jest.fn();
     mockXsuaaService.refreshAccessToken = jest.fn();
