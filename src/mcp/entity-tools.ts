@@ -1221,8 +1221,8 @@ function constructHintMessage(
  */
 function constructErrorMessage(error: any): string {
   let parts: string[] = [error?.message || String(error)];
-  if (!!error.code) parts.push(`code=${JSON.stringify(error.code)}`);
-  if (!!error.target) parts.push(`target=${JSON.stringify(error.target)}`);
-  if (!!error.args) parts.push(`args=${JSON.stringify(error.args)}`);
+  if (!!error?.code) parts.push(`code=${JSON.stringify(error.code)}`);
+  if (!!error?.target) parts.push(`target=${JSON.stringify(error.target)}`);
+  if (!!error?.args) parts.push(`args=${JSON.stringify(error.args)}`);
   return parts.join(" | ");
 }
