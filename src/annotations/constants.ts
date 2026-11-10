@@ -18,6 +18,7 @@ export const MCP_ANNOTATION_MAPPING = new Map<string, string>([
   ["@mcp.name", "name"],
   ["@mcp.description", "description"],
   ["@mcp.resource", "resource"],
+  ["@mcp.usePrimaryKey", "usePrimaryKey"],
   ["@mcp.tool", "tool"],
   ["@mcp.prompts", "prompts"],
   ["@mcp.wrap", "wrap"],

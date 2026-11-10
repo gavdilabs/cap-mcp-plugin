@@ -121,6 +121,8 @@ export class McpResourceAnnotation extends McpAnnotation {
   private readonly _deepInsertRefs: Map<string, string>;
   /** Map of association name → target entity's safe columns (excluding omitted) */
   private readonly _associationSafeColumns?: Map<string, string[]>;
+  /** Indicates if the resource should use primary key for update/delete operations */
+  private readonly _usePrimaryKey?: boolean;
 
   /**
    * Creates a new MCP resource annotation
@@ -139,6 +141,7 @@ export class McpResourceAnnotation extends McpAnnotation {
    * @param omittedFields - Optional set of fields that should be omitted from MCP entity
    * @param deepInsertRefs - Optional map of association property names to target entity names for deep insert
    * @param associationSafeColumns - Optional map of association names to their safe columns (pre-computed)
+   * @param usePrimaryKey - Optional flag indicating if primary key should be used for update/delete operations instead of filters
    */
   constructor(
     name: string,
@@ -156,6 +159,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     omittedFields?: Set<string>,
     deepInsertRefs?: Map<string, string>,
     associationSafeColumns?: Map<string, string[]>,
+    usePrimaryKey?: boolean,
   ) {
     super(
       name,
@@ -175,6 +179,7 @@ export class McpResourceAnnotation extends McpAnnotation {
     this._omittedFields = omittedFields;
     this._deepInsertRefs = deepInsertRefs ?? new Map();
     this._associationSafeColumns = associationSafeColumns;
+    this._usePrimaryKey = usePrimaryKey;
   }
 
   /**
@@ -258,6 +263,14 @@ export class McpResourceAnnotation extends McpAnnotation {
    */
   getAssociationSafeColumns(assocName: string): string[] | undefined {
     return this._associationSafeColumns?.get(assocName);
+  }
+
+  /**
+   * Gets the flag indicating if primary key should be used for update/delete operations
+   * Returns True if primary key should be used, false if filters should be used instead, or undefined if not specified
+   */
+  get usePrimaryKey(): boolean | undefined {
+    return this._usePrimaryKey;
   }
 }
 

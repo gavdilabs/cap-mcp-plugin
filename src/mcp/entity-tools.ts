@@ -868,9 +868,12 @@ function registerUpdateTool(
     }
 
     const tx = svc.tx({ user: getAccessRights(authEnabled) });
+    const tx_run = resAnno.usePrimaryKey
+      ? tx.run(UPDATE(resAnno.target, keys).set(updates))
+      : tx.run(UPDATE(resAnno.target).set(updates).where(keys));
     try {
       const response = await withTimeout(
-        tx.run(UPDATE(resAnno.target).set(updates).where(keys)),
+        tx_run,
         TIMEOUT_MS,
         toolName,
         async () => {
@@ -974,9 +977,12 @@ function registerDeleteTool(
     LOGGER.debug(`Executing DELETE on ${resAnno.target} with keys`, keys);
 
     const tx = svc.tx({ user: getAccessRights(authEnabled) });
+    const tx_run = resAnno.usePrimaryKey
+      ? tx.run(DELETE.from(resAnno.target, keys))
+      : tx.run(DELETE.from(resAnno.target).where(keys));
     try {
       const response = await withTimeout(
-        tx.run(DELETE.from(resAnno.target).where(keys)),
+        tx_run,
         TIMEOUT_MS,
         toolName,
         async () => {

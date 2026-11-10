@@ -89,6 +89,7 @@ export type McpReferenceAnnotationStructure = {
   "@mcp.description": string;
   "@mcp.resource"?: boolean | Array<McpResourceOption>;
   "@mcp.tool"?: boolean;
+  "@mcp.usePrimaryKey"?: boolean;
   "@prompts"?: McpAnnotationPrompt[];
 };
 
@@ -102,6 +103,7 @@ export type McpAnnotationStructure = {
   name: string;
   description: string;
   resource?: boolean | Array<McpResourceOption>;
+  usePrimaryKey?: boolean;
   tool?: boolean;
   prompts?: McpAnnotationPrompt[];
   /**

@@ -24,9 +24,10 @@ The primary annotation for configuring MCP resources and tools.
 **Syntax**:
 ```cds
 @mcp: {
-  name       : String,        // Required
-  description: String,        // Optional
-  resource   : Boolean | Array<String>  // Required for resources
+  name         : String,        // Required
+  description  : String,        // Optional
+  resource     : Boolean | Array<String>,  // Required for resources
+  usePrimaryKey: Boolean        // Optional (default: false)
 }
 entity EntityName { /* ... */ }
 ```
@@ -69,6 +70,23 @@ entity Genres as projection on my.Genres;
 - `skip` - OData $skip pagination offset
 
 See [Resources Guide](guide/resources.md) for details.
+
+**`usePrimaryKey`** (optional, default `false`):
+
+Controls how `update` and `delete` operations address the target row.
+
+- `false` / unset — rows are targeted with a `WHERE` clause (`UPDATE(target).set(...).where(keys)` / `DELETE.from(target).where(keys)`). This assumes a database underneath the CAP service that can resolve such statements.
+- `true` — rows are targeted by primary key directly (`UPDATE(target, keys).set(...)` / `DELETE.from(target, keys)`). Required when the entity is backed by a **remote service**, where a `WHERE` clause cannot be used and the primary key(s) must be supplied in the call.
+
+```cds
+@mcp: {
+  name         : 'books',
+  description  : 'Book data list from remote service',
+  resource     : true,
+  usePrimaryKey: true  // target update/delete by primary key instead of a WHERE clause
+}
+entity Books as projection on external.Books;
+```
 
 ### For Tools (Functions/Actions)
 

@@ -182,6 +182,25 @@ service CatalogService {
 - **Dynamic Filtering**: Complex filter expressions using OData syntax
 - **Flexible Selection**: Choose specific fields and sort orders
 
+#### Key-based Update/Delete with `usePrimaryKey`
+
+By default, `update` and `delete` operations target rows using a `WHERE` clause (`UPDATE(target).set(...).where(keys)` / `DELETE.from(target).where(keys)`). This assumes a database underneath the CAP service that can resolve such statements.
+
+When the MCP tools are pointed at a **remote service** (e.g. a projection onto an external OData service), a `WHERE` clause cannot be used — the remote endpoint requires the entity's **primary key(s)** to be supplied directly in the call (`UPDATE(target, keys).set(...)`). Set `@mcp.usePrimaryKey: true` to switch to key-based addressing:
+
+```cds
+service CatalogService {
+
+  @mcp: {
+    name         : 'books',
+    description  : 'Book data list from remote service',
+    resource     : true,
+    usePrimaryKey: true  // target update/delete by primary key instead of a WHERE clause. Default: false
+  }
+  entity Books as projection on external.Books;
+}
+```
+
 ### Wrapper tools
 
 When `wrap_entities_to_actions` is enabled (globally or via `@mcp.wrap.tools: true`), you will see tools named like:

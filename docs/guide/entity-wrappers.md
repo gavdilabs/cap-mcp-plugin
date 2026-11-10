@@ -208,6 +208,8 @@ CatalogService_Books_delete(123)
 
 **Parameters**: Entity key field(s) required
 
+> **Remote services (`usePrimaryKey`)**: By default, `update` and `delete` address the row with a `WHERE` clause, which assumes a database underneath the service. When the entity is backed by a remote service (where a `WHERE` clause cannot be used), set `@mcp.usePrimaryKey: true` on the entity so the operations target the row by primary key instead. See [Annotations Reference](annotations.md#for-resources-entities).
+
 ⚠️ **Warning**: This operation cannot be undone.
 
 ### Deep Insert (Nested Creation)

@@ -260,6 +260,8 @@ function constructResourceAnnotation(
     }
   }
 
+  const usePrimaryKey = !!annotations.usePrimaryKey;
+
   return new McpResourceAnnotation(
     annotations.name as string,
     annotations.description as string,
@@ -276,6 +278,7 @@ function constructResourceAnnotation(
     omittedFields,
     deepInsertRefs,
     associationSafeColumns,
+    usePrimaryKey,
   );
 }
 
