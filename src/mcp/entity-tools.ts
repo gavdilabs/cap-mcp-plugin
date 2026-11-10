@@ -474,7 +474,7 @@ function registerQueryTool(
         args.explain ? { data: result, plan: undefined } : result,
       );
     } catch (error: any) {
-      const msg = `QUERY_FAILED: ${error?.message || String(error)}`;
+      const msg = `QUERY_FAILED: ${constructErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError("QUERY_FAILED", msg);
     }
@@ -590,7 +590,7 @@ function registerGetTool(
       const result = applyOmissionFilter(response, resAnno);
       return asMcpResult(result ?? null);
     } catch (error: any) {
-      const msg = `GET_FAILED: ${error?.message || String(error)}`;
+      const msg = `GET_FAILED: ${constructErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError("GET_FAILED", msg);
     }
@@ -731,7 +731,7 @@ function registerCreateTool(
       const isTimeout = String(error?.message || "").includes("timed out");
       const msg = isTimeout
         ? `${toolName} timed out after ${TIMEOUT_MS}ms`
-        : `CREATE_FAILED: ${error?.message || String(error)}`;
+        : `CREATE_FAILED: ${constructErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError(isTimeout ? "TIMEOUT" : "CREATE_FAILED", msg);
     }
@@ -896,7 +896,7 @@ function registerUpdateTool(
       const isTimeout = String(error?.message || "").includes("timed out");
       const msg = isTimeout
         ? `${toolName} timed out after ${TIMEOUT_MS}ms`
-        : `UPDATE_FAILED: ${error?.message || String(error)}`;
+        : `UPDATE_FAILED: ${constructErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError(isTimeout ? "TIMEOUT" : "UPDATE_FAILED", msg);
     }
@@ -1004,7 +1004,7 @@ function registerDeleteTool(
       const isTimeout = String(error?.message || "").includes("timed out");
       const msg = isTimeout
         ? `${toolName} timed out after ${TIMEOUT_MS}ms`
-        : `DELETE_FAILED: ${error?.message || String(error)}`;
+        : `DELETE_FAILED: ${constructErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError(isTimeout ? "TIMEOUT" : "DELETE_FAILED", msg);
     }
@@ -1217,4 +1217,18 @@ function constructHintMessage(
   }
 
   return ` Hint: ${resAnno.wrap.hint[wrapAction] ?? ""}`;
+}
+
+/**
+ * Constructs a detailed error message string from the provided error object including its
+ * message, code, target, and arguments (omitting stack trace and other bulky properties).
+ * @param error The error object to construct the message from.
+ * @returns A string containing the detailed error message.
+ */
+function constructErrorMessage(error: any): string {
+  let parts: string[] = [error?.message || String(error)];
+  if (!!error?.code) parts.push(`code=${JSON.stringify(error.code)}`);
+  if (!!error?.target) parts.push(`target=${JSON.stringify(error.target)}`);
+  if (!!error?.args) parts.push(`args=${JSON.stringify(error.args)}`);
+  return parts.join(" | ");
 }
