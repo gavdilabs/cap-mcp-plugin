@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.9.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.8.0...1.9.0) (2026-11-11)
+
+### Features
+
+* add certificate and AMS support ([#163](https://github.com/gavdilabs/cap-mcp-plugin/issues/163)) ([e392d26](https://github.com/gavdilabs/cap-mcp-plugin/commit/e392d269cdc4f2b77205c2af7f8c410e0acb242a))
+* Provide more context in error message to client ([#162](https://github.com/gavdilabs/cap-mcp-plugin/issues/162)) ([71acc74](https://github.com/gavdilabs/cap-mcp-plugin/commit/71acc748cf5678056d40be86f604842d43fe97e4))
+
+### Additional Changes
+
+* **docs:** update README SAP CAP version requirement to 10 or higher ([1f3a97e](https://github.com/gavdilabs/cap-mcp-plugin/commit/1f3a97e1c0733d97c0cabea53d6d31767508daed))
+
 ## [1.8.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.7.0...1.8.0) (2026-07-15)
 
 ### Features
