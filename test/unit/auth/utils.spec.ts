@@ -40,10 +40,12 @@ jest.mock("@sap/cds", () => ({
 // Mock the handler factories
 const mockAuthHandler = jest.fn();
 const mockErrorHandler = jest.fn();
+const mockAmsHandler = jest.fn();
 
 jest.mock("../../../src/auth/factory", () => ({
   authHandlerFactory: jest.fn(() => mockAuthHandler),
   errorHandlerFactory: jest.fn(() => mockErrorHandler),
+  amsHandlerFactory: jest.fn(() => mockAmsHandler),
 }));
 
 // Mock the MCP SDK OAuth components
@@ -239,6 +241,7 @@ describe("Authentication Utils", () => {
         /^\/mcp(?!\/health).*/,
         mockErrorHandler,
         mockAuthHandler,
+        mockAmsHandler,
       );
     });
 
@@ -259,6 +262,7 @@ describe("Authentication Utils", () => {
         /^\/mcp(?!\/health).*/,
         mockErrorHandler,
         mockAuthHandler,
+        mockAmsHandler,
       );
     });
 
@@ -279,6 +283,7 @@ describe("Authentication Utils", () => {
         /^\/mcp(?!\/health).*/,
         mockErrorHandler,
         mockAuthHandler,
+        mockAmsHandler,
       );
     });
 
@@ -299,6 +304,7 @@ describe("Authentication Utils", () => {
         /^\/mcp(?!\/health).*/,
         mockErrorHandler,
         mockAuthHandler,
+        mockAmsHandler,
       );
     });
 

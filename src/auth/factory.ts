@@ -68,7 +68,9 @@ function send401WithMetadata(
  */
 export function authHandlerFactory(): RequestHandler {
   const authKind = cds.env.requires.auth.kind as AuthTypes;
-  const xsuaaService = !useMockAuth(authKind) ? new XSUAAService() : undefined;
+  const xsuaaService = !useMockAuth(authKind)
+    ? new XSUAAService(authKind)
+    : undefined;
 
   LOGGER.debug("Authentication kind", authKind);
 
@@ -158,5 +160,85 @@ export function errorHandlerFactory(): ErrorRequestHandler {
     }
 
     next(err);
+  };
+}
+
+/** CAP pseudo-roles must never be granted via AMS policies (security); inlined from @sap/ams. */
+const CAP_PSEUDO_ROLES = [
+  "any",
+  "authenticated-user",
+  "internal-user",
+  "system-user",
+];
+
+/**
+ * Creates an Express middleware that applies @sap/ams (Authorization Management Service)
+ * CAP authorizations to the MCP request chain.
+ *
+ * @sap/ams registers its CAP middleware via `cds.middlewares.add(..., { after: "auth" })`
+ * inside a `cds.once("bootstrap")` handler, which fires AFTER the MCP plugin copies the CAP
+ * 'before' middleware chain. As a result the AMS middleware is missed by that copy and must be
+ * appended directly to the MCP chain. This factory mirrors @sap/ams' internal
+ * `AmsCapMiddleware.handleRequest` using ONLY public exports (`amsCapPluginRuntime` +
+ * `AMS_AUTHORIZATIONS`), avoiding a dependency on a private module path.
+ *
+ * For each authenticated (non-anonymous) request the middleware:
+ * 1. Resolves the user's AMS authorizations for the current CAP context
+ * 2. Stores them on the user via the `AMS_AUTHORIZATIONS` symbol
+ * 3. Derives the user's non-pseudo AMS roles and exposes them through `user.is(...)`
+ *
+ * @returns An Express RequestHandler, or `undefined` when the @sap/ams CAP runtime is not
+ *   available (in which case no AMS middleware should be applied).
+ *
+ * @example
+ * ```typescript
+ * const amsHandler = amsHandlerFactory();
+ * if (amsHandler) authMiddleware.push(amsHandler);
+ * ```
+ */
+export function amsHandlerFactory(): RequestHandler | undefined {
+  // require() succeeding is not enough: @sap/ams only exports amsCapPluginRuntime when it could
+  // load @sap/cds AND @sap/xssec at first require. Gate on the actual export we use.
+  const ams = (() => {
+    try {
+      return require("@sap/ams");
+    } catch {
+      return null;
+    }
+  })();
+
+  if (!ams?.amsCapPluginRuntime) {
+    LOGGER.debug(
+      "Skipping AMS CAP middleware: @sap/ams CAP runtime not available",
+    );
+    return undefined;
+  }
+
+  const { amsCapPluginRuntime, AMS_AUTHORIZATIONS } = ams;
+
+  return async (_req, _res, next) => {
+    try {
+      const user = cds.context?.user;
+      if (!user || user instanceof cds.User.Anonymous) return next();
+
+      const authProvider = amsCapPluginRuntime.authProvider;
+      if (!authProvider.supportsCdsContext(cds.context)) return next();
+
+      const authorizations = await authProvider.getAuthorizations(cds.context);
+      user[AMS_AUTHORIZATIONS] = authorizations;
+
+      // Derive non-pseudo AMS roles and expose them via user.is (mirrors AmsCapMiddleware).
+      const amsRoles = (
+        Array.from(authorizations.getPotentialActions("$SCOPES")) as string[]
+      ).filter((r) => !CAP_PSEUDO_ROLES.includes(r.toLowerCase()));
+
+      const originalIs = user.is.bind(user);
+      user.is = (role: string) => amsRoles.includes(role) || originalIs(role);
+      user.amsRoles = amsRoles;
+
+      return next();
+    } catch (e) {
+      return next(e);
+    }
   };
 }
