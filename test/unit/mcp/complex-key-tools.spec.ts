@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerEntityWrappers } from "../../../src/mcp/entity-tools";
+import { DEFAULT_TOOL_CALL_TIMEOUT } from "../../../src/config/loader";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 import { WrapAccess } from "../../../src/auth/utils";
 
@@ -66,6 +67,7 @@ describe("Complex Key MCP Tools", () => {
         false,
         ["query", "get", "create", "update", "delete"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       expect(registeredTools).toEqual(
@@ -115,6 +117,7 @@ describe("Complex Key MCP Tools", () => {
         false,
         ["get", "update", "delete"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       expect(registeredTools).toEqual(
@@ -172,6 +175,7 @@ describe("Complex Key MCP Tools", () => {
         false,
         ["query", "get", "create", "update"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       expect(registeredTools).toEqual(
@@ -227,6 +231,7 @@ describe("Complex Key MCP Tools", () => {
         false,
         ["query", "get", "create", "update", "delete"], // Global modes
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       expect(registeredTools).toEqual(
@@ -275,6 +280,7 @@ describe("Complex Key MCP Tools", () => {
         false,
         ["query", "get", "create", "update", "delete"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       // Should register tools using default modes when no wrap configuration
@@ -321,6 +327,7 @@ describe("Complex Key MCP Tools", () => {
         false,
         ["query", "get"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       // registerEntityWrappers ignores the tools flag and registers based on modes
@@ -378,6 +385,7 @@ describe("Complex Key MCP Tools", () => {
         false,
         ["query", "get", "create", "update", "delete"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       // Should only register read operations
@@ -457,6 +465,7 @@ describe("Complex Key MCP Tools", () => {
         false,
         ["query", "get", "create", "update"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       registerEntityWrappers(
@@ -465,6 +474,7 @@ describe("Complex Key MCP Tools", () => {
         false,
         ["query", "get", "create", "update"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       // Should register tools for both entities

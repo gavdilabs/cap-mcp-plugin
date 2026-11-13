@@ -13,6 +13,9 @@ const DEFAULT_PROJECT_INFO: ProjectInfo = {
   version: "1.0.0",
 };
 
+/** Default timeout (ms) applied to wrapped entity tool calls when not configured. */
+export const DEFAULT_TOOL_CALL_TIMEOUT = 10_000;
+
 /**
  * Loads CAP configuration from environment and CDS settings
  * @returns Complete CAP configuration object with defaults applied
@@ -38,6 +41,7 @@ export function loadConfiguration(): CAPConfiguration {
     ],
     instructions: cdsEnv?.instructions,
     enable_model_description: cdsEnv?.enable_model_description ?? true,
+    tool_call_timeout: cdsEnv?.tool_call_timeout ?? DEFAULT_TOOL_CALL_TIMEOUT,
   };
 }
 

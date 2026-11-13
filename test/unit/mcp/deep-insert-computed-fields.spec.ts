@@ -163,6 +163,7 @@ const mockModel = {
 // Now import the modules
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerEntityWrappers } from "../../../src/mcp/entity-tools";
+import { DEFAULT_TOOL_CALL_TIMEOUT } from "../../../src/config/loader";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 import { WrapAccess } from "../../../src/auth/utils";
 
@@ -197,9 +198,16 @@ describe("entity-tools - Deep Insert with Computed Fields (Issue #86)", () => {
       computedFields,
     );
 
-    registerEntityWrappers(annotation, server, false, ["create"], {
-      canCreate: true,
-    });
+    registerEntityWrappers(
+      annotation,
+      server,
+      false,
+      ["create"],
+      {
+        canCreate: true,
+      },
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     // Parent schema checks
     expect(capturedSchema).not.toHaveProperty("ID");
@@ -277,9 +285,16 @@ describe("entity-tools - Deep Insert with Computed Fields (Issue #86)", () => {
       computedFields,
     );
 
-    registerEntityWrappers(annotation, server, false, ["create"], {
-      canCreate: true,
-    });
+    registerEntityWrappers(
+      annotation,
+      server,
+      false,
+      ["create"],
+      {
+        canCreate: true,
+      },
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     // Get the items composition schema
     const itemsSchema = capturedSchema.items;
@@ -352,9 +367,16 @@ describe("entity-tools - Deep Insert with Computed Fields (Issue #86)", () => {
       computedFields,
     );
 
-    registerEntityWrappers(annotation, server, false, ["create"], {
-      canCreate: true,
-    });
+    registerEntityWrappers(
+      annotation,
+      server,
+      false,
+      ["create"],
+      {
+        canCreate: true,
+      },
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     // Get the items composition schema
     const itemsSchema = capturedSchema.items;
@@ -438,9 +460,16 @@ describe("entity-tools - Deep Insert with Computed Fields (Issue #86)", () => {
       computedFields,
     );
 
-    registerEntityWrappers(annotation, server, false, ["create"], {
-      canCreate: true,
-    });
+    registerEntityWrappers(
+      annotation,
+      server,
+      false,
+      ["create"],
+      {
+        canCreate: true,
+      },
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     // Valid multi-level payload without any computed IDs
     const validPayload = {
@@ -526,9 +555,16 @@ describe("entity-tools - Deep Insert with Computed Fields (Issue #86)", () => {
       computedFields,
     );
 
-    registerEntityWrappers(annotation, server, false, ["create"], {
-      canCreate: true,
-    });
+    registerEntityWrappers(
+      annotation,
+      server,
+      false,
+      ["create"],
+      {
+        canCreate: true,
+      },
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     // Valid payload: version required (not computed), ID not provided (computed)
     const validPayload = {
@@ -583,9 +619,16 @@ describe("entity-tools - Deep Insert with Computed Fields (Issue #86)", () => {
       computedFields,
     );
 
-    registerEntityWrappers(annotation, server, false, ["create"], {
-      canCreate: true,
-    });
+    registerEntityWrappers(
+      annotation,
+      server,
+      false,
+      ["create"],
+      {
+        canCreate: true,
+      },
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     // Valid deep insert: Should NOT require order_ID even though it's a key on the child
     // because the parent ID is computed and will be auto-filled
@@ -650,9 +693,16 @@ describe("entity-tools - Deep Insert with Computed Fields (Issue #86)", () => {
       computedFields,
     );
 
-    registerEntityWrappers(annotation, server, false, ["create"], {
-      canCreate: true,
-    });
+    registerEntityWrappers(
+      annotation,
+      server,
+      false,
+      ["create"],
+      {
+        canCreate: true,
+      },
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     // Valid deep insert: Category with nested Products
     // Child products should NOT require category_ID even though there's an association back to parent
