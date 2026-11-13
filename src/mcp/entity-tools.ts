@@ -83,7 +83,6 @@ async function resolveServiceInstance(
 // NOTE: We use plain entity names (service projection) for queries.
 
 const MAX_TOP = 200;
-const TIMEOUT_MS = 10_000; // Standard timeout for tool calls (ms)
 
 /**
  * CDS integer types whose values can be safely represented as a JavaScript `Number`
@@ -214,6 +213,7 @@ export function registerEntityWrappers(
   authEnabled: boolean,
   defaultModes: EntityOperationMode[],
   accesses: WrapAccess,
+  timeout: number,
 ): void {
   const CDS = (global as any).cds;
   LOGGER.debug(
@@ -223,7 +223,7 @@ export function registerEntityWrappers(
   const modes = resAnno.wrap?.modes ?? defaultModes;
 
   if (modes.includes("query") && accesses.canRead) {
-    registerQueryTool(resAnno, server, authEnabled);
+    registerQueryTool(resAnno, server, authEnabled, timeout);
   }
   if (
     modes.includes("get") &&
@@ -231,10 +231,10 @@ export function registerEntityWrappers(
     resAnno.resourceKeys.size > 0 &&
     accesses.canRead
   ) {
-    registerGetTool(resAnno, server, authEnabled);
+    registerGetTool(resAnno, server, authEnabled, timeout);
   }
   if (modes.includes("create") && accesses.canCreate) {
-    registerCreateTool(resAnno, server, authEnabled);
+    registerCreateTool(resAnno, server, authEnabled, timeout);
   }
   if (
     modes.includes("update") &&
@@ -242,7 +242,7 @@ export function registerEntityWrappers(
     resAnno.resourceKeys.size > 0 &&
     accesses.canUpdate
   ) {
-    registerUpdateTool(resAnno, server, authEnabled);
+    registerUpdateTool(resAnno, server, authEnabled, timeout);
   }
   if (
     modes.includes("delete") &&
@@ -250,7 +250,7 @@ export function registerEntityWrappers(
     resAnno.resourceKeys.size > 0 &&
     accesses.canDelete
   ) {
-    registerDeleteTool(resAnno, server, authEnabled);
+    registerDeleteTool(resAnno, server, authEnabled, timeout);
   }
 }
 
@@ -284,6 +284,7 @@ function registerQueryTool(
   resAnno: McpResourceAnnotation,
   server: McpServer,
   authEnabled: boolean,
+  timeout: number,
 ): void {
   const toolName = nameFor(
     resAnno.serviceName,
@@ -458,7 +459,7 @@ function registerQueryTool(
       const t0 = Date.now();
       const response = await withTimeout(
         executeQuery(CDS, svc, args, q),
-        TIMEOUT_MS,
+        timeout,
         toolName,
       );
 
@@ -504,6 +505,7 @@ function registerGetTool(
   resAnno: McpResourceAnnotation,
   server: McpServer,
   authEnabled: boolean,
+  timeout: number,
 ): void {
   const toolName = nameFor(
     resAnno.serviceName,
@@ -578,7 +580,7 @@ function registerGetTool(
     try {
       let response = await withTimeout(
         svc.run(svc.read(resAnno.target, keys)),
-        TIMEOUT_MS,
+        timeout,
         `${toolName}`,
       );
 
@@ -620,6 +622,7 @@ function registerCreateTool(
   resAnno: McpResourceAnnotation,
   server: McpServer,
   authEnabled: boolean,
+  timeout: number,
 ): void {
   const toolName = nameFor(
     resAnno.serviceName,
@@ -710,7 +713,7 @@ function registerCreateTool(
     try {
       const response = await withTimeout(
         tx.run(INSERT.into(resAnno.target).entries(data)),
-        TIMEOUT_MS,
+        timeout,
         toolName,
         async () => {
           try {
@@ -730,7 +733,7 @@ function registerCreateTool(
       } catch {}
       const isTimeout = String(error?.message || "").includes("timed out");
       const msg = isTimeout
-        ? `${toolName} timed out after ${TIMEOUT_MS}ms`
+        ? `${toolName} timed out after ${timeout}ms`
         : `CREATE_FAILED: ${constructErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError(isTimeout ? "TIMEOUT" : "CREATE_FAILED", msg);
@@ -761,6 +764,7 @@ function registerUpdateTool(
   resAnno: McpResourceAnnotation,
   server: McpServer,
   authEnabled: boolean,
+  timeout: number,
 ): void {
   const toolName = nameFor(
     resAnno.serviceName,
@@ -874,7 +878,7 @@ function registerUpdateTool(
     try {
       const response = await withTimeout(
         tx_run,
-        TIMEOUT_MS,
+        timeout,
         toolName,
         async () => {
           try {
@@ -895,7 +899,7 @@ function registerUpdateTool(
       } catch {}
       const isTimeout = String(error?.message || "").includes("timed out");
       const msg = isTimeout
-        ? `${toolName} timed out after ${TIMEOUT_MS}ms`
+        ? `${toolName} timed out after ${timeout}ms`
         : `UPDATE_FAILED: ${constructErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError(isTimeout ? "TIMEOUT" : "UPDATE_FAILED", msg);
@@ -926,6 +930,7 @@ function registerDeleteTool(
   resAnno: McpResourceAnnotation,
   server: McpServer,
   authEnabled: boolean,
+  timeout: number,
 ): void {
   const toolName = nameFor(
     resAnno.serviceName,
@@ -983,7 +988,7 @@ function registerDeleteTool(
     try {
       const response = await withTimeout(
         tx_run,
-        TIMEOUT_MS,
+        timeout,
         toolName,
         async () => {
           try {
@@ -1003,7 +1008,7 @@ function registerDeleteTool(
       } catch {}
       const isTimeout = String(error?.message || "").includes("timed out");
       const msg = isTimeout
-        ? `${toolName} timed out after ${TIMEOUT_MS}ms`
+        ? `${toolName} timed out after ${timeout}ms`
         : `DELETE_FAILED: ${constructErrorMessage(error)}`;
       LOGGER.error(msg, error);
       return toolError(isTimeout ? "TIMEOUT" : "DELETE_FAILED", msg);

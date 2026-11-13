@@ -10,6 +10,7 @@ import {
 import { assignToolToServer } from "./tools";
 import { assignResourceToServer } from "./resources";
 import { CAPConfiguration } from "../config/types";
+import { DEFAULT_TOOL_CALL_TIMEOUT } from "../config/loader";
 import { assignPromptToServer } from "./prompts";
 import {
   getAccessRights,
@@ -78,7 +79,15 @@ export function createMcpServer(
       if (enabled) {
         const modes = entry.wrap?.modes ??
           config.wrap_entity_modes ?? ["query", "get"];
-        registerEntityWrappers(entry, server, authEnabled, modes, accesses);
+        const timeout = config.tool_call_timeout ?? DEFAULT_TOOL_CALL_TIMEOUT;
+        registerEntityWrappers(
+          entry,
+          server,
+          authEnabled,
+          modes,
+          accesses,
+          timeout,
+        );
       }
       continue;
     } else if (entry instanceof McpPromptAnnotation) {
