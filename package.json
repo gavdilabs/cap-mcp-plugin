@@ -63,7 +63,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^26.1.1",
     "@types/sinon": "^17.0.4",
-    "@types/supertest": "^6.0.2",
+    "@types/supertest": "^7.2.1",
     "docsify-cli": "^4.4.4",
     "eslint": "^9.29.0",
     "husky": "^9.1.7",
