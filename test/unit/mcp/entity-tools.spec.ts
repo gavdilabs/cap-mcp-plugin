@@ -3,6 +3,7 @@ import {
   registerEntityWrappers,
   coerceKeyValue,
 } from "../../../src/mcp/entity-tools";
+import { DEFAULT_TOOL_CALL_TIMEOUT } from "../../../src/config/loader";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 import { WrapAccess } from "../../../src/auth/utils";
 import { EntityListQueryArgs } from "../../../src/mcp/types";
@@ -39,7 +40,14 @@ describe("entity-tools - registration", () => {
       canUpdate: true,
       canDelete: true,
     };
-    registerEntityWrappers(res, server, false, ["query", "get"], accesses);
+    registerEntityWrappers(
+      res,
+      server,
+      false,
+      ["query", "get"],
+      accesses,
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     expect(reg).toEqual(
       expect.arrayContaining([
@@ -78,7 +86,14 @@ describe("entity-tools - registration", () => {
     );
 
     const accesses: WrapAccess = { canDelete: true };
-    registerEntityWrappers(res, server, false, ["delete"], accesses);
+    registerEntityWrappers(
+      res,
+      server,
+      false,
+      ["delete"],
+      accesses,
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     expect(reg).toEqual(["CatalogService_Books_delete"]);
   });
@@ -109,7 +124,14 @@ describe("entity-tools - registration", () => {
     );
 
     const accesses: WrapAccess = { canDelete: true };
-    registerEntityWrappers(res, server, false, ["delete"], accesses);
+    registerEntityWrappers(
+      res,
+      server,
+      false,
+      ["delete"],
+      accesses,
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
   });
 
   it("emits behaviour annotations per entity wrapper mode", () => {
@@ -148,6 +170,7 @@ describe("entity-tools - registration", () => {
       false,
       ["query", "get", "create", "update", "delete"],
       accesses,
+      DEFAULT_TOOL_CALL_TIMEOUT,
     );
 
     expect(annotations["CatalogService_Books_query"]).toEqual({
@@ -205,7 +228,14 @@ describe("entity-tools - custom tool naming via @mcp.wrap.name", () => {
     );
 
     const accesses: WrapAccess = { canRead: true };
-    registerEntityWrappers(res, server, false, ["query", "get"], accesses);
+    registerEntityWrappers(
+      res,
+      server,
+      false,
+      ["query", "get"],
+      accesses,
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     expect(reg).toEqual(["BookCatalog_query", "BookCatalog_get"]);
   });
@@ -236,7 +266,14 @@ describe("entity-tools - custom tool naming via @mcp.wrap.name", () => {
     );
 
     const accesses: WrapAccess = { canRead: true };
-    registerEntityWrappers(res, server, false, ["query"], accesses);
+    registerEntityWrappers(
+      res,
+      server,
+      false,
+      ["query"],
+      accesses,
+      DEFAULT_TOOL_CALL_TIMEOUT,
+    );
 
     expect(reg).toEqual(["CatalogService_Books_query"]);
   });
@@ -282,6 +319,7 @@ describe("entity-tools - custom tool naming via @mcp.wrap.name", () => {
       false,
       ["query", "get", "create", "update", "delete"],
       accesses,
+      DEFAULT_TOOL_CALL_TIMEOUT,
     );
 
     expect(reg).toEqual([
@@ -328,7 +366,14 @@ describe("entity-tools - Core.Computed field handling", () => {
       );
 
       const accesses: WrapAccess = { canCreate: true };
-      registerEntityWrappers(res, server, false, ["create"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["create"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       // Verify computed fields are NOT in the input schema
       expect(capturedInputSchema).toHaveProperty("name");
@@ -366,7 +411,14 @@ describe("entity-tools - Core.Computed field handling", () => {
       );
 
       const accesses: WrapAccess = { canCreate: true };
-      registerEntityWrappers(res, server, false, ["create"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["create"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       // All fields should be in the input schema (except keys which are optional)
       expect(capturedInputSchema).toHaveProperty("name");
@@ -402,7 +454,14 @@ describe("entity-tools - Core.Computed field handling", () => {
       );
 
       const accesses: WrapAccess = { canCreate: true };
-      registerEntityWrappers(res, server, false, ["create"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["create"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       // Computed field should not be in schema
       expect(capturedInputSchema).not.toHaveProperty("computedValue");
@@ -449,7 +508,14 @@ describe("entity-tools - Core.Computed field handling", () => {
       );
 
       const accesses: WrapAccess = { canUpdate: true };
-      registerEntityWrappers(res, server, false, ["update"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["update"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       // Verify key field IS in schema (required for update)
       expect(capturedInputSchema).toHaveProperty("ID");
@@ -494,7 +560,14 @@ describe("entity-tools - Core.Computed field handling", () => {
       );
 
       const accesses: WrapAccess = { canUpdate: true };
-      registerEntityWrappers(res, server, false, ["update"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["update"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       // Key should be present
       expect(capturedInputSchema).toHaveProperty("ID");
@@ -536,7 +609,14 @@ describe("entity-tools - Core.Computed field handling", () => {
       );
 
       const accesses: WrapAccess = { canUpdate: true };
-      registerEntityWrappers(res, server, false, ["update"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["update"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       // All fields should be in the input schema
       expect(capturedInputSchema).toHaveProperty("ID");
@@ -579,7 +659,14 @@ describe("entity-tools - Core.Computed field handling", () => {
       );
 
       const accesses: WrapAccess = { canCreate: true };
-      registerEntityWrappers(res, server, false, ["create"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["create"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       // Regular fields should be present
       expect(capturedInputSchema).toHaveProperty("orderDate");
@@ -629,6 +716,7 @@ describe("entity-tools - Core.Computed field handling", () => {
         false,
         ["create", "update"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       // Check create tool

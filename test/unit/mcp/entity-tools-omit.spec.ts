@@ -1,5 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerEntityWrappers } from "../../../src/mcp/entity-tools";
+import { DEFAULT_TOOL_CALL_TIMEOUT } from "../../../src/config/loader";
 import { McpResourceAnnotation } from "../../../src/annotations/structures";
 import { WrapAccess } from "../../../src/auth/utils";
 
@@ -77,7 +78,14 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
       };
 
       const accesses: WrapAccess = { canCreate: true };
-      registerEntityWrappers(res, server, false, ["create"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["create"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       const result = await capturedHandler({
         title: "Test Book",
@@ -144,7 +152,14 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
       };
 
       const accesses: WrapAccess = { canCreate: true };
-      registerEntityWrappers(res, server, false, ["create"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["create"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       const result = await capturedHandler({
         name: "John Doe",
@@ -205,7 +220,14 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
       };
 
       const accesses: WrapAccess = { canCreate: true };
-      registerEntityWrappers(res, server, false, ["create"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["create"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       const result = await capturedHandler({ name: "Item One", value: 100.5 });
       const parsedResponse = JSON.parse(result.content[0].text);
@@ -267,7 +289,14 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
       };
 
       const accesses: WrapAccess = { canUpdate: true };
-      registerEntityWrappers(res, server, false, ["update"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["update"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       const result = await capturedHandler({
         ID: 1,
@@ -335,7 +364,14 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
       };
 
       const accesses: WrapAccess = { canUpdate: true };
-      registerEntityWrappers(res, server, false, ["update"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["update"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       const result = await capturedHandler({
         ID: 1,
@@ -400,7 +436,14 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
       };
 
       const accesses: WrapAccess = { canUpdate: true };
-      registerEntityWrappers(res, server, false, ["update"], accesses);
+      registerEntityWrappers(
+        res,
+        server,
+        false,
+        ["update"],
+        accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
+      );
 
       const result = await capturedHandler({
         ID: 1,
@@ -486,6 +529,7 @@ describe("entity-tools - @mcp.omit field handling in create/update responses", (
         false,
         ["create", "update"],
         accesses,
+        DEFAULT_TOOL_CALL_TIMEOUT,
       );
 
       // Test create

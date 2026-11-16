@@ -570,6 +570,7 @@ Configure the MCP plugin through your CAP application's `package.json` or `.cdsr
 | `auth`                               | `"inherit"` \| `"none"` | `"inherit"`          | Authentication mode                                                         |
 | `instructions`                       | string                  | `null`               | MCP server instructions for agents                                          |
 | `enable_model_description`           | boolean                 | `true`               | Determines whether the MCP server should include the model description tool |
+| `tool_call_timeout`                  | number                  | `10000`              | Timeout (ms) for wrapped entity CRUD tool calls                             |
 | `capabilities.resources.listChanged` | boolean                 | `true`               | Enable resource list change notifications                                   |
 | `capabilities.resources.subscribe`   | boolean                 | `false`              | Enable resource subscriptions                                               |
 | `capabilities.tools.listChanged`     | boolean                 | `true`               | Enable tool list change notifications                                       |

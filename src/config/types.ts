@@ -58,6 +58,11 @@ export interface CAPConfiguration {
    * By default this should always be true, for backwards compatability
    */
   enable_model_description?: boolean;
+
+  /**
+   * Timeout for tool calls in milliseconds
+   */
+  tool_call_timeout?: number;
 }
 
 /**
