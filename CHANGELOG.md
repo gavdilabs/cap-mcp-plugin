@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.9.1](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.9.0...1.9.1) (2026-11-16)
+
+### Bug Fixes
+
+* add config parameter ([#168](https://github.com/gavdilabs/cap-mcp-plugin/issues/168)) ([35a9b49](https://github.com/gavdilabs/cap-mcp-plugin/commit/35a9b49f99a269674a106ede1d5d8f84fccafb10))
+
 ## [1.9.0](https://github.com/gavdilabs/cap-mcp-plugin/compare/1.8.0...1.9.0) (2026-11-11)
 
 ### Features
